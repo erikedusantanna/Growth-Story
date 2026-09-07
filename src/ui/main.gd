@@ -1,0 +1,136 @@
+extends Control
+## Cena principal: HUD, escritório, feed, telas e navegação inferior.
+
+const SCREEN_ORDER := ["team", "clients", "projects", "company", "unlocks"]
+const SCREEN_LABELS := {"team": "Equipe", "clients": "Clientes", "projects": "Projetos", "company": "Empresa", "unlocks": "Desbloqueios"}
+
+var hud: Hud
+var office_view: OfficeView
+var feed: RichTextLabel
+var screens: Dictionary = {}
+var nav_buttons: Dictionary = {}
+var popups: Popups
+var title_screen: TitleScreen
+var current_screen := "clients"
+
+
+func _ready() -> void:
+	add_to_group("main")
+	theme = UIKit.theme()
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	var bg := ColorRect.new()
+	bg.color = UIKit.COLOR_BG
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(bg)
+
+	var root := UIKit.vbox(6)
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.offset_left = 8
+	root.offset_right = -8
+	root.offset_top = 8
+	root.offset_bottom = -8
+	add_child(root)
+
+	hud = Hud.new()
+	root.add_child(hud)
+
+	office_view = OfficeView.new()
+	office_view.custom_minimum_size = Vector2(0, 290)
+	office_view.worker_tapped.connect(func(_id): show_screen("team"))
+	root.add_child(office_view)
+
+	var feed_panel := PanelContainer.new()
+	feed_panel.custom_minimum_size = Vector2(0, 76)
+	feed = RichTextLabel.new()
+	feed.bbcode_enabled = true
+	feed.scroll_active = false
+	feed.fit_content = false
+	feed.add_theme_font_size_override("normal_font_size", 13)
+	feed.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	feed_panel.add_child(feed)
+	root.add_child(feed_panel)
+
+	var holder := MarginContainer.new()
+	holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(holder)
+	screens["team"] = TeamScreen.new()
+	screens["clients"] = ClientsScreen.new()
+	screens["projects"] = ProjectsScreen.new()
+	screens["company"] = CompanyScreen.new()
+	screens["unlocks"] = UnlocksScreen.new()
+	for key in SCREEN_ORDER:
+		holder.add_child(screens[key])
+		screens[key].visible = false
+
+	var nav := UIKit.hbox(4)
+	for key in SCREEN_ORDER:
+		var name: String = key
+		var b := UIKit.button(SCREEN_LABELS[key], func(): show_screen(name), false, 56)
+		b.add_theme_font_size_override("font_size", 14)
+		b.clip_text = true
+		nav.add_child(b)
+		nav_buttons[key] = b
+	root.add_child(nav)
+
+	popups = Popups.new()
+	add_child(popups)
+
+	title_screen = TitleScreen.new()
+	title_screen.start_requested.connect(_on_game_started)
+	add_child(title_screen)
+
+	EventBus.log_added.connect(func(_t, _k): _refresh_feed())
+	EventBus.game_started.connect(_refresh_feed)
+	title_screen.open()
+
+
+func show_screen(name: String) -> void:
+	current_screen = name
+	for key in screens:
+		screens[key].visible = key == name
+		nav_buttons[key].modulate = Color(1, 1, 1, 1) if key == name else Color(1, 1, 1, 0.6)
+	screens[name].refresh()
+
+
+func show_title() -> void:
+	if Game.has_game():
+		Game.state.paused = true
+	title_screen.open()
+
+
+func _on_game_started() -> void:
+	show_screen("clients")
+	office_view.refresh()
+	hud.refresh()
+	_refresh_feed()
+	if Game.state.day == 0:
+		popups.show_info("Sua história começa aqui",
+			"Você é um freelancer com %s no caixa. Feche o primeiro cliente na aba Clientes, monte a estratégia e entregue resultado. Dinheiro e reputação abrem clientes maiores." % UIKit.money(Game.state.money))
+	Game.state.paused = false
+
+
+func _refresh_feed() -> void:
+	if not Game.has_game():
+		return
+	var lines: Array = Game.state.log.slice(maxi(Game.state.log.size() - 4, 0), Game.state.log.size())
+	feed.clear()
+	for entry in lines:
+		var color := _feed_color(String(entry.get("kind", "info")))
+		feed.append_text("[color=%s]%s[/color]\n" % [color.to_html(false), String(entry.get("text", ""))])
+
+
+func _feed_color(kind: String) -> Color:
+	match kind:
+		"money":
+			return UIKit.COLOR_GREEN
+		"warn":
+			return UIKit.COLOR_RED
+		"fun", "press":
+			return UIKit.COLOR_PURPLE
+		"rep", "unlock", "promo", "year":
+			return UIKit.COLOR_ACCENT
+		"client", "project":
+			return UIKit.COLOR_BLUE
+		_:
+			return UIKit.COLOR_TEXT

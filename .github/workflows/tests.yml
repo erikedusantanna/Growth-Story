@@ -1,0 +1,30 @@
+name: Testes headless
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  godot-tests:
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: 4.3-stable
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Baixar Godot
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv Godot_v${GODOT_VERSION}_linux.x86_64 godot
+          chmod +x godot
+          ./godot --headless --version
+
+      - name: Importar projeto
+        run: ./godot --headless --path . --import 2>&1 | tee import.log; ! grep -q "SCRIPT ERROR" import.log
+
+      - name: Simulação de 3 anos
+        run: ./godot --headless --path . res://tests/sim_test.tscn
+
+      - name: Smoke test da interface
+        run: ./godot --headless --path . res://tests/ui_smoke_test.tscn

@@ -1,0 +1,4 @@
+*.png binary
+*.gd text eol=lf
+*.tscn text eol=lf
+*.json text eol=lf

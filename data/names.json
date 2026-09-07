@@ -1,0 +1,45 @@
+{
+  "first": ["João", "Maria", "Lucas", "Ana", "Pedro", "Julia", "Gabriel", "Beatriz", "Rafael", "Larissa",
+            "Bruno", "Camila", "Felipe", "Mariana", "Thiago", "Fernanda", "Diego", "Letícia", "Matheus", "Carolina",
+            "Vinícius", "Amanda", "Gustavo", "Isabela", "Leonardo", "Bianca", "Caio", "Natália", "Rodrigo", "Priscila",
+            "Eduardo", "Renata", "Henrique", "Sofia", "Igor", "Yasmin", "Marcelo", "Aline", "Daniel", "Tainá"],
+  "last": ["Silva", "Santos", "Oliveira", "Souza", "Lima", "Pereira", "Costa", "Ferreira", "Almeida", "Nascimento",
+           "Ribeiro", "Carvalho", "Gomes", "Martins", "Araújo", "Barbosa", "Rocha", "Dias", "Moreira", "Nunes",
+           "Cardoso", "Teixeira", "Mendes", "Freitas", "Pinto", "Castro", "Campos", "Duarte", "Batista", "Monteiro"],
+  "personalities": {
+    "criativo": {"name": "Criativo", "desc": "Alta criatividade, baixa disciplina.", "attr_mods": {"creativity": 15, "management": -8}, "xp_mult": 1.0, "salary_mult": 1.0, "stress_rate": 1.0, "productivity": 0.95},
+    "workaholic": {"name": "Workaholic", "desc": "Produz muito, mas corre risco de burnout.", "attr_mods": {}, "xp_mult": 1.1, "salary_mult": 1.0, "stress_rate": 1.8, "productivity": 1.25},
+    "vendedor": {"name": "Vendedor", "desc": "Excelente relacionamento e fechamento.", "attr_mods": {"communication": 18, "technology": -5}, "xp_mult": 1.0, "salary_mult": 1.05, "stress_rate": 0.9, "productivity": 1.0},
+    "analitico": {"name": "Analítico", "desc": "Excelente estratégia e performance.", "attr_mods": {"strategy": 10, "performance": 10, "creativity": -6}, "xp_mult": 1.0, "salary_mult": 1.05, "stress_rate": 1.0, "productivity": 1.0},
+    "visionario": {"name": "Visionário", "desc": "Grande potencial, pouca experiência.", "attr_mods": {"strategy": 5}, "xp_mult": 1.5, "salary_mult": 0.9, "stress_rate": 1.0, "productivity": 0.9, "potential_min": 4},
+    "estrela": {"name": "Estrela", "desc": "Muito bom e muito caro.", "attr_mods": {"creativity": 12, "strategy": 12, "performance": 12, "communication": 8}, "xp_mult": 0.9, "salary_mult": 1.8, "stress_rate": 1.0, "productivity": 1.1},
+    "leal": {"name": "Leal", "desc": "Evolui devagar, mas dificilmente sai.", "attr_mods": {}, "xp_mult": 0.8, "salary_mult": 0.95, "stress_rate": 0.8, "productivity": 1.0, "loyalty_base": 90},
+    "mercenario": {"name": "Mercenário", "desc": "Entrega muito, mas exige aumentos.", "attr_mods": {"performance": 10, "creativity": 6}, "xp_mult": 1.0, "salary_mult": 1.15, "stress_rate": 1.0, "productivity": 1.15, "loyalty_base": 30}
+  },
+  "roles": {
+    "generalist": {"name": "Generalista", "focus": ["creativity", "strategy", "performance", "communication", "management", "technology"]},
+    "social_media": {"name": "Social Media", "focus": ["communication", "creativity"]},
+    "design": {"name": "Designer", "focus": ["creativity", "technology"]},
+    "paid_traffic": {"name": "Gestor de Tráfego", "focus": ["performance", "technology"]},
+    "copywriting": {"name": "Copywriter", "focus": ["creativity", "communication"]},
+    "branding": {"name": "Estrategista de Marca", "focus": ["strategy", "creativity"]},
+    "seo": {"name": "Analista de SEO", "focus": ["technology", "strategy"]},
+    "content": {"name": "Produtor de Conteúdo", "focus": ["creativity", "communication"]},
+    "influencer": {"name": "Gestor de Influência", "focus": ["communication", "management"]},
+    "crm": {"name": "Especialista em CRM", "focus": ["technology", "strategy"]},
+    "cro": {"name": "Especialista em CRO", "focus": ["performance", "technology"]},
+    "strategy": {"name": "Estrategista", "focus": ["strategy", "management"]},
+    "account": {"name": "Account", "focus": ["communication", "management"]}
+  },
+  "career": [
+    {"name": "Estagiário(a)", "xp": 0, "salary_mult": 0.5},
+    {"name": "Júnior", "xp": 60, "salary_mult": 0.8},
+    {"name": "Pleno", "xp": 180, "salary_mult": 1.0},
+    {"name": "Sênior", "xp": 400, "salary_mult": 1.35},
+    {"name": "Especialista", "xp": 700, "salary_mult": 1.6},
+    {"name": "Gerente", "xp": 1100, "salary_mult": 2.0},
+    {"name": "Diretor(a)", "xp": 1700, "salary_mult": 2.6},
+    {"name": "Executivo(a)", "xp": 2500, "salary_mult": 3.4}
+  ],
+  "colors": ["#e4572e", "#29335c", "#f3a712", "#a8c686", "#669bbc", "#c8553d", "#7b2cbf", "#2a9d8f", "#e76f51", "#3d5a80"]
+}

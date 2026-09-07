@@ -1,0 +1,179 @@
+class_name Popups
+extends CanvasLayer
+## Camada de modais: eventos, resultados, novo projeto, treinamento e avisos.
+## Enquanto um modal está aberto o tempo do jogo fica travado (Game.ui_blocking).
+
+var dim: ColorRect
+var holder: Control
+var current: Control = null
+var queue: Array = []
+
+
+func _ready() -> void:
+	layer = 10
+	add_to_group("popups")
+	dim = ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.65)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.visible = false
+	add_child(dim)
+	holder = Control.new()
+	holder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(holder)
+	EventBus.event_triggered.connect(show_event)
+	EventBus.project_completed.connect(show_result)
+	EventBus.game_over.connect(show_game_over)
+
+
+func is_open() -> bool:
+	return current != null
+
+
+func _open(builder: Callable) -> void:
+	if is_open():
+		queue.append(builder)
+		return
+	current = builder.call()
+	holder.add_child(current)
+	dim.visible = true
+	Game.ui_blocking = true
+
+
+func close() -> void:
+	if current != null:
+		current.queue_free()
+		current = null
+	if not queue.is_empty():
+		var next: Callable = queue.pop_front()
+		_open(next)
+	else:
+		dim.visible = false
+		Game.ui_blocking = false
+
+
+## Painel padrão: título, corpo rolável e barra de botões.
+func _panel(title: String) -> Dictionary:
+	var panel := PanelContainer.new()
+	panel.theme = UIKit.theme()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel.offset_left = 20
+	panel.offset_right = -20
+	panel.offset_top = 90
+	panel.offset_bottom = -90
+	var v := UIKit.vbox(10)
+	panel.add_child(v)
+	v.add_child(UIKit.title(title))
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	v.add_child(scroll)
+	var body := UIKit.vbox(8)
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(body)
+	var buttons := UIKit.vbox(6)
+	v.add_child(buttons)
+	return {"panel": panel, "body": body, "buttons": buttons}
+
+
+func show_info(title: String, text: String) -> void:
+	show_choice(title, text, ["OK"], Callable())
+
+
+func show_choice(title: String, text: String, choices: Array, callback: Callable) -> void:
+	_open(func():
+		var parts := _panel(title)
+		parts.body.add_child(UIKit.label(text, 17, UIKit.COLOR_TEXT, true))
+		for i in choices.size():
+			var idx := i
+			parts.buttons.add_child(UIKit.button(choices[i], func():
+				close()
+				if callback.is_valid():
+					callback.call(idx), i == 0))
+		return parts.panel)
+
+
+func show_event(ev: Dictionary) -> void:
+	_open(func():
+		var parts := _panel(ev.get("title", "Evento"))
+		parts.body.add_child(UIKit.label(ev.get("text", ""), 17, UIKit.COLOR_TEXT, true))
+		var choices: Array = ev.get("choices", [])
+		for i in choices.size():
+			var idx := i
+			parts.buttons.add_child(UIKit.button(choices[i].get("label", "OK"), func():
+				close()
+				Game.resolve_event(idx), i == 0))
+		if choices.is_empty():
+			parts.buttons.add_child(UIKit.button("OK", func():
+				close()
+				Game.resolve_event(0), true))
+		return parts.panel)
+
+
+func show_result(p: Project, result: Dictionary) -> void:
+	_open(func():
+		var is_retainer: bool = p.kind == Project.Kind.RETAINER
+		var parts := _panel("MÊS DO RETAINER FECHADO" if is_retainer and p.is_running() else "CAMPANHA CONCLUÍDA!")
+		var b: VBoxContainer = parts.body
+		b.add_child(UIKit.label(String(result.get("client_name", "")), 22))
+		b.add_child(UIKit.muted(String(result.get("project_title", ""))))
+		var stars_center := CenterContainer.new()
+		stars_center.add_child(UIKit.star_row(int(result.stars), 4))
+		b.add_child(stars_center)
+		var indicators: Dictionary = result.get("indicators", {})
+		for key in Project.INDICATORS:
+			b.add_child(UIKit.stat_row(Project.INDICATOR_NAMES[key], float(indicators.get(key, 0)), UIKit.indicator_color(key)))
+		b.add_child(UIKit.label("ROI %.1fx · %s" % [float(result.roi), ServiceSystem.MATCH_NAMES.get(result.get("match", "neutral"), "")], 16, UIKit.match_color(result.get("match", "neutral"))))
+		if int(result.get("late_days", 0)) > 0:
+			b.add_child(UIKit.label("Entregue com %d dias de atraso." % int(result.late_days), 15, UIKit.COLOR_RED))
+		b.add_child(UIKit.separator())
+		b.add_child(UIKit.label("+ %s" % UIKit.money(float(result.payment)), 22, UIKit.COLOR_GREEN))
+		var rep: float = float(result.rep_delta)
+		b.add_child(UIKit.label("%s%d reputação" % ["+" if rep >= 0 else "", int(roundf(rep))], 18, UIKit.COLOR_ACCENT if rep >= 0 else UIKit.COLOR_RED))
+		if int(result.stars) == 5:
+			b.add_child(UIKit.label("+1 case de sucesso", 18, UIKit.COLOR_PURPLE))
+		if result.has("press"):
+			b.add_child(UIKit.separator())
+			b.add_child(UIKit.label(String(result.press), 15, UIKit.COLOR_BLUE, true))
+		parts.buttons.add_child(UIKit.button("Continuar", close, true))
+		return parts.panel)
+
+
+func show_game_over(reason: String) -> void:
+	_open(func():
+		var parts := _panel("Fim de jogo")
+		parts.body.add_child(UIKit.label(reason, 17, UIKit.COLOR_TEXT, true))
+		parts.body.add_child(UIKit.muted("Toda agência tem uma história. A próxima pode ser diferente."))
+		parts.buttons.add_child(UIKit.button("Voltar ao menu", func():
+			close()
+			get_tree().call_group("main", "show_title"), true))
+		return parts.panel)
+
+
+func show_training(e: Employee) -> void:
+	_open(func():
+		var parts := _panel("Treinar %s" % e.name.split(" ")[0])
+		parts.body.add_child(UIKit.muted("Cursos aumentam atributos. Quem tem mais potencial aproveita melhor."))
+		for course in Game.content.courses:
+			var card := UIKit.card()
+			var v := UIKit.card_content(card)
+			v.add_child(UIKit.label(course.name, 18))
+			var gains: Array = []
+			for key in course.gains:
+				gains.append("+%d %s" % [int(course.gains[key]), Employee.ATTR_NAMES[key]])
+			v.add_child(UIKit.muted("%s · %d dias · %s" % [UIKit.money(float(course.cost)), int(course.days), ", ".join(gains)], 13))
+			var check := Game.employees.can_train(e, course.id)
+			var b := UIKit.button("Matricular", func():
+				var r := Game.employees.train(e, course.id)
+				close()
+				if not r.ok:
+					show_info("Treinamento", r.reason))
+			b.disabled = not check.ok
+			v.add_child(b)
+			parts.body.add_child(card)
+		parts.buttons.add_child(UIKit.button("Fechar", close))
+		return parts.panel)
+
+
+func show_new_project(c: Client) -> void:
+	_open(func(): return NewProjectDialog.new(c, self))
