@@ -2,16 +2,20 @@ class_name UIKit
 extends RefCounted
 ## Helpers estáticos para montar a interface em código (mobile-first).
 
-const COLOR_BG := Color("#1b1f2a")
-const COLOR_PANEL := Color("#262b38")
-const COLOR_PANEL_LIGHT := Color("#313747")
-const COLOR_TEXT := Color("#eef0f5")
-const COLOR_MUTED := Color("#9aa3b5")
-const COLOR_ACCENT := Color("#f3a712")
-const COLOR_GREEN := Color("#48c88c")
-const COLOR_RED := Color("#e4572e")
-const COLOR_BLUE := Color("#669bbc")
-const COLOR_PURPLE := Color("#a97bd6")
+## Paleta clara e colorida (cozy): fundo creme, painéis brancos, números em azul-marinho.
+const COLOR_BG := Color("#f3ecdf")
+const COLOR_PANEL := Color("#fffdf8")
+const COLOR_PANEL_LIGHT := Color("#efe6d6")
+const COLOR_BORDER := Color("#dccfb8")
+const COLOR_TEXT := Color("#2b2a33")
+const COLOR_MUTED := Color("#7d7a86")
+const COLOR_NUMBER := Color("#2b4fa8")
+const COLOR_ACCENT := Color("#ff8f3d")
+const COLOR_GREEN := Color("#2fa66b")
+const COLOR_RED := Color("#e05d5d")
+const COLOR_BLUE := Color("#3b6fd8")
+const COLOR_PURPLE := Color("#8e6ce0")
+const COLOR_GOLD := Color("#e8b034")
 
 const ATTR_SHORT := {
 	"creativity": "Cri", "strategy": "Est", "performance": "Per",
@@ -29,65 +33,84 @@ static func theme() -> Theme:
 	return _theme
 
 
+static var _bold: FontVariation = null
+
+
+## Fonte em negrito derivada da fonte padrão (títulos e números, como nas referências).
+static func bold_font() -> Font:
+	if _bold == null:
+		_bold = FontVariation.new()
+		_bold.base_font = ThemeDB.fallback_font
+		_bold.variation_embolden = 0.9
+	return _bold
+
+
+static func _rounded(bg: Color, border: Color = Color.TRANSPARENT, radius: int = 10, border_w: int = 0) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.set_corner_radius_all(radius)
+	if border_w > 0:
+		sb.border_color = border
+		sb.set_border_width_all(border_w)
+	sb.content_margin_left = 12
+	sb.content_margin_right = 12
+	sb.content_margin_top = 10
+	sb.content_margin_bottom = 10
+	return sb
+
+
 static func build_theme() -> Theme:
 	var theme := Theme.new()
 	theme.default_font_size = 18
 
-	var panel := StyleBoxFlat.new()
-	panel.bg_color = COLOR_PANEL
-	panel.corner_radius_top_left = 8
-	panel.corner_radius_top_right = 8
-	panel.corner_radius_bottom_left = 8
-	panel.corner_radius_bottom_right = 8
-	panel.content_margin_left = 12
-	panel.content_margin_right = 12
-	panel.content_margin_top = 10
-	panel.content_margin_bottom = 10
-	theme.set_stylebox("panel", "PanelContainer", panel)
+	theme.set_stylebox("panel", "PanelContainer", _rounded(COLOR_PANEL, COLOR_BORDER, 10, 2))
 
-	var btn := StyleBoxFlat.new()
-	btn.bg_color = COLOR_PANEL_LIGHT
-	btn.corner_radius_top_left = 6
-	btn.corner_radius_top_right = 6
-	btn.corner_radius_bottom_left = 6
-	btn.corner_radius_bottom_right = 6
-	btn.content_margin_left = 14
-	btn.content_margin_right = 14
+	var btn := _rounded(Color.WHITE, COLOR_BORDER, 8, 2)
 	btn.content_margin_top = 8
 	btn.content_margin_bottom = 8
 	theme.set_stylebox("normal", "Button", btn)
 	var btn_hover := btn.duplicate()
-	btn_hover.bg_color = COLOR_PANEL_LIGHT.lightened(0.1)
+	btn_hover.bg_color = COLOR_PANEL_LIGHT
 	theme.set_stylebox("hover", "Button", btn_hover)
 	var btn_pressed := btn.duplicate()
-	btn_pressed.bg_color = COLOR_ACCENT.darkened(0.2)
+	btn_pressed.bg_color = COLOR_ACCENT.lightened(0.55)
+	btn_pressed.border_color = COLOR_ACCENT
 	theme.set_stylebox("pressed", "Button", btn_pressed)
 	var btn_disabled := btn.duplicate()
-	btn_disabled.bg_color = COLOR_PANEL_LIGHT.darkened(0.25)
+	btn_disabled.bg_color = COLOR_PANEL_LIGHT
+	btn_disabled.border_color = COLOR_PANEL_LIGHT
 	theme.set_stylebox("disabled", "Button", btn_disabled)
 	theme.set_color("font_color", "Button", COLOR_TEXT)
+	theme.set_color("font_hover_color", "Button", COLOR_TEXT)
+	theme.set_color("font_pressed_color", "Button", COLOR_TEXT)
 	theme.set_color("font_disabled_color", "Button", COLOR_MUTED)
 	theme.set_color("font_color", "Label", COLOR_TEXT)
 
-	var bar_bg := StyleBoxFlat.new()
-	bar_bg.bg_color = COLOR_BG
-	bar_bg.corner_radius_top_left = 3
-	bar_bg.corner_radius_top_right = 3
-	bar_bg.corner_radius_bottom_left = 3
-	bar_bg.corner_radius_bottom_right = 3
+	var bar_bg := _rounded(COLOR_PANEL_LIGHT, Color.TRANSPARENT, 4)
+	bar_bg.content_margin_left = 0
+	bar_bg.content_margin_right = 0
+	bar_bg.content_margin_top = 0
+	bar_bg.content_margin_bottom = 0
 	theme.set_stylebox("background", "ProgressBar", bar_bg)
 	var bar_fill := bar_bg.duplicate()
 	bar_fill.bg_color = COLOR_ACCENT
 	theme.set_stylebox("fill", "ProgressBar", bar_fill)
 
-	var line := StyleBoxFlat.new()
-	line.bg_color = COLOR_BG
-	line.content_margin_left = 10
-	line.content_margin_right = 10
+	var line := _rounded(Color.WHITE, COLOR_BORDER, 8, 2)
 	line.content_margin_top = 8
 	line.content_margin_bottom = 8
 	theme.set_stylebox("normal", "LineEdit", line)
-	theme.set_stylebox("focus", "LineEdit", line)
+	var line_focus := line.duplicate()
+	line_focus.border_color = COLOR_BLUE
+	theme.set_stylebox("focus", "LineEdit", line_focus)
+	theme.set_color("font_color", "LineEdit", COLOR_TEXT)
+	theme.set_color("font_placeholder_color", "LineEdit", COLOR_MUTED)
+
+	var slider_bg := _rounded(COLOR_PANEL_LIGHT, Color.TRANSPARENT, 4)
+	slider_bg.content_margin_top = 4
+	slider_bg.content_margin_bottom = 4
+	theme.set_stylebox("slider", "HSlider", slider_bg)
+	theme.set_stylebox("grabber_area", "HSlider", _rounded(COLOR_ACCENT, Color.TRANSPARENT, 4))
 	return theme
 
 
@@ -103,7 +126,61 @@ static func label(text: String, size: int = 18, color: Color = COLOR_TEXT, wrap:
 
 
 static func title(text: String) -> Label:
-	return label(text, 24, COLOR_ACCENT)
+	var l := label(text, 24, COLOR_TEXT)
+	l.add_theme_font_override("font", bold_font())
+	return l
+
+
+## Número grande em negrito azul-marinho, como nas referências.
+static func number(text: String, size: int = 20, color: Color = COLOR_NUMBER) -> Label:
+	var l := label(text, size, color)
+	l.add_theme_font_override("font", bold_font())
+	return l
+
+
+static func icon(name: String, scale: int = 2) -> TextureRect:
+	var t := TextureRect.new()
+	t.texture = load("res://assets/art/icons/%s.png" % name)
+	t.custom_minimum_size = Vector2(10 * scale, 10 * scale)
+	t.stretch_mode = TextureRect.STRETCH_SCALE
+	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	t.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return t
+
+
+## Retrato do personagem (cabeça do sprite em camadas), ampliado.
+static func portrait(e: Employee, scale: int = 4) -> Control:
+	var box := PanelContainer.new()
+	var style := _rounded(COLOR_PANEL_LIGHT, COLOR_BORDER, 8, 2)
+	style.content_margin_left = 4
+	style.content_margin_right = 4
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
+	box.add_theme_stylebox_override("panel", style)
+	box.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	var holder := Control.new()
+	holder.custom_minimum_size = Vector2(16 * scale, 16 * scale)
+	box.add_child(holder)
+	var region := Rect2(4, 0, 16, 16)
+	var style_idx: int = clampi(e.hair_style, 0, Employee.HAIR_STYLES - 1)
+	var layers := [
+		["res://assets/art/characters/outline_%d.png" % style_idx, Color.WHITE],
+		["res://assets/art/characters/skin.png", Color(e.skin)],
+		["res://assets/art/characters/shirt.png", Color(e.color)],
+		["res://assets/art/characters/hair_%d.png" % style_idx, Color(e.hair_color)],
+	]
+	for layer in layers:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = load(layer[0])
+		atlas.region = region
+		var t := TextureRect.new()
+		t.texture = atlas
+		t.modulate = layer[1]
+		t.stretch_mode = TextureRect.STRETCH_SCALE
+		t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		t.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		holder.add_child(t)
+	return box
 
 
 static func muted(text: String, size: int = 15) -> Label:
@@ -115,26 +192,25 @@ static func button(text: String, callback: Callable, accent: bool = false, min_h
 	b.text = text
 	b.custom_minimum_size.y = min_height
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.clip_text = true
+	b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	if callback.is_valid():
 		b.pressed.connect(callback)
 	if accent:
-		var style := StyleBoxFlat.new()
-		style.bg_color = COLOR_ACCENT
-		style.corner_radius_top_left = 6
-		style.corner_radius_top_right = 6
-		style.corner_radius_bottom_left = 6
-		style.corner_radius_bottom_right = 6
-		style.content_margin_left = 14
-		style.content_margin_right = 14
+		var style := _rounded(COLOR_ACCENT, COLOR_ACCENT.darkened(0.15), 8, 2)
 		style.content_margin_top = 8
 		style.content_margin_bottom = 8
 		b.add_theme_stylebox_override("normal", style)
 		var hover := style.duplicate()
 		hover.bg_color = COLOR_ACCENT.lightened(0.1)
 		b.add_theme_stylebox_override("hover", hover)
-		b.add_theme_color_override("font_color", COLOR_BG)
-		b.add_theme_color_override("font_hover_color", COLOR_BG)
-		b.add_theme_color_override("font_pressed_color", COLOR_BG)
+		var pressed := style.duplicate()
+		pressed.bg_color = COLOR_ACCENT.darkened(0.15)
+		b.add_theme_stylebox_override("pressed", pressed)
+		b.add_theme_color_override("font_color", Color.WHITE)
+		b.add_theme_color_override("font_hover_color", Color.WHITE)
+		b.add_theme_color_override("font_pressed_color", Color.WHITE)
+		b.add_theme_font_override("font", bold_font())
 	return b
 
 
@@ -146,17 +222,11 @@ static func toggle(text: String, pressed: bool, callback: Callable) -> Button:
 	b.size_flags_horizontal = 0
 	if callback.is_valid():
 		b.toggled.connect(callback)
-	var on := StyleBoxFlat.new()
-	on.bg_color = COLOR_ACCENT.darkened(0.15)
-	on.corner_radius_top_left = 6
-	on.corner_radius_top_right = 6
-	on.corner_radius_bottom_left = 6
-	on.corner_radius_bottom_right = 6
-	on.content_margin_left = 12
-	on.content_margin_right = 12
+	var on := _rounded(COLOR_BLUE.lightened(0.7), COLOR_BLUE, 8, 2)
 	on.content_margin_top = 6
 	on.content_margin_bottom = 6
 	b.add_theme_stylebox_override("pressed", on)
+	b.add_theme_color_override("font_pressed_color", COLOR_BLUE.darkened(0.2))
 	return b
 
 
@@ -196,13 +266,7 @@ static func bar(value: float, max_value: float = 100.0, color: Color = COLOR_ACC
 	b.show_percentage = false
 	b.custom_minimum_size = Vector2(0, height)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var fill := StyleBoxFlat.new()
-	fill.bg_color = color
-	fill.corner_radius_top_left = 3
-	fill.corner_radius_top_right = 3
-	fill.corner_radius_bottom_left = 3
-	fill.corner_radius_bottom_right = 3
-	b.add_theme_stylebox_override("fill", fill)
+	b.add_theme_stylebox_override("fill", _rounded(color, Color.TRANSPARENT, 4))
 	return b
 
 
@@ -213,7 +277,7 @@ static func stat_row(name: String, value: float, color: Color = COLOR_ACCENT, la
 	n.custom_minimum_size.x = label_width
 	h.add_child(n)
 	h.add_child(bar(value, 100.0, color))
-	var v := label(str(int(roundf(value))), 15)
+	var v := number(str(int(roundf(value))), 15, COLOR_TEXT)
 	v.custom_minimum_size.x = 36
 	v.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	h.add_child(v)
@@ -222,15 +286,28 @@ static func stat_row(name: String, value: float, color: Color = COLOR_ACCENT, la
 
 static func attr_grid(e: Employee) -> GridContainer:
 	var g := GridContainer.new()
-	g.columns = 2
-	g.add_theme_constant_override("h_separation", 14)
+	g.columns = 3
+	g.add_theme_constant_override("h_separation", 10)
 	g.add_theme_constant_override("v_separation", 4)
 	g.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for key in Employee.ATTRS:
-		var row := stat_row(ATTR_SHORT[key], e.attr(key), attr_color(key), 40)
-		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		g.add_child(row)
+		g.add_child(attr_cell(key, e.attr(key)))
 	return g
+
+
+## Ícone + nome curto + número, com barrinha fina embaixo.
+static func attr_cell(key: String, value: float) -> VBoxContainer:
+	var v := vbox(2)
+	var row := hbox(6)
+	row.add_child(icon("attr_" + key))
+	row.add_child(label(ATTR_SHORT[key], 13, COLOR_MUTED))
+	var n := number(str(int(roundf(value))), 17, attr_color(key).darkened(0.2))
+	n.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	n.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(n)
+	v.add_child(row)
+	v.add_child(bar(value, 100.0, attr_color(key), 5))
+	return v
 
 
 static func attr_color(key: String) -> Color:
@@ -244,9 +321,9 @@ static func attr_color(key: String) -> Color:
 		"communication":
 			return COLOR_ACCENT
 		"management":
-			return Color("#d98c5f")
+			return Color("#8a8a96")
 		_:
-			return Color("#5fd9d0")
+			return Color("#3fbfbf")
 
 
 static func indicator_color(key: String) -> Color:

@@ -1,15 +1,96 @@
 {
   "micro_events": [
-    {"id": "cafe", "text": "{emp} tomou o quarto café do dia.", "effects": {"execution": 3}, "weight": 4},
-    {"id": "modo_criativo", "text": "{emp} ENTROU EM MODO CRIATIVO!", "effects": {"creativity": 8}, "weight": 2},
-    {"id": "insight", "text": "{emp} teve um insight no banho. A estratégia mudou de nível.", "effects": {"strategy": 6}, "weight": 2},
-    {"id": "reuniao_longa", "text": "Reunião de 2h que podia ser um e-mail. {emp} perdeu o ritmo.", "effects": {"execution": -4}, "weight": 3},
-    {"id": "teste_ab", "text": "{emp} rodou um teste A/B e o criativo B venceu com folga.", "effects": {"performance": 6}, "weight": 3},
-    {"id": "print_cliente", "text": "O cliente mandou print com 14 setas vermelhas. {emp} respirou fundo.", "effects": {"execution": -3, "motivation": -4}, "weight": 3},
-    {"id": "referencia", "text": "{emp} achou uma referência incrível no Pinterest às 2h da manhã.", "effects": {"creativity": 4}, "weight": 3},
-    {"id": "bug_pixel", "text": "O pixel de conversão parou de disparar. {emp} caçou o bug por horas.", "effects": {"performance": -5}, "weight": 2},
-    {"id": "elogio", "text": "O cliente elogiou o trabalho no grupo. {emp} ficou o dia inteiro sorrindo.", "effects": {"motivation": 6}, "weight": 3},
-    {"id": "playlist", "text": "{emp} colocou a playlist de foco. O escritório inteiro rendeu mais.", "effects": {"execution": 4}, "weight": 2}
+    {
+      "id": "cafe",
+      "text": "{emp} tomou o quarto café do dia.",
+      "effects": {
+        "execution": 3
+      },
+      "weight": 4,
+      "bubble": "Café!"
+    },
+    {
+      "id": "modo_criativo",
+      "text": "{emp} ENTROU EM MODO CRIATIVO!",
+      "effects": {
+        "creativity": 8
+      },
+      "weight": 2,
+      "bubble": "IDEIA!"
+    },
+    {
+      "id": "insight",
+      "text": "{emp} teve um insight no banho. A estratégia mudou de nível.",
+      "effects": {
+        "strategy": 6
+      },
+      "weight": 2,
+      "bubble": "Insight!"
+    },
+    {
+      "id": "reuniao_longa",
+      "text": "Reunião de 2h que podia ser um e-mail. {emp} perdeu o ritmo.",
+      "effects": {
+        "execution": -4
+      },
+      "weight": 3,
+      "bubble": "Reunião..."
+    },
+    {
+      "id": "teste_ab",
+      "text": "{emp} rodou um teste A/B e o criativo B venceu com folga.",
+      "effects": {
+        "performance": 6
+      },
+      "weight": 3,
+      "bubble": "B venceu!"
+    },
+    {
+      "id": "print_cliente",
+      "text": "O cliente mandou print com 14 setas vermelhas. {emp} respirou fundo.",
+      "effects": {
+        "execution": -3,
+        "motivation": -4
+      },
+      "weight": 3,
+      "bubble": "Print..."
+    },
+    {
+      "id": "referencia",
+      "text": "{emp} achou uma referência incrível no Pinterest às 2h da manhã.",
+      "effects": {
+        "creativity": 4
+      },
+      "weight": 3,
+      "bubble": "Ref!"
+    },
+    {
+      "id": "bug_pixel",
+      "text": "O pixel de conversão parou de disparar. {emp} caçou o bug por horas.",
+      "effects": {
+        "performance": -5
+      },
+      "weight": 2,
+      "bubble": "Bug..."
+    },
+    {
+      "id": "elogio",
+      "text": "O cliente elogiou o trabalho no grupo. {emp} ficou o dia inteiro sorrindo.",
+      "effects": {
+        "motivation": 6
+      },
+      "weight": 3,
+      "bubble": "Uhu!"
+    },
+    {
+      "id": "playlist",
+      "text": "{emp} colocou a playlist de foco. O escritório inteiro rendeu mais.",
+      "effects": {
+        "execution": 4
+      },
+      "weight": 2,
+      "bubble": "Playlist!"
+    }
   ],
   "press_good": [
     "Marketing Weekly: \"{client} encontra nova fórmula para crescimento.\"",

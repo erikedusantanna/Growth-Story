@@ -15,17 +15,24 @@ func _ready() -> void:
 	add_child(v)
 	var top := UIKit.hbox(10)
 	v.add_child(top)
-	money_label = UIKit.label("R$ 0", 20, UIKit.COLOR_GREEN)
-	money_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top.add_child(money_label)
-	rep_label = UIKit.label("Rep 0", 20, UIKit.COLOR_ACCENT)
-	rep_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	rep_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top.add_child(rep_label)
-	date_label = UIKit.label("01 Jan 2010", 18)
-	date_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	date_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top.add_child(date_label)
+	var money_box := UIKit.hbox(6)
+	money_box.add_child(UIKit.icon("coin"))
+	money_label = UIKit.number("R$ 0", 20)
+	money_box.add_child(money_label)
+	top.add_child(money_box)
+	var rep_box := UIKit.hbox(6)
+	rep_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rep_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	rep_box.add_child(UIKit.icon("rep"))
+	rep_label = UIKit.number("0", 20)
+	rep_box.add_child(rep_label)
+	top.add_child(rep_box)
+	var date_box := UIKit.hbox(6)
+	date_box.size_flags_horizontal = 0
+	date_box.add_child(UIKit.icon("calendar"))
+	date_label = UIKit.number("01 Jan 2010", 17, UIKit.COLOR_TEXT)
+	date_box.add_child(date_label)
+	top.add_child(date_box)
 
 	var bottom := UIKit.hbox(6)
 	v.add_child(bottom)
@@ -56,12 +63,17 @@ func refresh() -> void:
 		return
 	var st: GameState = Game.state
 	money_label.text = UIKit.money(st.money)
-	money_label.add_theme_color_override("font_color", UIKit.COLOR_GREEN if st.money >= 0.0 else UIKit.COLOR_RED)
-	rep_label.text = "Rep %d" % int(roundf(st.reputation))
+	money_label.add_theme_color_override("font_color", UIKit.COLOR_NUMBER if st.money >= 0.0 else UIKit.COLOR_RED)
+	rep_label.text = "%d" % int(roundf(st.reputation))
 	date_label.text = st.date_text()
 	phase_label.text = "%s · %s" % [st.agency_name, Game.reputation.phase_name()]
 	pause_button.text = ">" if st.paused else "II"
 	for i in speed_buttons.size():
 		var b: Button = speed_buttons[i]
 		var active: bool = st.speed == i + 1 and not st.paused
-		b.modulate = Color(1, 1, 1, 1) if active else Color(1, 1, 1, 0.55)
+		b.modulate = Color(1, 1, 1, 1) if active else Color(1, 1, 1, 0.6)
+		b.button_pressed = false
+		if active:
+			b.add_theme_stylebox_override("normal", b.get_theme_stylebox("pressed"))
+		else:
+			b.remove_theme_stylebox_override("normal")

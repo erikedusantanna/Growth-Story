@@ -233,6 +233,7 @@ func _micro_event(p: Project) -> void:
 		elif p.boosts.has(key):
 			p.boosts[key] += float(effects[key])
 	game.add_log(String(chosen["text"]).replace("{emp}", e.name), "fun")
+	EventBus.office_feedback.emit(e.id, String(chosen.get("bubble", "...")), "bubble")
 
 
 func apply_boost(indicator: String, value: float) -> void:
@@ -361,6 +362,7 @@ func _apply_result(p: Project, result: Dictionary) -> void:
 		st.cases += 1
 	for e in team_members(p):
 		game.employees.add_journey(e, "%s para %s: %d estrelas" % ["Ciclo de retainer" if p.kind == Project.Kind.RETAINER else "Entregou " + p.title, c.name if c != null else "?", stars])
+		EventBus.office_feedback.emit(e.id, "+%d XP" % int(12.0 + p.budget / 2500.0), "good" if stars >= 3 else "bad")
 		game.employees.gain_experience(e, 12.0 + p.budget / 2500.0)
 		var growth: float = 0.6 + e.potential * 0.25
 		for s in p.services:
