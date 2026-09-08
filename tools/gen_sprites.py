@@ -354,8 +354,32 @@ def icon():
     return ["".join(r) for r in rows]
 
 
+def scale_rows(rows, factor):
+    """Amplia uma grade de caracteres por vizinho mais próximo (mantém o pixel art nítido)."""
+    out = []
+    for r in rows:
+        line = "".join(ch * factor for ch in r)
+        out.extend([line] * factor)
+    return out
+
+
+def pad_rows(rows, size, fill="n"):
+    """Centraliza a grade em um quadrado de `size` preenchido com a cor `fill`."""
+    h = len(rows)
+    w = len(rows[0])
+    top = (size - h) // 2
+    left = (size - w) // 2
+    out = [fill * size for _ in range(top)]
+    for r in rows:
+        out.append(fill * left + r + fill * (size - left - w))
+    while len(out) < size:
+        out.append(fill * size)
+    return out
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
+    os.makedirs(os.path.join(os.path.dirname(__file__), "..", "assets", "icons"), exist_ok=True)
     write_png(os.path.join(OUT, "body.png"), hstack(BODY_A, BODY_B))
     write_png(os.path.join(OUT, "shirt.png"), hstack(SHIRT_A, SHIRT_B))
     write_png(os.path.join(OUT, "floor.png"), FLOOR)
@@ -369,7 +393,13 @@ def main():
     write_png(os.path.join(OUT, "star_empty.png"), STAR_EMPTY)
     write_png(os.path.join(OUT, "heart.png"), HEART)
     write_png(os.path.join(OUT, "heart_empty.png"), HEART_EMPTY)
-    write_png(os.path.join(os.path.dirname(__file__), "..", "icon.png"), icon())
+    root = os.path.join(os.path.dirname(__file__), "..")
+    base = icon()
+    write_png(os.path.join(root, "icon.png"), base)
+    # Ícones do launcher Android: 192x192 e adaptativo 432x432 (fundo liso + primeiro plano centralizado)
+    write_png(os.path.join(root, "assets", "icons", "launcher_192.png"), scale_rows(base, 6))
+    write_png(os.path.join(root, "assets", "icons", "adaptive_background_432.png"), ["n" * 432] * 432)
+    write_png(os.path.join(root, "assets", "icons", "adaptive_foreground_432.png"), pad_rows(scale_rows(base, 9), 432, "n"))
 
 
 if __name__ == "__main__":
