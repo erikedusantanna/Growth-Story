@@ -3,7 +3,7 @@ extends Node2D
 ## Personagem pixel art (24x32, visão 3/4) montado em camadas: contorno, pele, pernas, camisa, cabelo.
 ## A posição do nó é o pé do personagem (usada pelo y-sort do escritório).
 
-enum State { AT_DESK, WALKING, AT_SPOT }
+enum State { AT_DESK, WALKING, AT_SPOT, LEAVING, AWAY, RETURNING }
 enum Frame { IDLE, WALK_A, WALK_B, SIT }
 
 const WALK_SPEED := 26.0
@@ -24,6 +24,9 @@ var layers: Dictionary = {}
 var on_project := false
 var resting := false
 var training := false
+var door_pos := Vector2.ZERO
+var static_pose := false   # sala de treinamento: fica parado na pose escolhida
+var sitting := false
 
 
 func _ready() -> void:
@@ -65,13 +68,49 @@ func apply_look(e: Employee) -> void:
 func sync(e: Employee, day: int) -> void:
 	on_project = e.project_id != -1
 	resting = e.busy_until >= day and e.busy_reason == "Burnout"
+	var was_training := training
 	training = e.busy_until >= day and e.busy_reason == "Em treinamento"
 	apply_look(e)
+	if static_pose:
+		return
+	if training and not was_training and state != State.AWAY and state != State.LEAVING:
+		# vai até a porta e sai do escritório
+		target = door_pos
+		state = State.LEAVING
+	elif not training and (state == State.AWAY or state == State.LEAVING):
+		visible = true
+		position = door_pos
+		target = desk_pos
+		state = State.RETURNING
 
 
 func _process(delta: float) -> void:
 	var frame := Frame.IDLE
+	if static_pose:
+		for s in layers.values():
+			s.frame = Frame.SIT if sitting else Frame.IDLE
+		return
 	match state:
+		State.AWAY:
+			return
+		State.LEAVING, State.RETURNING:
+			var dir := target - position
+			if dir.length() < 1.5:
+				position = target
+				if state == State.LEAVING:
+					visible = false
+					state = State.AWAY
+				else:
+					state = State.AT_DESK
+					wait_time = rng.randf_range(8.0, 20.0)
+			else:
+				position += dir.normalized() * WALK_SPEED * delta
+				_set_flip(dir.x < 0.0)
+				frame_timer += delta
+				if frame_timer >= FRAME_TIME:
+					frame_timer = 0.0
+					walk_frame = 1 - walk_frame
+				frame = Frame.WALK_A if walk_frame == 0 else Frame.WALK_B
 		State.AT_DESK:
 			wait_time -= delta
 			frame = Frame.SIT

@@ -32,6 +32,8 @@ var desk_positions: Array = []
 var spot_positions: Array = []
 var workers: Dictionary = {}
 var built_level := -1
+var door_pos := Vector2.ZERO
+var training_room: TrainingRoom
 
 signal worker_tapped(employee_id: int)
 
@@ -49,9 +51,22 @@ func _ready() -> void:
 	world.add_child(fx_layer)
 	world.draw.connect(_draw_world)
 	resized.connect(_layout_world)
+	training_room = TrainingRoom.new()
+	training_room.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	training_room.position = Vector2(size.x - 12, 12)
+	add_child(training_room)
+	resized.connect(_place_training_room)
 	EventBus.state_changed.connect(refresh)
+	EventBus.day_passed.connect(func(_d): _sync_training())
 	EventBus.game_started.connect(func(): built_level = -1; refresh())
 	EventBus.office_feedback.connect(show_feedback)
+
+
+func _place_training_room() -> void:
+	if training_room == null:
+		return
+	training_room.reset_size()
+	training_room.position = Vector2(size.x - training_room.size.x - 10, 10)
 
 
 func refresh() -> void:
@@ -60,6 +75,16 @@ func refresh() -> void:
 	if Game.state.office_level != built_level:
 		_build(Game.office.current())
 	_sync_workers()
+	_sync_training()
+
+
+func _sync_training() -> void:
+	if not Game.has_game() or training_room == null:
+		return
+	var st: GameState = Game.state
+	var trainees: Array = st.employees.filter(func(e): return e.busy_until >= st.day and e.busy_reason == "Em treinamento")
+	training_room.sync(trainees)
+	_place_training_room()
 
 
 func _build(data: Dictionary) -> void:
@@ -71,6 +96,7 @@ func _build(data: Dictionary) -> void:
 	workers.clear()
 	desk_positions.clear()
 	spot_positions.clear()
+	door_pos = Vector2(float(data.get("width", 10)) * TILE - 24, WALL_ROWS * TILE + 8)
 	for p in data.get("wall", []):
 		var tex: Texture2D = load(FURNITURE[p.type])
 		var s := Sprite2D.new()
@@ -78,6 +104,8 @@ func _build(data: Dictionary) -> void:
 		s.centered = false
 		s.position = Vector2(float(p.x) * TILE, float(WALL_PROP_Y.get(p.type, 4)))
 		wall_layer.add_child(s)
+		if p.type == "door":
+			door_pos = Vector2(float(p.x) * TILE + 10, WALL_ROWS * TILE + 6)
 	for d in data.get("desks", []):
 		var bottom := Vector2(float(d[0]) * TILE, (float(d[1]) + 1.0) * TILE)
 		_add_furniture("chair", bottom + Vector2(8, -20))
@@ -134,8 +162,13 @@ func _sync_workers() -> void:
 			worker = Worker.new()
 			var desk: Vector2 = desk_positions[index % maxi(desk_positions.size(), 1)] if not desk_positions.is_empty() else Vector2(TILE * 3, TILE * 5)
 			worker.setup(e, desk, spot_positions, e.id * 7919 + st.seed)
+			worker.door_pos = door_pos
 			scene_layer.add_child(worker)
 			workers[e.id] = worker
+			if e.busy_until >= st.day and e.busy_reason == "Em treinamento":
+				worker.training = true
+				worker.state = Worker.State.AWAY
+				worker.visible = false
 		worker.sync(e, st.day)
 		index += 1
 	for id in workers.keys():
@@ -187,11 +220,17 @@ func _gui_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch and event.pressed or event is InputEventMouseButton and event.pressed:
 		var local: Vector2 = (event.position - world.position) / world.scale.x
 		var best_id := -1
-		var best_dist := 18.0
+		var best_dist := 26.0
 		for id in workers:
-			var d: float = workers[id].position.distance_to(local + Vector2(0, 16))
-			if d < best_dist:
-				best_dist = d
-				best_id = id
+			var w: Worker = workers[id]
+			if not w.visible:
+				continue
+			# retângulo do sprite (24x32 acima dos pés), com folga para o dedo
+			var rect := Rect2(w.position + Vector2(-14, -36), Vector2(28, 40))
+			if rect.has_point(local):
+				var d: float = (w.position + Vector2(0, -16)).distance_to(local)
+				if d < best_dist:
+					best_dist = d
+					best_id = id
 		if best_id != -1:
 			worker_tapped.emit(best_id)

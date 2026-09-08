@@ -268,6 +268,28 @@ def whiteboard():
     return c
 
 
+def projector_screen():
+    c = canvas(48, 30)
+    rect(c, 0, 0, 48, 3, "z")
+    rect(c, 22, 0, 4, 2, "k")
+    rect(c, 1, 3, 46, 26, "W")
+    rect(c, 0, 3, 1, 26, "Y")
+    rect(c, 47, 3, 1, 26, "Y")
+    # gráfico de barras
+    for i, h in enumerate((5, 8, 11, 15)):
+        rect(c, 5 + i * 4, 21 - h, 3, h, "2")
+    # pizza
+    rect(c, 28, 8, 12, 12, "2")
+    rect(c, 34, 8, 6, 6, "6")
+    rect(c, 34, 14, 6, 6, "5")
+    # linhas de texto
+    rect(c, 5, 24, 14, 1, "8")
+    rect(c, 26, 24, 16, 1, "8")
+    rect(c, 5, 26, 10, 1, "8")
+    rect(c, 0, 29, 48, 1, "Y")
+    return c
+
+
 def door():
     c = canvas(20, 30)
     rect(c, 0, 0, 20, 30, "d")
@@ -493,7 +515,8 @@ def main():
     write_png(os.path.join(OUT, "tiles", "wall.png"), wall_tile())
     for name, fn in (("desk", desk), ("chair", chair), ("sofa", sofa), ("plant", plant),
                      ("coffee", coffee_machine), ("cooler", water_cooler), ("shelf", shelf),
-                     ("window", window), ("whiteboard", whiteboard), ("door", door)):
+                     ("window", window), ("whiteboard", whiteboard), ("door", door),
+                     ("projector", projector_screen)):
         write_png(os.path.join(OUT, "furniture", f"{name}.png"), fn())
     characters()
     for name, rows in ICONS.items():

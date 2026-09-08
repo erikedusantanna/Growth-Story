@@ -32,7 +32,7 @@ Regra de ouro: **a UI nunca altera o estado diretamente**. Ela chama métodos do
 
 - **Orçamento**: projeto = `budget_cliente × (1,2 + 0,3 × maturidade)`; retainer = `budget_cliente`/mês.
   O `budget_cliente` é o valor negociado na proposta (60% a 140% da referência).
-- **Prazo**: `clamp(15 + orçamento/1000, 20, 60)` dias; retainer avalia a cada 30 dias.
+- **Prazo**: `clamp(18 + orçamento/800, 24, 60)` dias; retainer avalia a cada 30 dias.
 - **Esforço**: `12 + orçamento/350` pontos.
 - **Produção diária por pessoa**: `(0,5 + habilidade/100 × 1,5) × produtividade`, onde
   `habilidade` = média ponderada dos atributos pelos pesos dos serviços escolhidos e
@@ -47,8 +47,11 @@ Regra de ouro: **a UI nunca altera o estado diretamente**. Ela chama métodos do
   − 0,8/dia de atraso (máx. 20). Retainer: × `0,6 + 0,4 × progresso`.
 - **Estrelas**: limiares 35/50/65/82 (+3 para expectativa alta, −3 para baixa, +10 × (preço − 1) pelo preço negociado).
 - **Pagamento**: orçamento × [0,6; 0,85; 1,0; 1,1; 1,25].
-- **Reputação**: `(estrelas − 2,5) × (0,5 + 0,5 × tier)` (+2 em 5 estrelas com perfect match).
-  Ganhos × `1 − rep/100`; perdas × `0,3 + 0,7 × rep/100`.
+- **Bônus controláveis** (aparecem no detalhamento): entrega no prazo +5; diagnóstico aplicado +8 (+3 se acertou sem
+  diagnosticar); especialista na equipe +4 por serviço (máx. +8).
+- **Reputação**: `(estrelas − 2) × (0,4 + 0,3 × tier)` (+2 em 5 estrelas com perfect match): 3 estrelas já rende,
+  2 é neutro, 1 custa. Ganhos × `1 − rep/90` (mín. 0,1); perdas × `0,3 + 0,7 × rep/100`.
+- **Tier dos prospects**: o menor entre o tier por reputação (20/40/60/80) e `1 + equipe/3`.
 - **Expectativa**: limiares de estrelas deslocam +3 (alta) / −3 (baixa) e `+10 × (preço_negociado − 1)`.
 - **Cliente**: relação `± 15 × (estrelas − 3)`; 1–2 estrelas com paciência < 50 → 50% de cancelar.
 - **Equipe**: XP `12 + orçamento/2500`, atributos dos serviços crescem com o potencial.

@@ -124,12 +124,17 @@ func show_result(p: Project, result: Dictionary) -> void:
 		for key in Project.INDICATORS:
 			b.add_child(UIKit.stat_row(Project.INDICATOR_NAMES[key], float(indicators.get(key, 0)), UIKit.indicator_color(key)))
 		b.add_child(UIKit.label("ROI %.1fx · %s" % [float(result.roi), ServiceSystem.MATCH_NAMES.get(result.get("match", "neutral"), "")], 16, UIKit.match_color(result.get("match", "neutral"))))
-		if int(result.get("late_days", 0)) > 0:
-			b.add_child(UIKit.label("Entregue com %d dias de atraso." % int(result.late_days), 15, UIKit.COLOR_RED))
+		b.add_child(UIKit.separator())
+		b.add_child(UIKit.label("O que pesou na nota %d" % int(roundf(float(result.score))), 16, UIKit.COLOR_TEXT))
+		for item in result.get("breakdown", []):
+			b.add_child(_breakdown_row(item))
+		var gap: float = float(result.get("next_gap", 0.0))
+		if int(result.stars) < 5 and gap > 0.0:
+			b.add_child(UIKit.label("Faltaram %d pontos para %d estrelas." % [ceili(gap), int(result.stars) + 1], 14, UIKit.COLOR_BLUE, true))
 		b.add_child(UIKit.separator())
 		b.add_child(UIKit.label("+ %s" % UIKit.money(float(result.payment)), 22, UIKit.COLOR_GREEN))
 		var rep: float = float(result.rep_delta)
-		b.add_child(UIKit.label("%s%d reputação" % ["+" if rep >= 0 else "", int(roundf(rep))], 18, UIKit.COLOR_ACCENT if rep >= 0 else UIKit.COLOR_RED))
+		b.add_child(UIKit.label("%s reputação" % UIKit.signed(rep), 18, UIKit.COLOR_ACCENT if rep >= 0 else UIKit.COLOR_RED))
 		if int(result.stars) == 5:
 			b.add_child(UIKit.label("+1 case de sucesso", 18, UIKit.COLOR_PURPLE))
 		if result.has("press"):
@@ -137,6 +142,19 @@ func show_result(p: Project, result: Dictionary) -> void:
 			b.add_child(UIKit.label(String(result.press), 15, UIKit.COLOR_BLUE, true))
 		parts.buttons.add_child(UIKit.button("Continuar", close, true))
 		return parts.panel)
+
+
+## Linha do detalhamento: rótulo à esquerda, valor colorido à direita.
+func _breakdown_row(item: Dictionary) -> HBoxContainer:
+	var h := UIKit.hbox()
+	var l := UIKit.label(String(item.get("label", "")), 14, UIKit.COLOR_MUTED, true)
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h.add_child(l)
+	var v := UIKit.number(String(item.get("text", "")), 15, UIKit.COLOR_GREEN if item.get("good", true) else UIKit.COLOR_RED)
+	v.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	v.custom_minimum_size.x = 120
+	h.add_child(v)
+	return h
 
 
 func show_game_over(reason: String) -> void:

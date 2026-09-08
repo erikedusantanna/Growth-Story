@@ -38,7 +38,10 @@ func _ready() -> void:
 
 	office_view = OfficeView.new()
 	office_view.custom_minimum_size = Vector2(0, 336)
-	office_view.worker_tapped.connect(func(_id): show_screen("team"))
+	office_view.worker_tapped.connect(func(id):
+		var e: Employee = Game.state.employee_by_id(id)
+		if e != null:
+			popups.show_journey(e))
 	root.add_child(office_view)
 
 	var feed_panel := PanelContainer.new()

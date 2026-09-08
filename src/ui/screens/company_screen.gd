@@ -34,6 +34,7 @@ func build() -> void:
 	rv.add_child(UIKit.label("Reputação", 19, UIKit.COLOR_ACCENT))
 	rv.add_child(UIKit.stat_row(Game.reputation.tier_name(), st.reputation, UIKit.COLOR_ACCENT, 190))
 	rv.add_child(UIKit.muted("Reputação maior atrai clientes de tiers mais altos e candidatos melhores.", 13))
+	rv.add_child(UIKit.label("Como ganhar: 3 estrelas ou mais em campanhas. Diagnóstico, combinação perfeita, especialistas na equipe e entrega no prazo somam pontos na nota. 1 estrela tira reputação.", 13, UIKit.COLOR_TEXT, true))
 	content.add_child(rep)
 
 	var office := Game.office.current()

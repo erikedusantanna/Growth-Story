@@ -6,6 +6,7 @@ var main: Control
 
 
 func _ready() -> void:
+	var training_seen := false
 	main = load("res://src/ui/main.tscn").instantiate()
 	add_child(main)
 	await get_tree().process_frame
@@ -56,6 +57,21 @@ func _ready() -> void:
 	print("  popup jornada: %s" % main.popups.is_open())
 	main.popups.close()
 	print("  objetivo atual: %s" % main.objective_label.text)
+	Game.state.money = 50000.0
+	Game.state.office_level = 2
+	var trainee: Employee = Game.employees.generate_candidate("normal")
+	Game.state.candidates.append(trainee)
+	Game.employees.hire(trainee)
+	var tr := Game.employees.train(trainee, "criativo")
+	print("  matrícula: %s %s" % [tr.ok, tr.reason])
+	Game.on_day()
+	await get_tree().process_frame
+	training_seen = main.office_view.training_room.visible
+	print("  sala de treinamento visível: %s" % training_seen)
+	for i in 10:
+		Game.on_day()
+	await get_tree().process_frame
+	print("  sala de treinamento escondida após o curso: %s" % (not main.office_view.training_room.visible))
 	# avança o tempo pelo _process real (manual_time = false) e resolve eventos automaticamente
 	Game.state.speed = 3
 	var frames := 0
@@ -73,6 +89,6 @@ func _ready() -> void:
 	main.show_title()
 	await get_tree().process_frame
 	print("  workers no escritório: %d" % main.office_view.workers.size())
-	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size()
+	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen
 	print("[%s] UI smoke" % ("OK" if ok else "FALHA"))
 	get_tree().quit(0 if ok else 1)
