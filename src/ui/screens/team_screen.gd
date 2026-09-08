@@ -5,7 +5,7 @@ extends BaseScreen
 
 func build() -> void:
 	var st: GameState = Game.state
-	content.add_child(header("Equipe", "%d/%d lugares" % [st.employees.size(), Game.office.capacity()]))
+	content.add_child(header("Equipe", "%d/%d lugares · moral média %d" % [st.employees.size(), Game.office.capacity(), int(Game.employees.morale_average())]))
 	content.add_child(_office_banner())
 	for e in st.employees:
 		content.add_child(_employee_card(e))
@@ -57,8 +57,12 @@ func _employee_card(e: Employee) -> PanelContainer:
 	var status_color := UIKit.COLOR_GREEN if status == "Livre" else (UIKit.COLOR_RED if status == "Burnout" else UIKit.COLOR_ACCENT)
 	v.add_child(_person_header(e, status, status_color))
 	v.add_child(UIKit.attr_grid(e))
+	var morale_row := UIKit.stat_row("Moral", e.motivation, UIKit.COLOR_GREEN if e.motivation >= 50 else UIKit.COLOR_RED, 60)
+	var morale_bar: ProgressBar = morale_row.get_child(1)
+	morale_bar.max_value = Game.office.morale_max()
+	v.add_child(morale_row)
 	var meta := UIKit.hbox(14)
-	meta.add_child(UIKit.label("Motivação %d" % int(e.motivation), 14, UIKit.COLOR_MUTED))
+	meta.add_child(UIKit.label("Teto de moral %d" % int(Game.office.morale_max()), 14, UIKit.COLOR_MUTED))
 	meta.add_child(UIKit.label("Estresse %d" % int(e.stress), 14, UIKit.COLOR_RED if e.stress > 70 else UIKit.COLOR_MUTED))
 	meta.add_child(UIKit.label("Potencial", 14, UIKit.COLOR_MUTED))
 	meta.add_child(UIKit.star_row(e.potential, 2))

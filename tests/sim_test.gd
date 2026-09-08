@@ -15,6 +15,7 @@ func _ready() -> void:
 	_run_simulation(game, 12345, 3)
 	_test_save_roundtrip(game)
 	_test_scoring(game)
+	_test_hr_furniture_events(game)
 	if failures == 0:
 		print("\n[OK] Todos os testes passaram.")
 		get_tree().quit(0)
@@ -91,6 +92,22 @@ func _run_simulation(game, seed: int, years: int) -> void:
 			for e in st.available_employees():
 				game.employees.train(e, "criativo")
 				break
+		if st.day % 30 == 5 and st.money > 15000:
+			for f in game.office.furniture_items():
+				if game.office.can_buy(f).ok:
+					game.office.buy(f)
+					break
+		if game.hr.is_unlocked() and st.day % 25 == 0:
+			for a in game.hr.actions():
+				if game.hr.can_use(a).ok and st.money > game.hr.total_cost(a) + 10000:
+					game.hr.use(a)
+					break
+		if game.agency_events.is_unlocked() and st.day % 40 == 0:
+			for ev in game.agency_events.events():
+				var free_ids: Array = st.available_employees().slice(0, int(ev.get("people", 0))).map(func(e): return e.id)
+				if game.agency_events.can_run(ev, free_ids).ok and st.money > float(ev.get("cost", 0)) + 10000:
+					game.agency_events.run(ev, free_ids)
+					break
 	print("  dia=%d ano=%d caixa=%s rep=%.1f equipe=%d clientes=%d projetos=%d eventos=%d contratações=%d fase=%s" % [
 		st.day, st.year(), FinanceSystem.format_money(st.money), st.reputation, st.employees.size(),
 		st.active_clients().size(), completed, events_resolved, hires, game.reputation.phase_name()])
@@ -108,7 +125,7 @@ func _run_simulation(game, seed: int, years: int) -> void:
 	if year_report.size() >= 1:
 		var y1: Dictionary = year_report[0]
 		check(y1.employees >= 2 and y1.employees <= 5, "ano 1: equipe entre 2 e 5 (%d)" % y1.employees)
-		check(y1.rep >= 8.0 and y1.rep <= 40.0, "ano 1: reputação entre 8 e 40 (%.0f)" % y1.rep)
+		check(y1.rep >= 8.0 and y1.rep <= 45.0, "ano 1: reputação entre 8 e 45 (%.0f)" % y1.rep)
 	check(not st.game_over, "não faliu com política simples")
 	check(completed >= 6, "concluiu pelo menos 6 projetos/ciclos (%d)" % completed)
 	check(events_resolved >= 3, "eventos dispararam (%d)" % events_resolved)
@@ -123,6 +140,10 @@ func _run_simulation(game, seed: int, years: int) -> void:
 		if int(st.events_seen[id]) > 1080 / 120 + 1:
 			repeated += 1
 	check(repeated == 0, "nenhum evento repetiu além do cooldown")
+	print("  RH: %d ações · mobília: %d · eventos da agência: %d · teto de moral: %d" % [int(st.stats.get("hr_actions", 0)), int(st.stats.get("furniture", 0)), int(st.stats.get("agency_events", 0)), int(game.office.morale_max())])
+	check(int(st.stats.get("furniture", 0)) >= 1, "bot comprou mobília")
+	for e in st.employees:
+		check(e.motivation <= game.office.morale_max() + 0.01, "moral de %s respeita o teto" % e.name)
 	for e in st.employees:
 		check(e.project_id == -1 or st.project_by_id(e.project_id) != null and st.project_by_id(e.project_id).is_running(),
 			"%s aponta para projeto válido" % e.name)
@@ -187,6 +208,67 @@ func _test_save_roundtrip(game) -> void:
 		if not game.state.pending_event.is_empty():
 			game.resolve_event(0)
 	check(game.state.day == before.day + 30, "jogo continua após carregar")
+
+
+func _test_hr_furniture_events(game) -> void:
+	print("== RH, mobília e eventos ==")
+	game.new_game("Bem-estar", "Chefe", 99)
+	var st = game.state
+	check(not game.hr.is_unlocked(), "RH começa fechado")
+	st.office_level = 3
+	st.reputation = 45.0
+	st.money = 100000.0
+	for i in 3:
+		var c = game.employees.generate_candidate("normal")
+		st.candidates.append(c)
+		game.employees.hire(c)
+	check(game.hr.is_unlocked(), "RH abre com escritório 3 e rep 30+")
+	var pizza = game.hr.action_by_id("pizza")
+	st.employees[1].motivation = 50.0
+	var before: float = st.employees[1].motivation
+	check(game.hr.use(pizza).ok, "noite de pizza")
+	check(st.employees[1].motivation > before, "moral subiu com a pizza")
+	check(not game.hr.can_use(pizza).ok, "pizza entra em cooldown")
+	var energetico = game.hr.action_by_id("energetico")
+	var prod_before: float = game.employees.productivity(st.employees[0])
+	check(game.hr.use(energetico).ok, "energético com paçoca")
+	check(game.employees.productivity(st.employees[0]) > prod_before, "buff de produtividade ativo (%.2f > %.2f)" % [game.employees.productivity(st.employees[0]), prod_before])
+	for i in 12:
+		game.on_day()
+		if not st.pending_event.is_empty():
+			game.resolve_event(0)
+	check(st.buffs.is_empty(), "buff expira após 10 dias")
+	var cadeiras = game.office.furniture_by_id("cadeiras")
+	var cap_before: float = game.office.morale_max()
+	check(game.office.buy(cadeiras).ok, "comprou cadeiras ergonômicas")
+	check(game.office.morale_max() == cap_before + 10.0, "teto de moral subiu 10 (%d)" % int(game.office.morale_max()))
+	var cafe = game.office.furniture_by_id("cafe_premium")
+	var cri_before: float = st.employees[1].attr("creativity")
+	check(game.office.buy(cafe).ok, "comprou máquina de café")
+	check(st.employees[1].attr("creativity") == cri_before + 3.0, "café deu +3 de criatividade")
+	var novato = game.employees.generate_candidate("normal")
+	var novato_cri: float = novato.attr("creativity")
+	st.candidates.append(novato)
+	game.employees.hire(novato)
+	check(novato.attr("creativity") == novato_cri + 3.0, "quem entra depois também ganha o bônus da mobília")
+	check(game.agency_events.is_unlocked(), "eventos abrem com rep 40+")
+	var palestra = game.agency_events.event_by_id("palestra")
+	var speaker = st.available_employees()[0]
+	var rep_before: float = st.reputation
+	var prospects_before: int = st.prospects().size()
+	check(game.agency_events.run(palestra, [speaker.id]).ok, "palestra começou")
+	check(speaker.busy_reason == "Em evento" and not speaker.is_available(st.day), "palestrante fica fora")
+	for i in 4:
+		game.on_day()
+		if not st.pending_event.is_empty():
+			game.resolve_event(0)
+	check(st.agency_events.is_empty(), "palestra terminou")
+	check(st.reputation > rep_before, "palestra rendeu reputação (%.1f > %.1f)" % [st.reputation, rep_before])
+	check(st.prospects().size() > prospects_before, "palestra trouxe prospect")
+	check(speaker.is_available(st.day), "palestrante voltou")
+	var saved: Dictionary = st.to_dict()
+	var loaded = GameState.from_dict(saved)
+	check(loaded.furniture.size() == 2 and loaded.hr_last_used.has("pizza"), "mobília e RH sobrevivem ao save")
 
 
 func _test_scoring(game) -> void:

@@ -72,6 +72,19 @@ func _ready() -> void:
 		Game.on_day()
 	await get_tree().process_frame
 	print("  sala de treinamento escondida após o curso: %s" % (not main.office_view.training_room.visible))
+	Game.state.office_level = 3
+	Game.state.reputation = 45.0
+	Game.state.money = 80000.0
+	EventBus.state_changed.emit()
+	main.show_screen("unlocks")
+	await get_tree().process_frame
+	print("  aba Agência com RH e eventos: %d nós" % main.screens["unlocks"].content.get_child_count())
+	main.popups.show_people_picker(Game.agency_events.event_by_id("palestra"))
+	await get_tree().process_frame
+	print("  popup de escolha de pessoas: %s" % main.popups.is_open())
+	main.popups.close()
+	main.show_screen("company")
+	await get_tree().process_frame
 	# avança o tempo pelo _process real (manual_time = false) e resolve eventos automaticamente
 	Game.state.speed = 3
 	var frames := 0

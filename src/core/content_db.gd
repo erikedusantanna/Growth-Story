@@ -20,6 +20,9 @@ var courses: Array = []
 var offices: Array = []
 var feed: Dictionary = {}
 var objectives: Array = []
+var hr: Dictionary = {}
+var furniture: Dictionary = {}
+var agency_events: Dictionary = {}
 
 
 func load_all() -> void:
@@ -49,6 +52,9 @@ func load_all() -> void:
 	offices = _load_json("res://data/offices.json").get("offices", [])
 	feed = _load_json("res://data/feed.json")
 	objectives = _load_json("res://data/objectives.json").get("objectives", [])
+	hr = _load_json("res://data/hr_actions.json")
+	furniture = _load_json("res://data/furniture.json")
+	agency_events = _load_json("res://data/agency_events.json")
 
 
 func _load_json(path: String) -> Dictionary:

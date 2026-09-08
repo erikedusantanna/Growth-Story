@@ -290,6 +290,19 @@ def projector_screen():
     return c
 
 
+def pingpong():
+    c = canvas(32, 22)
+    rect(c, 1, 2, 30, 12, "l")
+    rect(c, 1, 2, 30, 1, "W")
+    rect(c, 15, 2, 2, 12, "W")
+    rect(c, 1, 8, 30, 1, "W")
+    rect(c, 0, 14, 32, 2, "L")
+    rect(c, 2, 16, 3, 6, "z")
+    rect(c, 27, 16, 3, 6, "z")
+    hline(c, 0, 31, 15, "o")
+    return c
+
+
 def door():
     c = canvas(20, 30)
     rect(c, 0, 0, 20, 30, "d")
@@ -516,7 +529,7 @@ def main():
     for name, fn in (("desk", desk), ("chair", chair), ("sofa", sofa), ("plant", plant),
                      ("coffee", coffee_machine), ("cooler", water_cooler), ("shelf", shelf),
                      ("window", window), ("whiteboard", whiteboard), ("door", door),
-                     ("projector", projector_screen)):
+                     ("projector", projector_screen), ("pingpong", pingpong)):
         write_png(os.path.join(OUT, "furniture", f"{name}.png"), fn())
     characters()
     for name, rows in ICONS.items():

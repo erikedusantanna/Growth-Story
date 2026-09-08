@@ -1,11 +1,13 @@
 class_name UnlocksScreen
 extends BaseScreen
-## Desbloqueios: árvore de serviços.
+## Agência: RH, eventos promovidos e árvore de serviços.
 
 const TIER_NAMES := {"inicio": "Início", "intermediario": "Intermediário", "avancado": "Avançado", "endgame": "Endgame"}
 
 
 func build() -> void:
+	_build_hr()
+	_build_agency_events()
 	content.add_child(header("Serviços", "%d/%d" % [Game.state.unlocked_services.size(), Game.content.service_order.size()]))
 	content.add_child(UIKit.muted("Cada segmento de cliente combina melhor com certos serviços. Descubra as combinações perfeitas."))
 	var last_tier := ""
@@ -26,6 +28,138 @@ func build() -> void:
 		v.add_child(UIKit.label("Funciona: %s" % ", ".join(best.map(func(s): return Game.content.service_name(s))), 14, UIKit.COLOR_GREEN, true))
 		v.add_child(UIKit.label("Evite: %s" % ", ".join(poor.map(func(s): return Game.content.service_name(s))), 14, UIKit.COLOR_RED, true))
 		content.add_child(card)
+
+
+# --- RH -------------------------------------------------------------------------
+
+func _build_hr() -> void:
+	var st: GameState = Game.state
+	content.add_child(header("RH", "moral média %d" % int(Game.employees.morale_average())))
+	if not Game.hr.is_unlocked():
+		var req := Game.hr.unlock_requirements()
+		var office_name: String = Game.office.level_data(int(req.get("office_level", 3))).get("name", "")
+		content.add_child(UIKit.card([UIKit.label("O departamento de RH abre com %s e %d de reputação." % [office_name, int(req.get("reputation", 30))], 15, UIKit.COLOR_TEXT, true),
+			UIKit.muted("Ele cuida da moral da equipe: festas, folgas, programas de bem-estar e sprints com energético.", 13)]))
+		content.add_child(UIKit.spacer(4))
+		return
+	if not st.buffs.is_empty():
+		var names: Array = st.buffs.map(func(b): return "%s (%d dias)" % [String(b.get("name", b.get("id", ""))), int(b.get("until_day", 0)) - st.day + 1])
+		content.add_child(UIKit.label("Efeitos ativos: %s" % ", ".join(names), 14, UIKit.COLOR_BLUE, true))
+	for a in Game.hr.actions():
+		content.add_child(_hr_card(a))
+	content.add_child(UIKit.spacer(4))
+
+
+func _hr_card(a: Dictionary) -> PanelContainer:
+	var card := UIKit.card()
+	var v := UIKit.card_content(card)
+	var top := UIKit.hbox()
+	var name := UIKit.number(String(a["name"]), 18, UIKit.COLOR_TEXT)
+	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(name)
+	top.add_child(UIKit.label(UIKit.money(Game.hr.total_cost(a)), 15, UIKit.COLOR_NUMBER))
+	v.add_child(top)
+	v.add_child(UIKit.muted(String(a.get("desc", "")), 13))
+	v.add_child(UIKit.label(_hr_effects_text(a), 13, UIKit.COLOR_BLUE, true))
+	var check := Game.hr.can_use(a)
+	var b := UIKit.button("Fazer", func():
+		var r := Game.hr.use(a)
+		if not r.ok:
+			popups().show_info("RH", r.reason), true)
+	b.disabled = not check.ok
+	v.add_child(b)
+	if not check.ok:
+		v.add_child(UIKit.label(check.reason, 13, UIKit.COLOR_RED))
+	return card
+
+
+func _hr_effects_text(a: Dictionary) -> String:
+	var parts: Array = []
+	if a.has("morale"):
+		parts.append("%s%d moral" % ["+" if float(a["morale"]) > 0 else "", int(a["morale"])])
+	if a.has("stress"):
+		parts.append("%d estresse" % int(a["stress"]))
+	if a.has("loyalty"):
+		parts.append("+%d lealdade" % int(a["loyalty"]))
+	if int(a.get("delay_days", 0)) > 0:
+		parts.append("projetos atrasam %d dias" % int(a["delay_days"]))
+	if a.has("buff"):
+		var b: Dictionary = a["buff"]
+		if b.has("productivity"):
+			parts.append("produtividade ×%.1f por %d dias" % [float(b["productivity"]), int(b.get("days", 0))])
+		if b.has("stress_rate"):
+			parts.append("estresse ×%.1f por %d dias" % [float(b["stress_rate"]), int(b.get("days", 0))])
+	parts.append("a cada %d dias" % int(a.get("cooldown_days", 0)))
+	return " · ".join(parts)
+
+
+# --- Eventos da agência ----------------------------------------------------------
+
+func _build_agency_events() -> void:
+	var st: GameState = Game.state
+	content.add_child(header("Eventos da agência"))
+	if not Game.agency_events.is_unlocked():
+		content.add_child(UIKit.card([UIKit.label("Eventos promovidos pela agência abrem com 40 de reputação.", 15, UIKit.COLOR_TEXT, true),
+			UIKit.muted("Palestras, feiras e patrocínios trazem reputação, prospects, candidatos e até patrocínio.", 13)]))
+		content.add_child(UIKit.spacer(4))
+		return
+	for r in st.agency_events:
+		var ev := Game.agency_events.event_by_id(String(r.get("id", "")))
+		content.add_child(UIKit.label("Em andamento: %s (termina em %d dias)" % [ev.get("name", "?"), int(r.get("ends_day", 0)) - st.day], 14, UIKit.COLOR_BLUE, true))
+	for ev in Game.agency_events.events():
+		content.add_child(_agency_event_card(ev))
+	content.add_child(UIKit.spacer(4))
+
+
+func _agency_event_card(ev: Dictionary) -> PanelContainer:
+	var card := UIKit.card()
+	var v := UIKit.card_content(card)
+	var top := UIKit.hbox()
+	var name := UIKit.number(String(ev["name"]), 18, UIKit.COLOR_TEXT)
+	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(name)
+	top.add_child(UIKit.label(UIKit.money(float(ev.get("cost", 0))), 15, UIKit.COLOR_NUMBER))
+	v.add_child(top)
+	v.add_child(UIKit.muted(String(ev.get("desc", "")), 13))
+	var needs: Array = []
+	if int(ev.get("people", 0)) > 0:
+		needs.append("%d pessoa%s por %d dias" % [int(ev["people"]), "" if int(ev["people"]) == 1 else "s", int(ev.get("days", 0))])
+	needs.append("rep %d" % int(ev.get("requires_rep", 0)))
+	v.add_child(UIKit.muted("Exige: %s" % " · ".join(needs), 13))
+	v.add_child(UIKit.label("Rende: %s" % _agency_effects_text(ev), 13, UIKit.COLOR_GREEN, true))
+	var check := Game.agency_events.can_run(ev, [])
+	var needs_people := int(ev.get("people", 0)) > 0
+	var blocked: bool = not check.ok and not (needs_people and check.reason.begins_with("Escolha"))
+	var b := UIKit.button("Escolher equipe e promover" if needs_people else "Promover", func():
+		if needs_people:
+			popups().show_people_picker(ev)
+		else:
+			var r := Game.agency_events.run(ev, [])
+			if not r.ok:
+				popups().show_info("Evento", r.reason), true)
+	b.disabled = blocked
+	v.add_child(b)
+	if blocked:
+		v.add_child(UIKit.label(check.reason, 13, UIKit.COLOR_RED))
+	return card
+
+
+func _agency_effects_text(ev: Dictionary) -> String:
+	var fx: Dictionary = ev.get("effects", {})
+	var parts: Array = []
+	if fx.has("reputation"):
+		parts.append("+%d reputação" % int(fx["reputation"]))
+	if fx.has("prospects"):
+		parts.append("%d prospect(s)%s" % [int(fx["prospects"]), " maiores" if int(fx.get("prospect_tier_bonus", 0)) > 0 else ""])
+	if fx.has("candidates"):
+		parts.append("%d candidato(s) fortes" % int(fx["candidates"]))
+	if fx.has("money"):
+		parts.append("patrocínio de %s" % UIKit.money(float(fx["money"])))
+	if fx.has("morale"):
+		parts.append("+%d moral" % int(fx["morale"]))
+	if int(fx.get("delay_days", 0)) > 0:
+		parts.append("projetos atrasam %d dia" % int(fx["delay_days"]))
+	return ", ".join(parts)
 
 
 func _service_card(svc: Dictionary) -> PanelContainer:

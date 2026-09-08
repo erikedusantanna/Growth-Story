@@ -1,0 +1,26 @@
+{
+  "unlock": {"reputation": 40},
+  "events": [
+    {"id": "palestra", "name": "Palestra em evento do setor", "desc": "Alguém da equipe sobe no palco por 20 minutos.",
+     "cost": 2000, "people": 1, "days": 3, "requires_rep": 40, "cooldown_days": 30,
+     "effects": {"reputation": 3, "prospects": 1}},
+    {"id": "feira_carreiras", "name": "Feira de carreiras", "desc": "Estande na universidade. Currículos aos montes.",
+     "cost": 3000, "people": 1, "days": 2, "requires_rep": 40, "cooldown_days": 60,
+     "effects": {"candidates": 3}},
+    {"id": "meetup", "name": "Meetup na agência", "desc": "Abre as portas para a comunidade por uma noite.",
+     "cost": 2500, "people": 0, "days": 1, "requires_rep": 40, "requires_office": 3, "cooldown_days": 45,
+     "effects": {"reputation": 2, "candidates": 2, "morale": 5, "delay_days": 1}},
+    {"id": "workshop", "name": "Workshop para empresários", "desc": "Meio dia ensinando o básico. Vira pipeline.",
+     "cost": 5000, "people": 2, "days": 4, "requires_rep": 45, "cooldown_days": 60,
+     "effects": {"reputation": 2, "prospects": 2}},
+    {"id": "podcast", "name": "Patrocínio de podcast", "desc": "Sua marca no intervalo do podcast de marketing mais ouvido.",
+     "cost": 8000, "people": 0, "days": 0, "requires_rep": 50, "cooldown_days": 90,
+     "effects": {"reputation": 4, "prospects": 1}},
+    {"id": "congresso", "name": "Estande em congresso", "desc": "Três pessoas, cinco dias, muitos cartões.",
+     "cost": 15000, "people": 3, "days": 5, "requires_rep": 55, "requires_office": 3, "cooldown_days": 120,
+     "effects": {"reputation": 6, "prospects": 2, "prospect_tier_bonus": 1}},
+    {"id": "palco_principal", "name": "Case no palco principal", "desc": "O maior evento do ano. Patrocinadores pagam para estar perto.",
+     "cost": 20000, "people": 2, "days": 4, "requires_rep": 70, "requires_office": 3, "cooldown_days": 180,
+     "effects": {"reputation": 8, "prospects": 2, "prospect_tier_bonus": 1, "money": 30000, "candidates": 2}}
+  ]
+}

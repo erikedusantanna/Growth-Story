@@ -2,7 +2,7 @@ extends Control
 ## Cena principal: HUD, escritório, feed, telas e navegação inferior.
 
 const SCREEN_ORDER := ["team", "clients", "projects", "company", "unlocks"]
-const SCREEN_LABELS := {"team": "Equipe", "clients": "Clientes", "projects": "Projetos", "company": "Empresa", "unlocks": "Desbloqueios"}
+const SCREEN_LABELS := {"team": "Equipe", "clients": "Clientes", "projects": "Projetos", "company": "Empresa", "unlocks": "Agência"}
 
 var hud: Hud
 var office_view: OfficeView

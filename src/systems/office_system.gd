@@ -35,6 +35,86 @@ func rent() -> float:
 	return float(current().get("rent", 0)) * game.state.rent_modifier
 
 
+# --- Mobília --------------------------------------------------------------------
+
+func furniture_items() -> Array:
+	return game.content.furniture.get("items", [])
+
+
+func furniture_by_id(id: String) -> Dictionary:
+	for f in furniture_items():
+		if f["id"] == id:
+			return f
+	return {}
+
+
+func owns(id: String) -> bool:
+	return id in game.state.furniture
+
+
+func can_buy(f: Dictionary) -> Dictionary:
+	var st: GameState = game.state
+	if owns(f["id"]):
+		return {"ok": false, "reason": "Já comprado."}
+	if st.office_level < int(f.get("requires_office", 1)):
+		return {"ok": false, "reason": "Precisa do escritório nível %d." % int(f["requires_office"])}
+	if st.reputation < float(f.get("requires_rep", 0)):
+		return {"ok": false, "reason": "Precisa de %d de reputação." % int(f["requires_rep"])}
+	if st.money < float(f.get("cost", 0)):
+		return {"ok": false, "reason": "Caixa insuficiente."}
+	return {"ok": true, "reason": ""}
+
+
+func buy(f: Dictionary) -> Dictionary:
+	var check := can_buy(f)
+	if not check.ok:
+		return check
+	var st: GameState = game.state
+	game.finance.add_money(-float(f.get("cost", 0)), "Mobília: %s" % f["name"], "expense")
+	st.furniture.append(f["id"])
+	st.stats["furniture"] = int(st.stats.get("furniture", 0)) + 1
+	var fx: Dictionary = f.get("effects", {})
+	for e in st.employees:
+		apply_furniture_bonus(e, f)
+		if fx.has("morale_once"):
+			game.employees.change_morale(e, float(fx["morale_once"]))
+	game.add_log("Nova mobília: %s." % f["name"], "unlock")
+	EventBus.state_changed.emit()
+	return {"ok": true, "reason": ""}
+
+
+## Bônus permanente de atributo de uma mobília (aplicado a quem já está e a quem entra).
+func apply_furniture_bonus(e: Employee, f: Dictionary) -> void:
+	var bonus: Dictionary = f.get("effects", {}).get("attr_bonus", {})
+	for key in bonus:
+		e.attrs[key] = clampf(e.attr(key) + float(bonus[key]), 1.0, 100.0)
+
+
+func apply_all_furniture_bonuses(e: Employee) -> void:
+	for id in game.state.furniture:
+		var f := furniture_by_id(id)
+		if not f.is_empty():
+			apply_furniture_bonus(e, f)
+
+
+## Efeitos agregados de toda a mobília comprada.
+func furniture_effects() -> Dictionary:
+	var out := {"morale_max": float(game.content.furniture.get("base_morale_max", 85)), "morale_daily": 0.0,
+		"stress_rate": 1.0, "productivity": 1.0}
+	for id in game.state.furniture:
+		var fx: Dictionary = furniture_by_id(id).get("effects", {})
+		out["morale_max"] += float(fx.get("morale_max", 0))
+		out["morale_daily"] += float(fx.get("morale_daily", 0))
+		out["stress_rate"] *= 1.0 + float(fx.get("stress_rate", 0))
+		out["productivity"] *= 1.0 + float(fx.get("productivity", 0))
+	out["morale_max"] = minf(out["morale_max"], 100.0)
+	return out
+
+
+func morale_max() -> float:
+	return float(furniture_effects()["morale_max"])
+
+
 func can_upgrade() -> Dictionary:
 	var nxt := next_level()
 	if nxt.is_empty():
