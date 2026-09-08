@@ -50,7 +50,10 @@ func _running_card(p: Project) -> PanelContainer:
 	v.add_child(days)
 	v.add_child(UIKit.stat_row("Progresso", p.progress() * 100.0, UIKit.COLOR_TEXT))
 	for key in Project.INDICATORS:
-		v.add_child(UIKit.stat_row(Project.INDICATOR_NAMES[key], p.indicators[key], UIKit.indicator_color(key)))
+		var row := UIKit.stat_row(Project.INDICATOR_NAMES[key], p.indicators[key], UIKit.indicator_color(key))
+		row.add_child(UIKit.icon("ind_" + key))
+		row.move_child(row.get_child(row.get_child_count() - 1), 0)
+		v.add_child(row)
 	if p.addresses_problem:
 		v.add_child(UIKit.label("A estratégia ataca o problema real do cliente.", 13, UIKit.COLOR_GREEN))
 	v.add_child(UIKit.button("Cancelar projeto", func(): _confirm_cancel(p)))

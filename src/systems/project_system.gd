@@ -23,10 +23,10 @@ func quote(c: Client, kind: int) -> Dictionary:
 	if kind == Project.Kind.RETAINER:
 		budget = c.budget
 	else:
-		budget = c.budget * (2.0 + 0.5 * c.maturity)
+		budget = c.budget * (1.2 + 0.3 * c.maturity)
 	budget = roundf(budget / 100.0) * 100.0
 	var deadline := RETAINER_CYCLE_DAYS if kind == Project.Kind.RETAINER else clampi(15 + int(budget / 1000.0), 20, 60)
-	var effort := 10.0 + budget / 600.0
+	var effort := 12.0 + budget / 350.0
 	return {"budget": budget, "deadline": deadline, "effort": effort}
 
 
@@ -233,6 +233,7 @@ func _micro_event(p: Project) -> void:
 		elif p.boosts.has(key):
 			p.boosts[key] += float(effects[key])
 	game.add_log(String(chosen["text"]).replace("{emp}", e.name), "fun")
+	EventBus.office_feedback.emit(e.id, String(chosen.get("bubble", "...")), "bubble")
 
 
 func apply_boost(indicator: String, value: float) -> void:
@@ -299,7 +300,7 @@ func evaluate(p: Project) -> Dictionary:
 			stars += 1
 	var payment: float = p.budget * PAYMENT_MULT[stars]
 	var tier := c.tier if c != null else 1
-	var rep_delta := (stars - 2.5) * (0.8 + tier * 0.7)
+	var rep_delta := (stars - 2.5) * (0.5 + tier * 0.5)
 	if stars == 5 and p.match_quality == "perfect":
 		rep_delta += 2.0
 	var roi := snappedf((0.5 + score / 100.0 * 4.5) * game.services.match_multiplier(p.match_quality), 0.1)
@@ -361,6 +362,7 @@ func _apply_result(p: Project, result: Dictionary) -> void:
 		st.cases += 1
 	for e in team_members(p):
 		game.employees.add_journey(e, "%s para %s: %d estrelas" % ["Ciclo de retainer" if p.kind == Project.Kind.RETAINER else "Entregou " + p.title, c.name if c != null else "?", stars])
+		EventBus.office_feedback.emit(e.id, "+%d XP" % int(12.0 + p.budget / 2500.0), "good" if stars >= 3 else "bad")
 		game.employees.gain_experience(e, 12.0 + p.budget / 2500.0)
 		var growth: float = 0.6 + e.potential * 0.25
 		for s in p.services:

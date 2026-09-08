@@ -35,6 +35,7 @@ func create_founder(founder_name: String) -> Employee:
 	e.experience = 180.0
 	e.age = 26
 	e.color = "#f3a712"
+	_randomize_look(e)
 	e.hired_on = 0
 	e.journey.append({"day": 0, "text": "Fundou a agência"})
 	return e
@@ -76,6 +77,7 @@ func generate_candidate(quality: String = "normal") -> Employee:
 	e.loyalty = float(pers.get("loyalty_base", rng.randf_range(40.0, 75.0)))
 	e.age = rng.randi_range(19, 45)
 	e.color = content.colors[rng.randi_range(0, content.colors.size() - 1)]
+	_randomize_look(e)
 
 	var avg := e.average_attr()
 	if avg < 35.0:
@@ -90,6 +92,13 @@ func generate_candidate(quality: String = "normal") -> Employee:
 	e.salary = _salary_for(e)
 	e.candidate_expires = st.day + CANDIDATE_LIFETIME
 	return e
+
+
+func _randomize_look(e: Employee) -> void:
+	var rng: RandomNumberGenerator = game.state.rng
+	e.skin = Employee.SKIN_TONES[rng.randi_range(0, Employee.SKIN_TONES.size() - 1)]
+	e.hair_style = rng.randi_range(0, Employee.HAIR_STYLES - 1)
+	e.hair_color = Employee.HAIR_COLORS[rng.randi_range(0, Employee.HAIR_COLORS.size() - 1)]
 
 
 func _salary_for(e: Employee) -> float:
@@ -155,6 +164,7 @@ func hire(candidate: Employee) -> Dictionary:
 	st.employees.append(candidate)
 	st.stats["hires"] = int(st.stats["hires"]) + 1
 	add_journey(candidate, "Entrou na agência como %s" % title(candidate))
+	EventBus.office_feedback.emit(candidate.id, "Oi!", "bubble")
 	game.add_log(_pick(game.content.feed.get("hired", [])).replace("{emp}", candidate.name), "hire")
 	EventBus.employee_hired.emit(candidate)
 	EventBus.state_changed.emit()
@@ -236,6 +246,7 @@ func _finish_training(e: Employee) -> void:
 		parts.append("+%d %s" % [int(roundf(gained)), Employee.ATTR_NAMES.get(key, key)])
 	e.motivation = clampf(e.motivation + 5.0, 0.0, 100.0)
 	add_journey(e, "Concluiu %s: %s" % [course["name"], ", ".join(parts)])
+	EventBus.office_feedback.emit(e.id, parts[0] if not parts.is_empty() else "+", "good")
 	game.add_log("%s concluiu %s (%s)." % [e.name, course["name"], ", ".join(parts)], "promo")
 	EventBus.state_changed.emit()
 
@@ -269,6 +280,7 @@ func promote(e: Employee) -> void:
 	for key in Employee.ATTRS:
 		e.attrs[key] = clampf(e.attr(key) + 1.0, 1.0, 100.0)
 	add_journey(e, "Promovido(a) a %s" % title(e))
+	EventBus.office_feedback.emit(e.id, "Promoção!", "good")
 	var text: String = _pick(game.content.feed.get("promotion", ["{emp} foi promovido(a) a {title}."]))
 	game.add_log(text.replace("{emp}", e.name).replace("{title}", title(e)), "promo")
 	EventBus.employee_promoted.emit(e)
@@ -330,6 +342,7 @@ func _burnout(e: Employee) -> void:
 	e.busy_until = game.state.day + BURNOUT_DAYS
 	e.busy_reason = "Burnout"
 	add_journey(e, "Entrou em burnout e ficou %d dias afastado(a)" % BURNOUT_DAYS)
+	EventBus.office_feedback.emit(e.id, "zzz...", "bad")
 	game.add_log(_pick(game.content.feed.get("burnout", ["{emp} entrou em burnout."])).replace("{emp}", e.name), "warn")
 	EventBus.state_changed.emit()
 

@@ -30,9 +30,10 @@ Regra de ouro: **a UI nunca altera o estado diretamente**. Ela chama métodos do
 
 ## Projeto
 
-- **Orçamento**: projeto = `budget_cliente × (2 + 0,5 × maturidade)`; retainer = `budget_cliente`/mês.
+- **Orçamento**: projeto = `budget_cliente × (1,2 + 0,3 × maturidade)`; retainer = `budget_cliente`/mês.
+  O `budget_cliente` é o valor negociado na proposta (60% a 140% da referência).
 - **Prazo**: `clamp(15 + orçamento/1000, 20, 60)` dias; retainer avalia a cada 30 dias.
-- **Esforço**: `10 + orçamento/600` pontos.
+- **Esforço**: `12 + orçamento/350` pontos.
 - **Produção diária por pessoa**: `(0,5 + habilidade/100 × 1,5) × produtividade`, onde
   `habilidade` = média ponderada dos atributos pelos pesos dos serviços escolhidos e
   `produtividade = base_personalidade × (0,7 + motivação × 0,6) × (1 − estresse/220)`.
@@ -46,8 +47,9 @@ Regra de ouro: **a UI nunca altera o estado diretamente**. Ela chama métodos do
   − 0,8/dia de atraso (máx. 20). Retainer: × `0,6 + 0,4 × progresso`.
 - **Estrelas**: limiares 35/50/65/82 (+3 para expectativa alta, −3 para baixa, +10 × (preço − 1) pelo preço negociado).
 - **Pagamento**: orçamento × [0,6; 0,85; 1,0; 1,1; 1,25].
-- **Reputação**: `(estrelas − 2,5) × (0,8 + 0,7 × tier)` (+2 em 5 estrelas com perfect match).
-  Ganhos × `1 − rep/130`; perdas × `0,3 + 0,7 × rep/100`.
+- **Reputação**: `(estrelas − 2,5) × (0,5 + 0,5 × tier)` (+2 em 5 estrelas com perfect match).
+  Ganhos × `1 − rep/100`; perdas × `0,3 + 0,7 × rep/100`.
+- **Expectativa**: limiares de estrelas deslocam +3 (alta) / −3 (baixa) e `+10 × (preço_negociado − 1)`.
 - **Cliente**: relação `± 15 × (estrelas − 3)`; 1–2 estrelas com paciência < 50 → 50% de cancelar.
 - **Equipe**: XP `12 + orçamento/2500`, atributos dos serviços crescem com o potencial.
 
@@ -56,6 +58,22 @@ Regra de ouro: **a UI nunca altera o estado diretamente**. Ela chama métodos do
 `proposal_chance(c, price_factor)` = `45 + melhor Comunicação × 0,35 + rep × 0,3 − dificuldade × 8 − tentativas × 12 (+10 com um Vendedor)`
 `+ (1 − price_factor) × 60`. O slider vai de 0,6 a 1,4. Ao fechar, `c.budget` passa a ser o valor negociado
 e `c.price_factor` desloca os limiares de estrelas (cliente que paga mais espera mais).
+
+## Prospects e custos fixos
+
+- A cada 15 dias, chance `0,15 + rep/160` de chegar um prospect, até 2 simultâneos abaixo de 20 de
+  reputação e 3 acima. O tier máximo do prospect segue as faixas de reputação (GDD §27).
+- Custos mensais: salários + aluguel do escritório (0 / 2.500 / 8.000 / 20.000) + R$ 250 por pessoa em
+  ferramentas. Ampliações custam 8 mil / 45 mil / 150 mil e pedem reputação 8 / 25 / 45.
+
+## Régua de ritmo (GDD §53)
+
+`tests/sim_test.gd` roda 3 anos com uma política automática gananciosa e imprime, por ano, equipe,
+clientes, receita, caixa, reputação e escritório. O teste falha se o ano 3 sair da faixa
+3–10 pessoas, R$ 120–700 mil de receita e 20–70 de reputação, ou se o ano 1 sair de 2–5 pessoas e 8–35
+de reputação. Um jogador real tende a crescer mais devagar que o bot; a faixa é o teto, não a meta.
+
+Última medição: ano 1 = 4 pessoas, R$ 97 mil, rep 24 · ano 3 = 4 pessoas, R$ 289 mil, rep 45.
 
 ## Combinações (`data/services.json → match_table`)
 

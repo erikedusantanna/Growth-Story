@@ -37,7 +37,7 @@ func _ready() -> void:
 	root.add_child(hud)
 
 	office_view = OfficeView.new()
-	office_view.custom_minimum_size = Vector2(0, 290)
+	office_view.custom_minimum_size = Vector2(0, 336)
 	office_view.worker_tapped.connect(func(_id): show_screen("team"))
 	root.add_child(office_view)
 
@@ -97,7 +97,13 @@ func show_screen(name: String) -> void:
 	current_screen = name
 	for key in screens:
 		screens[key].visible = key == name
-		nav_buttons[key].modulate = Color(1, 1, 1, 1) if key == name else Color(1, 1, 1, 0.6)
+		var b: Button = nav_buttons[key]
+		if key == name:
+			b.add_theme_stylebox_override("normal", b.get_theme_stylebox("pressed"))
+			b.add_theme_color_override("font_color", UIKit.COLOR_ACCENT.darkened(0.25))
+		else:
+			b.remove_theme_stylebox_override("normal")
+			b.remove_theme_color_override("font_color")
 	screens[name].refresh()
 
 

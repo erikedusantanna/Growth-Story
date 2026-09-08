@@ -13,7 +13,7 @@ func _ready() -> void:
 	layer = 10
 	add_to_group("popups")
 	dim = ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.65)
+	dim.color = Color(0.17, 0.16, 0.2, 0.55)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	dim.visible = false
 	add_child(dim)
@@ -248,7 +248,15 @@ func show_journey(e: Employee) -> void:
 	_open(func():
 		var parts := _panel("Jornada de %s" % e.name.split(" ")[0])
 		var b: VBoxContainer = parts.body
-		b.add_child(UIKit.muted("%s · %s · na agência desde %s" % [Game.employees.title(e), Game.employees.personality_name(e), GameState.date_text_for(maxi(e.hired_on, 0))]))
+		var head := UIKit.hbox(12)
+		head.add_child(UIKit.portrait(e, 4))
+		var info := UIKit.vbox(2)
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info.add_child(UIKit.number(e.name, 19, UIKit.COLOR_TEXT))
+		info.add_child(UIKit.muted("%s · %s" % [Game.employees.title(e), Game.employees.personality_name(e)]))
+		info.add_child(UIKit.muted("Na agência desde %s" % GameState.date_text_for(maxi(e.hired_on, 0)), 13))
+		head.add_child(info)
+		b.add_child(head)
 		b.add_child(UIKit.attr_grid(e))
 		b.add_child(UIKit.separator())
 		if e.journey.is_empty():

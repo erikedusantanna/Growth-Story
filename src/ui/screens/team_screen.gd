@@ -36,7 +36,8 @@ func _office_banner() -> PanelContainer:
 	if full:
 		v.add_child(UIKit.label("Escritório lotado. Amplie para contratar mais gente.", 14, UIKit.COLOR_RED, true))
 	var check := Game.office.can_upgrade()
-	var b := UIKit.button("Ampliar: %s (%s · %d lugares · rep %d)" % [nxt.name, UIKit.money(float(nxt.upgrade_cost)), int(nxt.capacity), int(nxt.rep_required)], func():
+	v.add_child(UIKit.muted("Próximo: %s · %d lugares · rep %d" % [nxt.name, int(nxt.capacity), int(nxt.rep_required)], 13))
+	var b := UIKit.button("Ampliar por %s" % UIKit.money(float(nxt.upgrade_cost)), func():
 		if Game.office.upgrade():
 			popups().show_info("Mudança feita!", "A agência agora está em %s. Cabem %d pessoas. O aluguel passa a %s/mês." % [nxt.name, int(nxt.capacity), UIKit.money(float(nxt.rent) * Game.state.rent_modifier)]), full)
 	b.disabled = not check.ok
@@ -52,20 +53,9 @@ func _employee_card(e: Employee) -> PanelContainer:
 	var st: GameState = Game.state
 	var card := UIKit.card()
 	var v := UIKit.card_content(card)
-	var top := UIKit.hbox()
-	var name := UIKit.label(e.name, 20, Color(e.color).lightened(0.35))
-	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top.add_child(name)
-	top.add_child(UIKit.label(Game.employees.personality_name(e), 14, UIKit.COLOR_MUTED))
-	v.add_child(top)
 	var status := e.is_busy_reason(st.day)
 	var status_color := UIKit.COLOR_GREEN if status == "Livre" else (UIKit.COLOR_RED if status == "Burnout" else UIKit.COLOR_ACCENT)
-	var sub := UIKit.hbox()
-	var title := UIKit.label(Game.employees.title(e), 15, UIKit.COLOR_MUTED)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	sub.add_child(title)
-	sub.add_child(UIKit.label(status, 15, status_color))
-	v.add_child(sub)
+	v.add_child(_person_header(e, status, status_color))
 	v.add_child(UIKit.attr_grid(e))
 	var meta := UIKit.hbox(14)
 	meta.add_child(UIKit.label("Motivação %d" % int(e.motivation), 14, UIKit.COLOR_MUTED))
@@ -88,6 +78,25 @@ func _employee_card(e: Employee) -> PanelContainer:
 	return card
 
 
+## Retrato + nome em negrito + cargo + personalidade, como o cartão das referências.
+func _person_header(e: Employee, right_text: String, right_color: Color) -> HBoxContainer:
+	var h := UIKit.hbox(12)
+	h.add_child(UIKit.portrait(e, 4))
+	var v := UIKit.vbox(2)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var top := UIKit.hbox()
+	var name := UIKit.number(e.name, 19, UIKit.COLOR_TEXT)
+	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	top.add_child(name)
+	top.add_child(UIKit.label(right_text, 14, right_color))
+	v.add_child(top)
+	v.add_child(UIKit.label(Game.employees.title(e), 15, UIKit.COLOR_MUTED))
+	v.add_child(UIKit.label("%s · %s" % [Game.employees.personality_name(e), Game.content.personalities.get(e.personality, {}).get("desc", "")], 13, UIKit.COLOR_BLUE, true))
+	h.add_child(v)
+	return h
+
+
 func _confirm_fire(e: Employee) -> void:
 	popups().show_choice("Demitir %s?" % e.name,
 		"A rescisão custa um salário (%s). A equipe pode perder motivação." % UIKit.money(e.salary),
@@ -102,14 +111,7 @@ func _confirm_fire(e: Employee) -> void:
 func _candidate_card(c: Employee) -> PanelContainer:
 	var card := UIKit.card()
 	var v := UIKit.card_content(card)
-	var top := UIKit.hbox()
-	var name := UIKit.label(c.name, 20)
-	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top.add_child(name)
-	top.add_child(UIKit.label(Game.employees.personality_name(c), 14, UIKit.COLOR_MUTED))
-	v.add_child(top)
-	v.add_child(UIKit.muted("%s · %d anos" % [Game.employees.title(c), c.age]))
-	v.add_child(UIKit.muted(Game.content.personalities.get(c.personality, {}).get("desc", ""), 13))
+	v.add_child(_person_header(c, "%d anos" % c.age, UIKit.COLOR_MUTED))
 	v.add_child(UIKit.attr_grid(c))
 	var meta := UIKit.hbox(14)
 	meta.add_child(UIKit.label("Salário %s/mês" % UIKit.money(c.salary), 15, UIKit.COLOR_GREEN))
