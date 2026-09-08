@@ -27,6 +27,7 @@ var last_project_day: int = -1
 var projects_done: int = 0
 var proposal_attempts: int = 0
 var retainer_months_left: int = 0     # >0 quando há contrato recorrente
+var price_factor: float = 1.0         # preço negociado na proposta (1.0 = orçamento de referência)
 
 
 func is_active() -> bool:
@@ -42,6 +43,7 @@ func to_dict() -> Dictionary:
 		"relationship": relationship, "satisfaction": satisfaction, "status": status,
 		"known_on": known_on, "last_project_day": last_project_day, "projects_done": projects_done,
 		"proposal_attempts": proposal_attempts, "retainer_months_left": retainer_months_left,
+		"price_factor": price_factor,
 	}
 
 
@@ -70,4 +72,5 @@ static func from_dict(d: Dictionary) -> Client:
 	c.projects_done = int(d.get("projects_done", 0))
 	c.proposal_attempts = int(d.get("proposal_attempts", 0))
 	c.retainer_months_left = int(d.get("retainer_months_left", 0))
+	c.price_factor = float(d.get("price_factor", 1.0))
 	return c

@@ -46,10 +46,20 @@ func _ready() -> void:
 	main.popups.show_choice("Teste", "corpo", ["A", "B"], func(i): print("  escolha: %d" % i))
 	await get_tree().process_frame
 	main.popups.close()
+	Game.clients.spawn_prospect()
+	main.popups.show_proposal(Game.state.prospects()[0])
+	await get_tree().process_frame
+	print("  popup proposta: %s" % main.popups.is_open())
+	main.popups.close()
+	main.popups.show_journey(Game.state.employees[0])
+	await get_tree().process_frame
+	print("  popup jornada: %s" % main.popups.is_open())
+	main.popups.close()
+	print("  objetivo atual: %s" % main.objective_label.text)
 	# avança o tempo pelo _process real (manual_time = false) e resolve eventos automaticamente
 	Game.state.speed = 3
 	var frames := 0
-	while Game.state.day < 40 and frames < 6000:
+	while Game.state.day < 30 and frames < 8000:
 		if main.popups.is_open():
 			if not Game.state.pending_event.is_empty():
 				Game.resolve_event(0)
@@ -63,6 +73,6 @@ func _ready() -> void:
 	main.show_title()
 	await get_tree().process_frame
 	print("  workers no escritório: %d" % main.office_view.workers.size())
-	var ok: bool = Game.state.day >= 40 and main.office_view.workers.size() == Game.state.employees.size()
+	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size()
 	print("[%s] UI smoke" % ("OK" if ok else "FALHA"))
 	get_tree().quit(0 if ok else 1)

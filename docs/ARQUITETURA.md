@@ -24,8 +24,9 @@ Regra de ouro: **a UI nunca altera o estado diretamente**. Ela chama métodos do
 2. `projects.on_day` — progresso, indicadores, micro-eventos, conclusão/ciclo de retainer.
 3. `clients.on_day` — diagnóstico, decaimento de relação, novos prospects.
 4. `events.on_day` — sorteio de evento aleatório (pausa o tempo até ser resolvido).
-5. A cada 30 dias `on_month`: custos fixos, lealdade, novos candidatos, autosave.
-6. A cada 360 dias `on_year`: resumo no feed.
+5. `objectives.check` — avança objetivos concluídos (também roda em `state_changed`).
+6. A cada 30 dias `on_month`: custos fixos, lealdade, novos candidatos, autosave.
+7. A cada 360 dias `on_year`: resumo no feed.
 
 ## Projeto
 
@@ -43,12 +44,18 @@ Regra de ouro: **a UI nunca altera o estado diretamente**. Ela chama métodos do
 - **Nota**: média ponderada (0,3/0,25/0,25/0,2) com pesos da personalidade do cliente,
   × multiplicador da combinação (1,35 / 1,12 / 1,0 / 0,75), × `1 − 0,06 × (dificuldade − 1)`,
   − 0,8/dia de atraso (máx. 20). Retainer: × `0,6 + 0,4 × progresso`.
-- **Estrelas**: limiares 35/50/65/82 (+3 para expectativa alta, −3 para baixa).
+- **Estrelas**: limiares 35/50/65/82 (+3 para expectativa alta, −3 para baixa, +10 × (preço − 1) pelo preço negociado).
 - **Pagamento**: orçamento × [0,6; 0,85; 1,0; 1,1; 1,25].
 - **Reputação**: `(estrelas − 2,5) × (0,8 + 0,7 × tier)` (+2 em 5 estrelas com perfect match).
   Ganhos × `1 − rep/130`; perdas × `0,3 + 0,7 × rep/100`.
 - **Cliente**: relação `± 15 × (estrelas − 3)`; 1–2 estrelas com paciência < 50 → 50% de cancelar.
 - **Equipe**: XP `12 + orçamento/2500`, atributos dos serviços crescem com o potencial.
+
+## Proposta comercial
+
+`proposal_chance(c, price_factor)` = `45 + melhor Comunicação × 0,35 + rep × 0,3 − dificuldade × 8 − tentativas × 12 (+10 com um Vendedor)`
+`+ (1 − price_factor) × 60`. O slider vai de 0,6 a 1,4. Ao fechar, `c.budget` passa a ser o valor negociado
+e `c.price_factor` desloca os limiares de estrelas (cliente que paga mais espera mais).
 
 ## Combinações (`data/services.json → match_table`)
 
@@ -59,7 +66,7 @@ dois ou mais em `best` → *perfect*; um → *boa*; caso contrário *neutra*.
 
 Campos de condição: `min_day`, `min_reputation`, `min_employees`, `min_active_clients`,
 `min_running_projects`, `min_cases`, `min_avg_stress`, `min_office_level`,
-`requires_personality`, `once`. Placeholders no texto: `{best_employee}`, `{random_client}`,
+`requires_personality`, `once`, `cooldown_days` (padrão 120: o mesmo evento não repete antes disso). Placeholders no texto: `{best_employee}`, `{random_client}`,
 `{personality_employee}`. Efeitos suportados estão em `EventSystem._apply_effect`.
 
 ## Save
@@ -74,3 +81,5 @@ para não perder precisão. Versão do save em `version` (1).
   correspondente em `data/names.json → roles` gera candidatos especialistas.
 - **Evento**: `data/events.json`; novos tipos de efeito em `EventSystem._apply_effect`.
 - **Escritório**: `data/offices.json` (posições em tiles de 16 px; linha 0 é a parede).
+- **Objetivo**: `data/objectives.json` (`type` é uma chave de `stats` ou um dos especiais em `ObjectiveSystem.progress_value`).
+- **Jornada**: chame `Game.employees.add_journey(e, texto)` em qualquer marco novo.

@@ -38,22 +38,12 @@ func _prospect_card(c: Client) -> PanelContainer:
 	v.add_child(UIKit.muted("Orçamento de referência: %s/mês" % UIKit.money(c.budget)))
 	var chance := Game.clients.proposal_chance(c)
 	var actions := UIKit.hbox()
-	actions.add_child(UIKit.button("Enviar proposta (%d%%)" % int(chance), func(): _propose(c), true))
+	actions.add_child(UIKit.button("Proposta (%d%% no preço base)" % int(chance), func(): popups().show_proposal(c), true))
 	actions.add_child(UIKit.button("Dispensar", func(): Game.clients.drop_prospect(c)))
 	v.add_child(actions)
 	if c.proposal_attempts > 0:
 		v.add_child(UIKit.label("Tentativas: %d de 3" % c.proposal_attempts, 13, UIKit.COLOR_RED))
 	return card
-
-
-func _propose(c: Client) -> void:
-	var r := Game.clients.propose(c)
-	if not r.ok:
-		popups().show_info("Proposta", r.reason)
-	elif r.success:
-		popups().show_info("Contrato fechado!", "%s agora é seu cliente. Faça um diagnóstico ou comece um projeto na aba Clientes." % c.name)
-	else:
-		popups().show_info("Ainda não...", "%s não fechou desta vez (chance era %d%%). A cada tentativa a chance cai." % [c.name, int(r.chance)])
 
 
 func _active_card(c: Client) -> PanelContainer:
@@ -64,7 +54,8 @@ func _active_card(c: Client) -> PanelContainer:
 	var meta := UIKit.hbox(14)
 	meta.add_child(UIKit.heart_row(c.satisfaction))
 	meta.add_child(UIKit.label("Projetos: %d" % c.projects_done, 14, UIKit.COLOR_MUTED))
-	meta.add_child(UIKit.label("Orçamento %s/mês" % UIKit.money(c.budget), 14, UIKit.COLOR_MUTED))
+	var pct := int(roundf((c.price_factor - 1.0) * 100.0))
+	meta.add_child(UIKit.label("Orçamento %s/mês%s" % [UIKit.money(c.budget), (" (%s%d%%)" % ["+" if pct >= 0 else "", pct]) if pct != 0 else ""], 14, UIKit.COLOR_MUTED))
 	v.add_child(meta)
 	v.add_child(UIKit.stat_row("Relação", c.relationship, UIKit.COLOR_GREEN))
 	if c.diagnosed:

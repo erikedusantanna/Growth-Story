@@ -11,6 +11,7 @@ var finance := FinanceSystem.new()
 var reputation := ReputationSystem.new()
 var events := EventSystem.new()
 var office := OfficeSystem.new()
+var objectives := ObjectiveSystem.new()
 var save := SaveSystem.new()
 var time := TimeSystem.new()
 
@@ -23,8 +24,9 @@ var ui_blocking := false
 func _ready() -> void:
 	content = ContentDB.new()
 	content.load_all()
-	for system in [services, employees, clients, projects, finance, reputation, events, office, time]:
+	for system in [services, employees, clients, projects, finance, reputation, events, office, objectives, time]:
 		system.setup(self)
+	EventBus.state_changed.connect(func(): if state != null: objectives.check())
 
 
 func _process(delta: float) -> void:
@@ -94,6 +96,7 @@ func on_day() -> void:
 	projects.on_day()
 	clients.on_day()
 	events.on_day()
+	objectives.check()
 	if state.day % GameState.DAYS_PER_MONTH == 0:
 		on_month()
 	if state.day % (GameState.DAYS_PER_MONTH * GameState.MONTHS_PER_YEAR) == 0:

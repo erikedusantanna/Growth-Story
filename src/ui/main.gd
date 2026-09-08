@@ -7,6 +7,7 @@ const SCREEN_LABELS := {"team": "Equipe", "clients": "Clientes", "projects": "Pr
 var hud: Hud
 var office_view: OfficeView
 var feed: RichTextLabel
+var objective_label: Label
 var screens: Dictionary = {}
 var nav_buttons: Dictionary = {}
 var popups: Popups
@@ -41,14 +42,20 @@ func _ready() -> void:
 	root.add_child(office_view)
 
 	var feed_panel := PanelContainer.new()
-	feed_panel.custom_minimum_size = Vector2(0, 76)
+	feed_panel.custom_minimum_size = Vector2(0, 96)
+	var feed_box := UIKit.vbox(2)
+	feed_panel.add_child(feed_box)
+	objective_label = UIKit.label("", 14, UIKit.COLOR_ACCENT, true)
+	objective_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	objective_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	feed_box.add_child(objective_label)
 	feed = RichTextLabel.new()
 	feed.bbcode_enabled = true
 	feed.scroll_active = false
 	feed.fit_content = false
 	feed.add_theme_font_size_override("normal_font_size", 13)
 	feed.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	feed_panel.add_child(feed)
+	feed_box.add_child(feed)
 	root.add_child(feed_panel)
 
 	var holder := MarginContainer.new()
@@ -82,6 +89,7 @@ func _ready() -> void:
 
 	EventBus.log_added.connect(func(_t, _k): _refresh_feed())
 	EventBus.game_started.connect(_refresh_feed)
+	EventBus.state_changed.connect(_refresh_objective)
 	title_screen.open()
 
 
@@ -106,13 +114,27 @@ func _on_game_started() -> void:
 	_refresh_feed()
 	if Game.state.day == 0:
 		popups.show_info("Sua história começa aqui",
-			"Você é um freelancer com %s no caixa. Feche o primeiro cliente na aba Clientes, monte a estratégia e entregue resultado. Dinheiro e reputação abrem clientes maiores." % UIKit.money(Game.state.money))
+			"Você é um freelancer com %s no caixa. Siga os objetivos mostrados acima do feed: feche o primeiro cliente, monte a estratégia e entregue resultado. Dinheiro e reputação abrem clientes maiores. Use os botões 1x, 2x e 3x para controlar o ritmo." % UIKit.money(Game.state.money))
 	Game.state.paused = false
+
+
+func _refresh_objective() -> void:
+	if not Game.has_game():
+		return
+	var obj := Game.objectives.current()
+	if obj.is_empty():
+		objective_label.text = "Todos os objetivos concluídos. Agora a história é sua."
+		return
+	var target := float(obj.get("value", 1))
+	var value := Game.objectives.progress_value(obj)
+	var progress := " (%d/%d)" % [int(value), int(target)] if target > 1.0 else ""
+	objective_label.text = "Objetivo %d/%d: %s%s" % [Game.objectives.completed_count() + 1, Game.objectives.all().size(), obj["text"], progress]
 
 
 func _refresh_feed() -> void:
 	if not Game.has_game():
 		return
+	_refresh_objective()
 	var lines: Array = Game.state.log.slice(maxi(Game.state.log.size() - 4, 0), Game.state.log.size())
 	feed.clear()
 	for entry in lines:

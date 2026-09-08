@@ -28,12 +28,14 @@ var month_revenue: float = 0.0
 var month_expenses: float = 0.0
 var last_event_day: int = -999
 var events_seen: Dictionary = {}
+var events_last_day: Dictionary = {}   # id -> último dia em que disparou
+var objective_index: int = 0           # objetivo atual (data/objectives.json)
 var pending_event: Dictionary = {}
 var cases: int = 0
 var speed: int = 1
 var paused: bool = false
 var game_over: bool = false
-var stats: Dictionary = {"projects_done": 0, "five_stars": 0, "hires": 0, "total_revenue": 0.0, "clients_signed": 0}
+var stats: Dictionary = {"projects_done": 0, "five_stars": 0, "hires": 0, "total_revenue": 0.0, "clients_signed": 0, "trainings": 0, "retainers": 0, "diagnoses": 0}
 
 
 func new_id() -> int:
@@ -60,7 +62,12 @@ func day_of_month() -> int:
 
 
 func date_text() -> String:
-	return "%02d %s %d" % [day_of_month(), MONTH_NAMES[month()], year()]
+	return date_text_for(day)
+
+
+static func date_text_for(d: int) -> String:
+	var mi := d / DAYS_PER_MONTH
+	return "%02d %s %d" % [d % DAYS_PER_MONTH + 1, MONTH_NAMES[mi % MONTHS_PER_YEAR], START_YEAR + mi / MONTHS_PER_YEAR]
 
 
 func game_year() -> int:
@@ -144,6 +151,7 @@ func to_dict() -> Dictionary:
 		"finance_history": finance_history.duplicate(true),
 		"month_revenue": month_revenue, "month_expenses": month_expenses,
 		"last_event_day": last_event_day, "events_seen": events_seen.duplicate(),
+		"events_last_day": events_last_day.duplicate(), "objective_index": objective_index,
 		"pending_event": pending_event.duplicate(true), "cases": cases,
 		"speed": speed, "game_over": game_over, "stats": stats.duplicate(),
 	}
@@ -182,6 +190,8 @@ static func from_dict(d: Dictionary) -> GameState:
 	s.month_expenses = float(d.get("month_expenses", 0))
 	s.last_event_day = int(d.get("last_event_day", -999))
 	s.events_seen = d.get("events_seen", {})
+	s.events_last_day = d.get("events_last_day", {})
+	s.objective_index = int(d.get("objective_index", 0))
 	s.pending_event = d.get("pending_event", {})
 	s.cases = int(d.get("cases", 0))
 	s.speed = int(d.get("speed", 1))

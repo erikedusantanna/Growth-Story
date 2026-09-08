@@ -53,7 +53,7 @@ func _run_simulation(game, seed: int, years: int) -> void:
 			events_resolved += 1
 		for c in st.prospects():
 			if st.active_clients().size() < st.employees.size() + 1:
-				game.clients.propose(c)
+				game.clients.propose(c, [0.8, 1.0, 1.2][st.rng.randi_range(0, 2)])
 		for c in st.active_clients():
 			if st.project_for_client(c.id) == null:
 				if not c.diagnosed and c.diagnosis_days_left == 0 and st.money > 5000:
@@ -97,6 +97,14 @@ func _run_simulation(game, seed: int, years: int) -> void:
 	check(hires >= 1, "contratou alguém (%d)" % hires)
 	check(st.reputation > 5.0, "reputação subiu (%.1f)" % st.reputation)
 	check(st.money > 5000.0, "caixa cresceu (%s)" % FinanceSystem.format_money(st.money))
+	check(st.objective_index >= 5, "objetivos avançaram (%d/%d)" % [st.objective_index, game.content.objectives.size()])
+	var with_journey: int = st.employees.filter(func(e): return e.journey.size() >= 2).size()
+	check(with_journey >= 1, "colaboradores têm jornada registrada (%d)" % with_journey)
+	var repeated := 0
+	for id in st.events_seen:
+		if int(st.events_seen[id]) > 1080 / 120 + 1:
+			repeated += 1
+	check(repeated == 0, "nenhum evento repetiu além do cooldown")
 	for e in st.employees:
 		check(e.project_id == -1 or st.project_by_id(e.project_id) != null and st.project_by_id(e.project_id).is_running(),
 			"%s aponta para projeto válido" % e.name)
@@ -172,5 +180,10 @@ func _test_scoring(game) -> void:
 	check(p.result.payment > 0.0, "pagamento positivo (%s)" % FinanceSystem.format_money(p.result.payment))
 	check(founder.project_id == -1, "fundador liberado ao fim do projeto")
 	print("  score=%.1f estrelas=%d match=%s prazo=%d dias" % [p.result.score, p.result.stars, p.match_quality, days])
+	var cheap: float = game.clients.proposal_chance(c, 0.6)
+	var fair: float = game.clients.proposal_chance(c, 1.0)
+	var pricey: float = game.clients.proposal_chance(c, 1.4)
+	check(cheap > fair and fair > pricey, "desconto aumenta a chance (%.0f > %.0f > %.0f)" % [cheap, fair, pricey])
+	check(game.clients.proposed_budget(c, 0.8) < c.budget, "preço proposto acompanha o slider")
 	check(FinanceSystem.format_money(1234567.0) == "R$ 1.234.567", "formatação de dinheiro")
 	check(FinanceSystem.format_money(-950.0) == "-R$ 950", "formatação negativa")

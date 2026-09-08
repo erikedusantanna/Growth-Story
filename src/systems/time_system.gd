@@ -1,9 +1,10 @@
 class_name TimeSystem
 extends RefCounted
 ## Converte tempo real em dias de jogo. Velocidades: 1x, 2x, 3x.
+## Ritmo "cozy": um dia dura 3,5 s no 1x, para dar tempo de pensar durante os projetos.
 
-const SECONDS_PER_DAY := 1.4
-const SPEEDS := [1.0, 2.0, 3.5]
+const SECONDS_PER_DAY := 3.5
+const SPEEDS := [1.0, 2.0, 3.0]
 
 var game
 var accumulator := 0.0

@@ -175,5 +175,96 @@ func show_training(e: Employee) -> void:
 		return parts.panel)
 
 
+## Proposta comercial com slider de preço: desconto aumenta a chance, prêmio reduz e eleva a expectativa.
+func show_proposal(c: Client) -> void:
+	_open(func():
+		var parts := _panel("Proposta para %s" % c.name)
+		var b: VBoxContainer = parts.body
+		b.add_child(UIKit.muted("%s · %s · Expectativa %s" % [Game.clients.segment_name(c), Game.clients.personality_name(c), c.expectation]))
+		b.add_child(UIKit.label("\"%s\"" % c.goal, 16, UIKit.COLOR_TEXT, true))
+		b.add_child(UIKit.muted("Orçamento de referência: %s/mês" % UIKit.money(c.budget)))
+		b.add_child(UIKit.spacer(4))
+		var price_label := UIKit.label("", 20, UIKit.COLOR_GREEN)
+		price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.add_child(price_label)
+		var slider := HSlider.new()
+		slider.min_value = ClientSystem.PRICE_MIN * 100.0
+		slider.max_value = ClientSystem.PRICE_MAX * 100.0
+		slider.step = 5
+		slider.value = 100
+		slider.custom_minimum_size.y = 44
+		b.add_child(slider)
+		var ends := UIKit.hbox()
+		var lo := UIKit.muted("Barato: fecha fácil")
+		lo.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		ends.add_child(lo)
+		var hi := UIKit.muted("Caro: exige mais")
+		hi.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		ends.add_child(hi)
+		b.add_child(ends)
+		var chance_label := UIKit.label("", 18, UIKit.COLOR_ACCENT)
+		chance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.add_child(chance_label)
+		b.add_child(UIKit.stat_row("Chance", 0.0, UIKit.COLOR_ACCENT, 70))
+		var chance_bar: ProgressBar = b.get_child(b.get_child_count() - 1).get_child(1)
+		var chance_value: Label = b.get_child(b.get_child_count() - 1).get_child(2)
+		var hint := UIKit.muted("", 13)
+		b.add_child(hint)
+		var send := UIKit.button("Enviar proposta", Callable(), true)
+		var refresh := func():
+			var factor: float = slider.value / 100.0
+			var pct := int(roundf((factor - 1.0) * 100.0))
+			price_label.text = "%s/mês (%s%d%%)" % [UIKit.money(Game.clients.proposed_budget(c, factor)), "+" if pct >= 0 else "", pct]
+			var chance := Game.clients.proposal_chance(c, factor)
+			chance_label.text = "Chance de fechar: %d%%" % int(chance)
+			chance_bar.value = chance
+			chance_value.text = str(int(chance))
+			if factor < 0.9:
+				hint.text = "Desconto: fecha mais fácil, mas os projetos rendem menos."
+			elif factor > 1.1:
+				hint.text = "Prêmio: mais difícil de fechar e o cliente vai esperar entregas melhores."
+			else:
+				hint.text = "Preço de mercado."
+			send.text = "Enviar proposta (%d%%)" % int(chance)
+		slider.value_changed.connect(func(_v): refresh.call())
+		refresh.call()
+		send.pressed.connect(func():
+			var factor: float = slider.value / 100.0
+			close()
+			var r := Game.clients.propose(c, factor)
+			if not r.ok:
+				show_info("Proposta", r.reason)
+			elif r.success:
+				show_info("Contrato fechado!", "%s aceitou %s/mês. Faça um diagnóstico ou comece um projeto." % [c.name, UIKit.money(c.budget)])
+			else:
+				show_info("Ainda não...", "%s não fechou desta vez (chance era %d%%). A cada tentativa a chance cai; um preço menor ajuda." % [c.name, int(r.chance)]))
+		parts.buttons.add_child(send)
+		parts.buttons.add_child(UIKit.button("Cancelar", close))
+		return parts.panel)
+
+
+## Linha do tempo do colaborador: contratação, cursos, promoções, campanhas, eventos.
+func show_journey(e: Employee) -> void:
+	_open(func():
+		var parts := _panel("Jornada de %s" % e.name.split(" ")[0])
+		var b: VBoxContainer = parts.body
+		b.add_child(UIKit.muted("%s · %s · na agência desde %s" % [Game.employees.title(e), Game.employees.personality_name(e), GameState.date_text_for(maxi(e.hired_on, 0))]))
+		b.add_child(UIKit.attr_grid(e))
+		b.add_child(UIKit.separator())
+		if e.journey.is_empty():
+			b.add_child(UIKit.muted("Nenhum marco registrado ainda."))
+		var entries: Array = e.journey.duplicate()
+		entries.reverse()
+		for entry in entries:
+			var row := UIKit.hbox(10)
+			var date := UIKit.label(GameState.date_text_for(int(entry.get("day", 0))), 13, UIKit.COLOR_MUTED)
+			date.custom_minimum_size.x = 96
+			row.add_child(date)
+			row.add_child(UIKit.label(String(entry.get("text", "")), 15, UIKit.COLOR_TEXT, true))
+			b.add_child(row)
+		parts.buttons.add_child(UIKit.button("Fechar", close, true))
+		return parts.panel)
+
+
 func show_new_project(c: Client) -> void:
 	_open(func(): return NewProjectDialog.new(c, self))

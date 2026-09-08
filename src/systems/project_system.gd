@@ -80,6 +80,7 @@ func create_project(c: Client, services: Array, team_ids: Array, kind: int = Pro
 	c.last_project_day = st.day
 	if kind == Project.Kind.RETAINER:
 		c.retainer_months_left = RETAINER_MONTHS
+		st.stats["retainers"] = int(st.stats.get("retainers", 0)) + 1
 	game.add_log("Projeto iniciado: %s (%s)." % [p.title, c.name], "project")
 	EventBus.project_started.emit(p)
 	EventBus.state_changed.emit()
@@ -289,6 +290,9 @@ func evaluate(p: Project) -> Dictionary:
 		shift = 3.0
 	elif c != null and c.expectation == "baixa":
 		shift = -3.0
+	if c != null:
+		# Quem paga mais caro espera mais; quem pagou barato é mais tolerante.
+		shift += (c.price_factor - 1.0) * 10.0
 	var stars := 1
 	for t in thresholds:
 		if score >= float(t) + shift:
@@ -356,6 +360,7 @@ func _apply_result(p: Project, result: Dictionary) -> void:
 		st.stats["five_stars"] = int(st.stats["five_stars"]) + 1
 		st.cases += 1
 	for e in team_members(p):
+		game.employees.add_journey(e, "%s para %s: %d estrelas" % ["Ciclo de retainer" if p.kind == Project.Kind.RETAINER else "Entregou " + p.title, c.name if c != null else "?", stars])
 		game.employees.gain_experience(e, 12.0 + p.budget / 2500.0)
 		var growth: float = 0.6 + e.potential * 0.25
 		for s in p.services:

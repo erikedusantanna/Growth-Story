@@ -49,6 +49,7 @@ func _employee_card(e: Employee) -> PanelContainer:
 	var train := UIKit.button("Treinar", func(): popups().show_training(e))
 	train.disabled = not e.is_available(st.day)
 	actions.add_child(train)
+	actions.add_child(UIKit.button("Jornada", func(): popups().show_journey(e)))
 	if not e.is_founder:
 		actions.add_child(UIKit.button("Demitir", func(): _confirm_fire(e)))
 	v.add_child(actions)
