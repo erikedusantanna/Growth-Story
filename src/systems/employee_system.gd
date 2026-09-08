@@ -3,6 +3,7 @@ extends RefCounted
 ## Contratação, treinamento, carreira, motivação e estresse.
 
 const BURNOUT_DAYS := 10
+const JOURNEY_MAX := 40
 const MAX_CANDIDATES := 5
 const CANDIDATE_LIFETIME := 45
 
@@ -35,6 +36,7 @@ func create_founder(founder_name: String) -> Employee:
 	e.age = 26
 	e.color = "#f3a712"
 	e.hired_on = 0
+	e.journey.append({"day": 0, "text": "Fundou a agência"})
 	return e
 
 
@@ -152,6 +154,7 @@ func hire(candidate: Employee) -> Dictionary:
 	candidate.candidate_expires = 0
 	st.employees.append(candidate)
 	st.stats["hires"] = int(st.stats["hires"]) + 1
+	add_journey(candidate, "Entrou na agência como %s" % title(candidate))
 	game.add_log(_pick(game.content.feed.get("hired", [])).replace("{emp}", candidate.name), "hire")
 	EventBus.employee_hired.emit(candidate)
 	EventBus.state_changed.emit()
@@ -212,6 +215,7 @@ func train(e: Employee, course_id: String) -> Dictionary:
 	e.training_id = course_id
 	e.busy_until = game.state.day + int(course["days"])
 	e.busy_reason = "Em treinamento"
+	game.state.stats["trainings"] = int(game.state.stats.get("trainings", 0)) + 1
 	game.add_log("%s começou: %s." % [e.name, course["name"]], "info")
 	EventBus.state_changed.emit()
 	return {"ok": true, "reason": ""}
@@ -225,10 +229,14 @@ func _finish_training(e: Employee) -> void:
 		return
 	var gains: Dictionary = course.get("gains", {})
 	var potential_mult := 0.7 + e.potential * 0.15
+	var parts: Array = []
 	for key in gains:
-		e.attrs[key] = clampf(e.attr(key) + float(gains[key]) * potential_mult, 1.0, 100.0)
+		var gained: float = float(gains[key]) * potential_mult
+		e.attrs[key] = clampf(e.attr(key) + gained, 1.0, 100.0)
+		parts.append("+%d %s" % [int(roundf(gained)), Employee.ATTR_NAMES.get(key, key)])
 	e.motivation = clampf(e.motivation + 5.0, 0.0, 100.0)
-	game.add_log("%s concluiu %s." % [e.name, course["name"]], "info")
+	add_journey(e, "Concluiu %s: %s" % [course["name"], ", ".join(parts)])
+	game.add_log("%s concluiu %s (%s)." % [e.name, course["name"], ", ".join(parts)], "promo")
 	EventBus.state_changed.emit()
 
 
@@ -260,6 +268,7 @@ func promote(e: Employee) -> void:
 	e.loyalty = clampf(e.loyalty + 8.0, 0.0, 100.0)
 	for key in Employee.ATTRS:
 		e.attrs[key] = clampf(e.attr(key) + 1.0, 1.0, 100.0)
+	add_journey(e, "Promovido(a) a %s" % title(e))
 	var text: String = _pick(game.content.feed.get("promotion", ["{emp} foi promovido(a) a {title}."]))
 	game.add_log(text.replace("{emp}", e.name).replace("{title}", title(e)), "promo")
 	EventBus.employee_promoted.emit(e)
@@ -320,6 +329,7 @@ func _burnout(e: Employee) -> void:
 	e.motivation = clampf(e.motivation - 25.0, 0.0, 100.0)
 	e.busy_until = game.state.day + BURNOUT_DAYS
 	e.busy_reason = "Burnout"
+	add_journey(e, "Entrou em burnout e ficou %d dias afastado(a)" % BURNOUT_DAYS)
 	game.add_log(_pick(game.content.feed.get("burnout", ["{emp} entrou em burnout."])).replace("{emp}", e.name), "warn")
 	EventBus.state_changed.emit()
 
@@ -339,6 +349,13 @@ func on_month() -> void:
 	for e in leaving:
 		quit(e, "pediu demissão")
 	refresh_candidates()
+
+
+## Registra um marco na história do colaborador (visível em Equipe → Jornada).
+func add_journey(e: Employee, text: String) -> void:
+	e.journey.append({"day": game.state.day, "text": text})
+	if e.journey.size() > JOURNEY_MAX:
+		e.journey.pop_front()
 
 
 func _pick(list: Array) -> String:

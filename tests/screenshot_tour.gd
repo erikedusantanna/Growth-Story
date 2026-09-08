@@ -22,9 +22,10 @@ func _ready() -> void:
 	Game.manual_time = true
 	# prepara um estado interessante: 3 pessoas, cliente ativo, projeto rodando
 	var st: GameState = Game.state
+	st.office_level = 2
+	st.money = 50000.0
 	for i in 2:
 		Game.employees.hire(Game.employees.generate_candidate("high"))
-	st.office_level = 2
 	var c: Client = st.prospects()[0]
 	c.status = Client.Status.ACTIVE
 	c.diagnosed = true
@@ -38,9 +39,24 @@ func _ready() -> void:
 	main.show_screen("clients")
 	await _frames(2)
 	await _shot("03_clients")
+	if not st.prospects().is_empty():
+		main.popups.show_proposal(st.prospects()[0])
+		await _frames(2)
+		await _shot("03b_proposal")
+		main.popups.close()
+		await _settle()
 	main.show_screen("team")
 	await _frames(2)
 	await _shot("04_team")
+	Game.employees.train(st.employees[2], "criativo")
+	for i in 8:
+		Game.on_day()
+	await _settle()
+	main.popups.show_journey(st.employees[2])
+	await _frames(2)
+	await _shot("04b_journey")
+	main.popups.close()
+	await _settle()
 	main.show_screen("projects")
 	await _frames(2)
 	await _shot("05_projects")

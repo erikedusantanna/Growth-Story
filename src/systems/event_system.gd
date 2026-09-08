@@ -4,6 +4,8 @@ extends RefCounted
 
 const MIN_GAP_DAYS := 10
 const DAILY_CHANCE := 0.07
+## Um mesmo evento não repete antes deste intervalo (o JSON pode sobrescrever com "cooldown_days").
+const DEFAULT_COOLDOWN_DAYS := 120
 
 var game
 
@@ -53,12 +55,16 @@ func trigger(ev: Dictionary) -> void:
 		"choices": ev.get("choices", []), "targets": targets}
 	st.last_event_day = st.day
 	st.events_seen[ev["id"]] = int(st.events_seen.get(ev["id"], 0)) + 1
+	st.events_last_day[ev["id"]] = st.day
 	EventBus.event_triggered.emit(st.pending_event)
 
 
 func _eligible(ev: Dictionary) -> bool:
 	var st: GameState = game.state
 	if ev.get("once", false) and st.events_seen.has(ev["id"]):
+		return false
+	var last: int = int(st.events_last_day.get(ev["id"], -9999))
+	if st.day - last < int(ev.get("cooldown_days", DEFAULT_COOLDOWN_DAYS)):
 		return false
 	if st.day < int(ev.get("min_day", 0)):
 		return false
@@ -117,11 +123,11 @@ func resolve(choice_index: int) -> void:
 	var choice: Dictionary = choices[idx]
 	game.add_log("%s: %s" % [ev.get("title", "Evento"), choice.get("label", "")], "event")
 	for effect in choice.get("effects", []):
-		_apply_effect(effect, ev.get("targets", {}))
+		_apply_effect(effect, ev.get("targets", {}), String(ev.get("title", "Evento")))
 	EventBus.state_changed.emit()
 
 
-func _apply_effect(effect: Dictionary, targets: Dictionary) -> void:
+func _apply_effect(effect: Dictionary, targets: Dictionary, title: String = "Evento") -> void:
 	var st: GameState = game.state
 	var type: String = effect.get("type", "")
 	var value: float = float(effect.get("value", 0))
@@ -142,6 +148,8 @@ func _apply_effect(effect: Dictionary, targets: Dictionary) -> void:
 			var attr: String = effect.get("attr", "creativity")
 			for e in st.employees:
 				e.attrs[attr] = clampf(e.attr(attr) + value, 1.0, 100.0)
+				game.employees.add_journey(e, "%s: %s%d %s" % [title, "+" if value >= 0 else "", int(value), Employee.ATTR_NAMES.get(attr, attr)])
+			game.add_log("Toda a equipe: %s%d de %s." % ["+" if value >= 0 else "", int(value), Employee.ATTR_NAMES.get(attr, attr)], "promo")
 		"log":
 			game.add_log(effect.get("text", ""), "event")
 		"flag":
@@ -149,6 +157,7 @@ func _apply_effect(effect: Dictionary, targets: Dictionary) -> void:
 		"raise_best":
 			if target_employee != null:
 				game.employees.give_raise(target_employee, value)
+				game.employees.add_journey(target_employee, "Recebeu aumento de %d%% após proposta da concorrência" % int(value * 100))
 		"loyalty_best":
 			if target_employee != null:
 				target_employee.loyalty = clampf(target_employee.loyalty + value, 0.0, 100.0)

@@ -41,7 +41,7 @@
        {"label": "Recusar", "effects": [{"type": "reputation", "value": 5}, {"type": "log", "text": "O mercado ouviu falar da sua recusa. Respeito."}]},
        {"label": "Contraproposta", "effects": [{"type": "money", "value": 300000}, {"type": "flag", "id": "investor", "value": true}, {"type": "log", "text": "Vocês fecharam um investimento minoritário."}]}
      ]},
-    {"id": "logo_maior", "title": "Pedido clássico", "weight": 5, "min_running_projects": 1,
+    {"id": "logo_maior", "title": "Pedido clássico", "weight": 5, "min_running_projects": 1, "cooldown_days": 60,
      "text": "\"Pode deixar o logo maior?\" Toda a equipe suspirou ao mesmo tempo.",
      "choices": [
        {"label": "Fazer o logo maior", "effects": [{"type": "motivation", "value": -8}, {"type": "client_relationship", "value": 5}]},
@@ -87,7 +87,7 @@
        {"label": "Conceder", "effects": [{"type": "raise_personality", "value": 0.25}]},
        {"label": "Negar", "effects": [{"type": "motivation_personality", "value": -25}, {"type": "loyalty_personality", "value": -30}]}
      ]},
-    {"id": "workshop_gratis", "title": "Workshop gratuito", "weight": 2,
+    {"id": "workshop_gratis", "title": "Workshop gratuito", "weight": 1, "min_day": 60, "cooldown_days": 240,
      "text": "Uma comunidade de marketing ofereceu um workshop gratuito de criatividade.",
      "choices": [
        {"label": "Mandar a equipe", "effects": [{"type": "attr_all", "attr": "creativity", "value": 3}, {"type": "project_delay", "days": 1}]},
@@ -112,7 +112,7 @@
        {"label": "Fechar parceria", "effects": [{"type": "spawn_prospect"}, {"type": "attr_all", "attr": "management", "value": 2}]},
        {"label": "Recusar", "effects": []}
      ]},
-    {"id": "so_mais_uma_coisinha", "title": "\"Só mais uma coisinha...\"", "weight": 5, "min_running_projects": 1,
+    {"id": "so_mais_uma_coisinha", "title": "\"Só mais uma coisinha...\"", "weight": 5, "min_running_projects": 1, "cooldown_days": 60,
      "text": "O cliente mandou áudio de 4 minutos às 23h. Resumo: três tarefas novas no projeto.",
      "choices": [
        {"label": "Absorver as tarefas", "effects": [{"type": "project_extra_work", "value": 0.15}, {"type": "client_relationship", "value": 6}]},

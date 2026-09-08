@@ -19,6 +19,7 @@ var colors: Array = []
 var courses: Array = []
 var offices: Array = []
 var feed: Dictionary = {}
+var objectives: Array = []
 
 
 func load_all() -> void:
@@ -47,6 +48,7 @@ func load_all() -> void:
 	courses = _load_json("res://data/training.json").get("courses", [])
 	offices = _load_json("res://data/offices.json").get("offices", [])
 	feed = _load_json("res://data/feed.json")
+	objectives = _load_json("res://data/objectives.json").get("objectives", [])
 
 
 func _load_json(path: String) -> Dictionary:

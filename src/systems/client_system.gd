@@ -109,7 +109,13 @@ func _fill_procedural(c: Client, tier_cap: int) -> void:
 	c.problem = problems[rng.randi_range(0, problems.size() - 1)]
 
 
-func proposal_chance(c: Client) -> float:
+const PRICE_MIN := 0.6
+const PRICE_MAX := 1.4
+const PRICE_CHANCE_PER_PERCENT := 0.6   # cada 1% de desconto = +0,6 pontos de chance
+
+
+## Chance de fechar (0–100). price_factor < 1 é desconto (mais fácil), > 1 é prêmio (mais difícil).
+func proposal_chance(c: Client, price_factor: float = 1.0) -> float:
 	var st: GameState = game.state
 	var best_comm := 0.0
 	var seller_bonus := 0.0
@@ -118,18 +124,25 @@ func proposal_chance(c: Client) -> float:
 		if e.personality == "vendedor":
 			seller_bonus = 10.0
 	var chance := 45.0 + best_comm * 0.35 + st.reputation * 0.3 - c.difficulty * 8.0 - c.proposal_attempts * 12.0 + seller_bonus
-	return clampf(chance, 10.0, 95.0)
+	chance += (1.0 - clampf(price_factor, PRICE_MIN, PRICE_MAX)) * 100.0 * PRICE_CHANCE_PER_PERCENT
+	return clampf(chance, 5.0, 95.0)
 
 
-## Tenta fechar contrato com um prospect. Retorna {ok, success, chance}.
-func propose(c: Client) -> Dictionary:
+func proposed_budget(c: Client, price_factor: float) -> float:
+	return roundf(c.budget * clampf(price_factor, PRICE_MIN, PRICE_MAX) / 100.0) * 100.0
+
+
+## Tenta fechar contrato com um prospect pelo preço proposto. Retorna {ok, success, chance}.
+func propose(c: Client, price_factor: float = 1.0) -> Dictionary:
 	var st: GameState = game.state
 	if c.status != Client.Status.PROSPECT:
 		return {"ok": false, "success": false, "chance": 0.0, "reason": "Não é um prospect."}
-	var chance := proposal_chance(c)
+	var chance := proposal_chance(c, price_factor)
 	var success: bool = st.rng.randf() * 100.0 < chance
 	c.proposal_attempts += 1
 	if success:
+		c.budget = proposed_budget(c, price_factor)
+		c.price_factor = clampf(price_factor, PRICE_MIN, PRICE_MAX)
 		c.status = Client.Status.ACTIVE
 		c.relationship = clampf(c.relationship + 10.0, 0.0, 100.0)
 		st.stats["clients_signed"] = int(st.stats["clients_signed"]) + 1
@@ -178,6 +191,7 @@ func start_diagnosis(c: Client) -> Dictionary:
 		return check
 	game.finance.add_money(-diagnosis_cost(c), "Diagnóstico: %s" % c.name, "expense")
 	c.diagnosis_days_left = diagnosis_days(c)
+	game.state.stats["diagnoses"] = int(game.state.stats.get("diagnoses", 0)) + 1
 	game.add_log("Auditoria de marketing iniciada em %s." % c.name, "info")
 	EventBus.state_changed.emit()
 	return {"ok": true, "reason": ""}

@@ -30,6 +30,7 @@ var training_id: String = ""
 var busy_until: int = -1               # dia até o qual está ocupado (treino/burnout)
 var busy_reason: String = ""
 var months_since_raise: int = 0
+var journey: Array = []                # [{day, text}] história do colaborador na agência
 
 
 func attr(key: String) -> float:
@@ -83,6 +84,7 @@ func to_dict() -> Dictionary:
 		"age": age, "color": color, "hired_on": hired_on, "candidate_expires": candidate_expires,
 		"project_id": project_id, "training_id": training_id, "busy_until": busy_until,
 		"busy_reason": busy_reason, "months_since_raise": months_since_raise,
+		"journey": journey.duplicate(true),
 	}
 
 
@@ -112,4 +114,5 @@ static func from_dict(d: Dictionary) -> Employee:
 	e.busy_until = int(d.get("busy_until", -1))
 	e.busy_reason = d.get("busy_reason", "")
 	e.months_since_raise = int(d.get("months_since_raise", 0))
+	e.journey = Array(d.get("journey", []))
 	return e

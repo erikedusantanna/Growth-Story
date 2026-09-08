@@ -1,0 +1,17 @@
+{
+  "objectives": [
+    {"id": "first_client", "text": "Feche seu primeiro cliente (aba Clientes → Proposta)", "type": "clients_signed", "value": 1, "reward_money": 500},
+    {"id": "first_diagnosis", "text": "Faça um diagnóstico para descobrir o problema real do cliente", "type": "diagnoses", "value": 1},
+    {"id": "first_project", "text": "Entregue sua primeira campanha", "type": "projects_done", "value": 1, "reward_money": 1000},
+    {"id": "first_hire", "text": "Contrate a primeira pessoa da equipe", "type": "hires", "value": 1},
+    {"id": "first_training", "text": "Matricule alguém em um treinamento", "type": "trainings", "value": 1},
+    {"id": "three_projects", "text": "Entregue 3 campanhas", "type": "projects_done", "value": 3, "reward_money": 1500},
+    {"id": "first_unlock", "text": "Desbloqueie um novo serviço (aba Desbloqueios)", "type": "services_unlocked", "value": 4},
+    {"id": "first_retainer", "text": "Feche um retainer com um cliente satisfeito", "type": "retainers", "value": 1, "reward_money": 2000},
+    {"id": "office_2", "text": "Mude para um escritório maior (aba Empresa)", "type": "office_level", "value": 2},
+    {"id": "rep_20", "text": "Alcance 20 de reputação e vire uma agência local", "type": "reputation", "value": 20, "reward_money": 3000},
+    {"id": "five_star", "text": "Conquiste um case de sucesso (5 estrelas)", "type": "five_stars", "value": 1},
+    {"id": "team_5", "text": "Tenha 5 pessoas na equipe", "type": "employees", "value": 5},
+    {"id": "rep_40", "text": "Alcance 40 de reputação e vire uma agência reconhecida", "type": "reputation", "value": 40, "reward_money": 5000}
+  ]
+}

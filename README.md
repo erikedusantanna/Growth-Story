@@ -40,11 +40,12 @@ Depois: *Projeto → Exportar → Android → Exportar projeto*, ou
 
 | Sistema | Onde | Resumo |
 |---|---|---|
-| Tempo | `time_system.gd`, `game_manager.gd` | Dia a cada 1,4 s (1x/2x/3,5x), meses de 30 dias, anos a partir de 2010, pausa automática em eventos/modais |
+| Tempo | `time_system.gd`, `game_manager.gd` | Ritmo cozy: dia a cada 3,5 s no 1x (2x, 3x), meses de 30 dias, anos a partir de 2010, pausa automática em eventos/modais |
 | Funcionários | `employee_system.gd`, `models/employee.gd` | 6 atributos, motivação, estresse, lealdade, potencial, 8 personalidades, carreira em 8 níveis, burnout, pedidos de demissão |
 | Contratação | idem | Candidatos procedurais (nomes BR), qualidade cresce com reputação, expiram em 45 dias, capacidade do escritório |
 | Treinamento | `data/training.json` | 7 cursos com custo, dias e ganhos de atributo (potencial multiplica) |
 | Clientes | `client_system.gd`, `data/clients.json` | 12 clientes escritos à mão + geração procedural; segmento, tier, personalidade, objetivo declarado e **problema real oculto** |
+| Proposta comercial | `client_system.gd`, `popups.gd` | Slider de preço (60% a 140% do orçamento): desconto aumenta a chance de fechar, prêmio reduz e eleva a expectativa do cliente |
 | Diagnóstico | idem | Auditoria paga que revela o problema real; a estratégia certa ganha +15 de Estratégia |
 | Projetos | `project_system.gd` | Escolha de 1–3 serviços + equipe, execução diária com 4 indicadores, prazo, atraso, micro-eventos de humor |
 | Combinações | `service_system.gd`, `match_table` | Segmento × serviços = *Perfect match* (+35%), boa, neutra ou ruim (−25%) |
@@ -53,7 +54,9 @@ Depois: *Projeto → Exportar → Android → Exportar projeto*, ou
 | Serviços | `data/services.json` | 11 serviços em 3 tiers; desbloqueio por caixa + reputação |
 | Finanças | `finance_system.gd` | Caixa, salários, aluguel, ferramentas, histórico mensal, falência abaixo de −R$ 30.000 |
 | Reputação | `reputation_system.gd` | 0–100 com retornos decrescentes; faixas do GDD §27 e fases do §29 |
-| Eventos | `event_system.gd`, `data/events.json` | 20 eventos com escolhas e condições (reputação, equipe, estresse, projetos…) |
+| Eventos | `event_system.gd`, `data/events.json` | 20 eventos com escolhas, condições (reputação, equipe, estresse, projetos…) e cooldown por evento |
+| Jornada | `employee_system.gd`, `popups.gd` | Linha do tempo por colaborador: contratação, cursos, promoções, campanhas, eventos (Equipe → Jornada) |
+| Objetivos | `objective_system.gd`, `data/objectives.json` | 13 objetivos sequenciais que guiam o primeiro ano, com bônus em caixa (GDD §37) |
 | Escritório | `office_system.gd`, `src/office/` | 4 níveis com layout em tiles; funcionários andam entre mesa, café e sofá |
 | Save/Load | `save_system.gd` | JSON em `user://savegame.json`, autosave mensal, botão na aba Empresa |
 | UI | `src/ui/` | HUD, escritório, feed de humor, 5 abas (Equipe, Clientes, Projetos, Empresa, Desbloqueios), modais |
