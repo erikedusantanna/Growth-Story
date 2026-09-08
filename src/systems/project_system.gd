@@ -25,7 +25,7 @@ func quote(c: Client, kind: int) -> Dictionary:
 	else:
 		budget = c.budget * (1.2 + 0.3 * c.maturity)
 	budget = roundf(budget / 100.0) * 100.0
-	var deadline := RETAINER_CYCLE_DAYS if kind == Project.Kind.RETAINER else clampi(15 + int(budget / 1000.0), 20, 60)
+	var deadline := RETAINER_CYCLE_DAYS if kind == Project.Kind.RETAINER else clampi(18 + int(budget / 800.0), 24, 60)
 	var effort := 12.0 + budget / 350.0
 	return {"budget": budget, "deadline": deadline, "effort": effort}
 
@@ -256,57 +256,164 @@ func extra_work(fraction: float, project: Project = null) -> void:
 
 # --- Avaliação ------------------------------------------------------------------
 
-func evaluate(p: Project) -> Dictionary:
+## Bônus que o jogador controla diretamente (aparecem no detalhamento do resultado).
+const BONUS_ON_TIME := 5.0
+const BONUS_DIAGNOSIS := 8.0
+const BONUS_DIAGNOSIS_LUCKY := 3.0
+const BONUS_SPECIALIST := 4.0
+const BONUS_SPECIALIST_MAX := 8.0
+
+
+## Nota, estrelas e detalhamento. Com with_noise=false serve de previsão (sem sorteio).
+func _score(p: Project, c: Client, with_noise: bool, predicted_days: int = -1) -> Dictionary:
 	var st: GameState = game.state
-	var c: Client = st.client_by_id(p.client_id)
 	var pers: Dictionary = {}
 	if c != null:
 		pers = game.content.client_personalities.get(c.personality, {})
 	var pweights: Dictionary = pers.get("weights", {})
 	var base_weights := {"strategy": 0.3, "creativity": 0.25, "execution": 0.25, "performance": 0.2}
+	var breakdown: Array = []
 	var score := 0.0
 	var weight_sum := 0.0
 	var finals := {}
 	for key in Project.INDICATORS:
-		var final_value := clampf(p.targets[key] + p.boosts[key] + st.rng.randf_range(-4.0, 4.0), 0.0, 100.0)
+		var noise: float = st.rng.randf_range(-4.0, 4.0) if with_noise else 0.0
+		var final_value := clampf(p.targets[key] + p.boosts[key] + noise, 0.0, 100.0)
 		finals[key] = final_value
 		var w: float = base_weights[key] * float(pweights.get(key, 1.0))
 		score += final_value * w
 		weight_sum += w
 	score /= maxf(weight_sum, 0.001)
-	score *= game.services.match_multiplier(p.match_quality)
-	var difficulty := 1
-	if c != null:
-		difficulty = c.difficulty
-	score *= 1.0 - 0.06 * (difficulty - 1)
-	var late_days := maxi(0, p.days_elapsed - p.deadline_days)
-	score -= minf(20.0, late_days * 0.8)
-	if p.kind == Project.Kind.RETAINER:
+	breakdown.append({"label": "Base da equipe (indicadores)", "text": "%d" % int(roundf(score)), "good": true})
+
+	var mult: float = game.services.match_multiplier(p.match_quality)
+	if mult != 1.0:
+		var before := score
+		score *= mult
+		breakdown.append({"label": ServiceSystem.MATCH_NAMES.get(p.match_quality, "Combinação"),
+			"text": "%s%d" % ["+" if score >= before else "", int(roundf(score - before))], "good": score >= before})
+
+	if p.addresses_problem:
+		if c != null and c.diagnosed:
+			score += BONUS_DIAGNOSIS
+			breakdown.append({"label": "Diagnóstico aplicado na estratégia", "text": "+%d" % int(BONUS_DIAGNOSIS), "good": true})
+		else:
+			score += BONUS_DIAGNOSIS_LUCKY
+			breakdown.append({"label": "Acertou o problema sem diagnóstico", "text": "+%d" % int(BONUS_DIAGNOSIS_LUCKY), "good": true})
+
+	var specialist_bonus := 0.0
+	var specialist_names: Array = []
+	for sid in p.services:
+		for e in team_members(p):
+			if e.role == sid:
+				specialist_bonus += BONUS_SPECIALIST
+				specialist_names.append(game.content.service_name(sid))
+				break
+	specialist_bonus = minf(specialist_bonus, BONUS_SPECIALIST_MAX)
+	if specialist_bonus > 0.0:
+		score += specialist_bonus
+		breakdown.append({"label": "Especialista em %s" % ", ".join(specialist_names), "text": "+%d" % int(specialist_bonus), "good": true})
+
+	var difficulty := c.difficulty if c != null else 1
+	if difficulty > 1:
+		var before_d := score
+		score *= 1.0 - 0.06 * (difficulty - 1)
+		breakdown.append({"label": "Cliente difícil (tier %d)" % (c.tier if c != null else 1), "text": "%d" % int(roundf(score - before_d)), "good": false})
+
+	var days: int = predicted_days if predicted_days >= 0 else p.days_elapsed
+	var late_days := maxi(0, days - p.deadline_days)
+	if p.kind != Project.Kind.RETAINER:
+		if late_days > 0:
+			var penalty := minf(20.0, late_days * 0.8)
+			score -= penalty
+			breakdown.append({"label": "%d dias de atraso" % late_days, "text": "-%d" % int(roundf(penalty)), "good": false})
+		else:
+			score += BONUS_ON_TIME
+			breakdown.append({"label": "Entrega no prazo", "text": "+%d" % int(BONUS_ON_TIME), "good": true})
+	elif predicted_days < 0:
+		var before_r := score
 		score *= 0.6 + 0.4 * p.progress()
+		if p.progress() < 0.999:
+			breakdown.append({"label": "Mês com %d%% do trabalho feito" % int(p.progress() * 100), "text": "%d" % int(roundf(score - before_r)), "good": false})
 	score = clampf(score, 0.0, 100.0)
 
-	var thresholds := STAR_THRESHOLDS.duplicate()
 	var shift := 0.0
 	if c != null and c.expectation == "alta":
-		shift = 3.0
+		shift += 3.0
 	elif c != null and c.expectation == "baixa":
-		shift = -3.0
+		shift -= 3.0
 	if c != null:
-		# Quem paga mais caro espera mais; quem pagou barato é mais tolerante.
 		shift += (c.price_factor - 1.0) * 10.0
+	if absf(shift) >= 0.5:
+		breakdown.append({"label": "Expectativa do cliente" + (" (preço acima da referência)" if c != null and c.price_factor > 1.05 else ""),
+			"text": "%s%d pontos por estrela" % ["+" if shift > 0 else "", int(roundf(shift))], "good": shift < 0})
+
 	var stars := 1
-	for t in thresholds:
+	for t in STAR_THRESHOLDS:
 		if score >= float(t) + shift:
 			stars += 1
+	var next_gap := 0.0
+	if stars < 5:
+		next_gap = float(STAR_THRESHOLDS[stars - 1]) + shift - score
+	return {"score": score, "stars": stars, "finals": finals, "breakdown": breakdown, "shift": shift,
+		"late_days": late_days, "next_gap": next_gap}
+
+
+func evaluate(p: Project) -> Dictionary:
+	var st: GameState = game.state
+	var c: Client = st.client_by_id(p.client_id)
+	var r := _score(p, c, true)
+	var stars: int = r.stars
 	var payment: float = p.budget * PAYMENT_MULT[stars]
 	var tier := c.tier if c != null else 1
-	var rep_delta := (stars - 2.5) * (0.5 + tier * 0.5)
+	# 3 estrelas já rende reputação; 2 fica neutro; 1 custa.
+	var rep_delta := (stars - 2) * (0.4 + tier * 0.3)
 	if stars == 5 and p.match_quality == "perfect":
 		rep_delta += 2.0
-	var roi := snappedf((0.5 + score / 100.0 * 4.5) * game.services.match_multiplier(p.match_quality), 0.1)
-	return {"score": score, "stars": stars, "payment": payment, "rep_delta": rep_delta, "roi": roi,
-		"late_days": late_days, "indicators": finals, "match": p.match_quality,
+	var roi := snappedf((0.5 + r.score / 100.0 * 4.5) * game.services.match_multiplier(p.match_quality), 0.1)
+	return {"score": r.score, "stars": stars, "payment": payment, "rep_delta": rep_delta, "roi": roi,
+		"late_days": r.late_days, "indicators": r.finals, "match": p.match_quality,
+		"breakdown": r.breakdown, "next_gap": r.next_gap, "shift": r.shift,
 		"client_name": c.name if c != null else "", "project_title": p.title, "kind": p.kind}
+
+
+## Previsão antes de iniciar: nota, estrelas, detalhamento e dicas do que faria a nota subir.
+func predict(c: Client, services: Array, team_ids: Array, kind: int) -> Dictionary:
+	var q := quote(c, kind)
+	var tmp := Project.new()
+	tmp.client_id = c.id
+	tmp.kind = kind
+	tmp.services = services.duplicate()
+	tmp.team = team_ids.duplicate()
+	tmp.effort_total = float(q.effort)
+	tmp.deadline_days = int(q.deadline)
+	tmp.match_quality = game.services.match_quality(c.segment, services)
+	tmp.addresses_problem = game.services.addresses_problem(c.problem, services)
+	compute_targets(tmp)
+	var days := estimated_days(tmp) if not team_ids.is_empty() else 0
+	var r := _score(tmp, c, false, days)
+	var hints: Array = []
+	if not c.diagnosed:
+		hints.append("Diagnóstico do cliente: +%d na nota e +15 de Estratégia se a solução for certa." % int(BONUS_DIAGNOSIS))
+	if tmp.match_quality != "perfect":
+		var best: Array = game.content.match_table.get(c.segment, {}).get("best", []).map(func(sid): return game.content.service_name(sid))
+		hints.append("Combinação perfeita para %s: dois destes serviços (%s) rende ×1,35." % [game.clients.segment_name(c), ", ".join(best)])
+	var missing: Array = []
+	for sid in services:
+		var has := false
+		for id in team_ids:
+			var e: Employee = game.state.employee_by_id(id)
+			if e != null and e.role == sid:
+				has = true
+		if not has:
+			missing.append(game.content.service_name(sid))
+	if not missing.is_empty():
+		hints.append("Especialista em %s na equipe: +%d por serviço." % [", ".join(missing), int(BONUS_SPECIALIST)])
+	if days > int(q.deadline):
+		hints.append("Previsão de atraso (%d dias para %d de prazo): mais gente na equipe evita a penalidade." % [days, int(q.deadline)])
+	return {"score": r.score, "stars": r.stars, "breakdown": r.breakdown, "hints": hints, "days": days,
+		"deadline": int(q.deadline), "budget": q.budget, "match": tmp.match_quality,
+		"addresses_problem": tmp.addresses_problem, "targets": tmp.targets.duplicate(), "next_gap": r.next_gap}
 
 
 func complete(p: Project) -> void:

@@ -142,17 +142,32 @@ func _update_preview() -> void:
 		preview_box.add_child(UIKit.muted("Escolha serviços e equipe para ver a prévia."))
 		start_button.disabled = true
 		return
-	var pv := Game.projects.preview(client, services, team, kind)
+	var pv := Game.projects.predict(client, services, team, kind)
 	var card := UIKit.card()
 	var v := UIKit.card_content(card)
-	v.add_child(UIKit.label(ServiceSystem.MATCH_NAMES.get(pv.match, ""), 18, UIKit.match_color(pv.match)))
-	if pv.addresses_problem:
-		v.add_child(UIKit.label("Ataca o problema real do cliente" + ("" if client.diagnosed else " (bônus parcial sem diagnóstico)"), 14, UIKit.COLOR_GREEN, true))
+	var head := UIKit.hbox(10)
+	head.add_child(UIKit.star_row(int(pv.stars), 3))
+	var score_label := UIKit.number("nota prevista %d" % int(roundf(float(pv.score))), 15, UIKit.COLOR_NUMBER)
+	score_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(score_label)
+	v.add_child(head)
+	v.add_child(UIKit.label(ServiceSystem.MATCH_NAMES.get(pv.match, ""), 16, UIKit.match_color(pv.match)))
 	var deadline_color := UIKit.COLOR_GREEN if int(pv.days) <= int(pv.deadline) else UIKit.COLOR_RED
-	v.add_child(UIKit.label("Estimativa: %d dias (prazo %d)" % [int(pv.days), int(pv.deadline)], 15, deadline_color))
-	v.add_child(UIKit.label("Valor: %s%s" % [UIKit.money(float(pv.budget)), "/mês" if kind == Project.Kind.RETAINER else ""], 15, UIKit.COLOR_TEXT))
-	for key in Project.INDICATORS:
-		v.add_child(UIKit.stat_row(Project.INDICATOR_NAMES[key], float(pv.targets[key]), UIKit.indicator_color(key)))
+	v.add_child(UIKit.label("Estimativa: %d dias (prazo %d) · %s%s" % [int(pv.days), int(pv.deadline), UIKit.money(float(pv.budget)), "/mês" if kind == Project.Kind.RETAINER else ""], 14, deadline_color))
+	for item in pv.breakdown:
+		var h := UIKit.hbox()
+		var l := UIKit.label(String(item.label), 13, UIKit.COLOR_MUTED, true)
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		h.add_child(l)
+		var val := UIKit.number(String(item.text), 13, UIKit.COLOR_GREEN if item.good else UIKit.COLOR_RED)
+		val.custom_minimum_size.x = 110
+		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		h.add_child(val)
+		v.add_child(h)
+	if not pv.hints.is_empty():
+		v.add_child(UIKit.label("Para subir a nota:", 14, UIKit.COLOR_BLUE))
+		for hint in pv.hints:
+			v.add_child(UIKit.label("• " + String(hint), 13, UIKit.COLOR_TEXT, true))
 	preview_box.add_child(card)
 	start_button.disabled = false
 

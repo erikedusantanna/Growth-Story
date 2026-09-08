@@ -48,10 +48,15 @@ func _ready() -> void:
 	main.show_screen("team")
 	await _frames(2)
 	await _shot("04_team")
-	Game.employees.train(st.employees[2], "criativo")
-	for i in 8:
+	Game.employees.train(st.employees[2], "performance")
+	Game.on_day()
+	await _settle()
+	await get_tree().create_timer(4.5).timeout   # personagem caminha até a porta e sai
+	await _shot("04a_training")
+	for i in 12:
 		Game.on_day()
 	await _settle()
+	await get_tree().create_timer(1.0).timeout
 	main.popups.show_journey(st.employees[2])
 	await _frames(2)
 	await _shot("04b_journey")
