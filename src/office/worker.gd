@@ -69,7 +69,7 @@ func sync(e: Employee, day: int) -> void:
 	on_project = e.project_id != -1
 	resting = e.busy_until >= day and e.busy_reason == "Burnout"
 	var was_training := training
-	training = e.busy_until >= day and e.busy_reason == "Em treinamento"
+	training = e.busy_until >= day and (e.busy_reason == "Em treinamento" or e.busy_reason == "Em evento")
 	apply_look(e)
 	if static_pose:
 		return

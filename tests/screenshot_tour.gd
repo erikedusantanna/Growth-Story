@@ -71,6 +71,26 @@ func _ready() -> void:
 	main.show_screen("unlocks")
 	await _frames(2)
 	await _shot("07_unlocks")
+	st.office_level = 3
+	st.reputation = 45.0
+	st.money = 90000.0
+	Game.office.buy(Game.office.furniture_by_id("plantas"))
+	Game.office.buy(Game.office.furniture_by_id("pingpong"))
+	EventBus.state_changed.emit()
+	await _frames(3)
+	main.show_screen("unlocks")
+	await _frames(2)
+	await _shot("07b_agencia_rh")
+	main.show_screen("company")
+	await _frames(2)
+	main.screens["company"].scroll_vertical = 700
+	await _frames(2)
+	await _shot("07c_mobilia")
+	main.popups.show_people_picker(Game.agency_events.event_by_id("workshop"))
+	await _frames(2)
+	await _shot("07d_evento_pessoas")
+	main.popups.close()
+	await _settle()
 	main.popups.show_new_project(_second_client())
 	await _frames(2)
 	await _shot("08_new_project")

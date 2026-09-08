@@ -17,6 +17,7 @@ const FURNITURE := {
 	"window": "res://assets/art/furniture/window.png",
 	"whiteboard": "res://assets/art/furniture/whiteboard.png",
 	"door": "res://assets/art/furniture/door.png",
+	"pingpong": "res://assets/art/furniture/pingpong.png",
 }
 ## Deslocamento vertical dos objetos de parede (a partir do topo da parede).
 const WALL_PROP_Y := {"window": 6, "whiteboard": 6, "shelf": 2, "door": 2}
@@ -69,10 +70,14 @@ func _place_training_room() -> void:
 	training_room.position = Vector2(size.x - training_room.size.x - 10, 10)
 
 
+var built_furniture := 0
+
+
 func refresh() -> void:
 	if not Game.has_game():
 		return
-	if Game.state.office_level != built_level:
+	if Game.state.office_level != built_level or Game.state.furniture.size() != built_furniture:
+		built_furniture = Game.state.furniture.size()
 		_build(Game.office.current())
 	_sync_workers()
 	_sync_training()
@@ -115,8 +120,23 @@ func _build(data: Dictionary) -> void:
 		_add_furniture(p.type, Vector2(float(p.pos[0]) * TILE, (float(p.pos[1]) + 1.0) * TILE))
 	for sp in data.get("spots", []):
 		spot_positions.append(Vector2((float(sp[0]) + 0.5) * TILE, (float(sp[1]) + 1.0) * TILE))
+	_build_decor(data)
 	_layout_world()
 	world.queue_redraw()
+
+
+## Mobília comprada com sprite ocupa os slots de decoração do escritório.
+func _build_decor(data: Dictionary) -> void:
+	var slots: Array = data.get("decor_slots", [])
+	var index := 0
+	for id in Game.state.furniture:
+		var f: Dictionary = Game.office.furniture_by_id(id)
+		var sprite: String = String(f.get("sprite", ""))
+		if sprite == "" or index >= slots.size():
+			continue
+		var slot: Array = slots[index]
+		_add_furniture(sprite, Vector2(float(slot[0]) * TILE, (float(slot[1]) + 1.0) * TILE))
+		index += 1
 
 
 func _add_furniture(type: String, bottom_left: Vector2) -> void:
@@ -165,7 +185,7 @@ func _sync_workers() -> void:
 			worker.door_pos = door_pos
 			scene_layer.add_child(worker)
 			workers[e.id] = worker
-			if e.busy_until >= st.day and e.busy_reason == "Em treinamento":
+			if e.busy_until >= st.day and (e.busy_reason == "Em treinamento" or e.busy_reason == "Em evento"):
 				worker.training = true
 				worker.state = Worker.State.AWAY
 				worker.visible = false

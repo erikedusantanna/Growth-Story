@@ -476,7 +476,7 @@ func _apply_result(p: Project, result: Dictionary) -> void:
 			var weights: Dictionary = game.content.services.get(s, {}).get("weights", {})
 			for key in weights:
 				e.attrs[key] = clampf(e.attr(key) + float(weights[key]) * growth * st.rng.randf_range(0.5, 1.5), 1.0, 100.0)
-		e.motivation = clampf(e.motivation + (6.0 if stars >= 4 else (-8.0 if stars <= 2 else 1.0)), 0.0, 100.0)
+		game.employees.change_morale(e, 6.0 if stars >= 4 else (-8.0 if stars <= 2 else 1.0))
 		e.stress = clampf(e.stress - 8.0, 0.0, 100.0)
 	if c != null:
 		game.clients.on_project_result(c, result)

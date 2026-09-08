@@ -78,6 +78,21 @@ de reputação. Um jogador real tende a crescer mais devagar que o bot; a faixa 
 
 Última medição: ano 1 = 4 pessoas, R$ 97 mil, rep 24 · ano 3 = 4 pessoas, R$ 289 mil, rep 45.
 
+## Moral, RH, mobília e eventos da agência
+
+- **Moral** é o campo `motivation` do funcionário (0 até o teto). Teto base 85 (`data/furniture.json → base_morale_max`),
+  elevado por mobília. Toda alteração passa por `EmployeeSystem.change_morale`, que respeita o teto. Produtividade
+  = personalidade × (0,7 + moral × 0,6) × (1 − estresse/220) × buffs do RH × mobília.
+- **RH** (`HRSystem`): abre com `hr_actions.json → unlock` (escritório 3 e reputação 30). Cada ação tem custo fixo
+  + custo por pessoa, `cooldown_days`, e efeitos: `morale`, `stress`, `loyalty`, `delay_days` (atrasa projetos) e
+  `buff` temporário (`productivity`, `stress_rate`, `days`) guardado em `state.buffs`.
+- **Mobília** (`OfficeSystem`): `state.furniture` guarda os ids. `furniture_effects()` agrega `morale_max`,
+  `morale_daily`, `stress_rate` e `productivity`; `attr_bonus` é aplicado a todos na compra e a cada contratação.
+  Itens com `sprite` ocupam os `decor_slots` do escritório.
+- **Eventos da agência** (`AgencyEventSystem`): abrem com reputação 40. Custam `cost` e `people` por `days`
+  (as pessoas ficam com `busy_reason = "Em evento"` e saem pela porta). Ao terminar, aplicam `effects`:
+  `reputation`, `prospects` (+`prospect_tier_bonus`), `candidates`, `money` (patrocínio), `morale`, `delay_days`.
+
 ## Combinações (`data/services.json → match_table`)
 
 Por segmento há uma lista `best` e uma `poor`. Qualquer serviço em `poor` → *ruim*;

@@ -70,8 +70,12 @@ Depois: *Projeto → Exportar → Android → Exportar projeto*, ou
 | Jornada | `employee_system.gd`, `popups.gd` | Linha do tempo por colaborador: contratação, cursos, promoções, campanhas, eventos (Equipe → Jornada) |
 | Objetivos | `objective_system.gd`, `data/objectives.json` | 13 objetivos sequenciais que guiam o primeiro ano, com bônus em caixa (GDD §37) |
 | Escritório | `office_system.gd`, `src/office/` | 4 níveis (4 / 7 / 12 / 18 lugares) com layout em tiles; ampliação pela aba Equipe ou Empresa; funcionários andam entre mesa, café e sofá |
+| Moral | `employee_system.gd`, `office_system.gd` | Barra por pessoa (campo `motivation`) com teto dado pela mobília; sobe com resultados, RH e eventos; cai com estresse, pedidos do cliente e sprints |
+| RH | `hr_system.gd`, `data/hr_actions.json` | Abre com escritório profissional + reputação 30: pizza, happy hour, feriado prolongado, energético com paçoca (buff de produtividade), festa, bem-estar, retiro; custo, cooldown e efeitos colaterais |
+| Mobília | `office_system.gd`, `data/furniture.json` | Comprada na aba Empresa: teto de moral, moral diária, estresse, produtividade e bônus permanentes de atributo (valem para quem entra depois); algumas aparecem no escritório |
+| Eventos da agência | `agency_event_system.gd`, `data/agency_events.json` | Abrem com reputação 40: custam dinheiro e/ou pessoas por alguns dias e rendem reputação, prospects, candidatos, moral ou patrocínio |
 | Save/Load | `save_system.gd` | JSON em `user://savegame.json`, autosave mensal, botão na aba Empresa |
-| UI | `src/ui/` | HUD, escritório, feed de humor, 5 abas (Equipe, Clientes, Projetos, Empresa, Desbloqueios), modais |
+| UI | `src/ui/` | HUD, escritório, feed de humor, 5 abas (Equipe, Clientes, Projetos, Empresa, Agência), modais |
 
 Detalhes de fórmulas e fluxo em `docs/ARQUITETURA.md`.
 

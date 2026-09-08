@@ -261,6 +261,43 @@ func show_proposal(c: Client) -> void:
 		return parts.panel)
 
 
+## Escolha de quem vai representar a agência em um evento.
+func show_people_picker(ev: Dictionary) -> void:
+	_open(func():
+		var needed := int(ev.get("people", 0))
+		var parts := _panel("%s: quem vai?" % ev["name"])
+		var b: VBoxContainer = parts.body
+		b.add_child(UIKit.muted("Escolha %d pessoa%s. Elas ficam fora %d dias." % [needed, "" if needed == 1 else "s", int(ev.get("days", 0))]))
+		var chosen: Array = []
+		var confirm := UIKit.button("Promover (%s)" % UIKit.money(float(ev.get("cost", 0))), Callable(), true)
+		confirm.disabled = true
+		for emp in Game.state.available_employees():
+			var e: Employee = emp
+			var row := UIKit.hbox(10)
+			row.add_child(UIKit.portrait(e, 2))
+			var t := UIKit.toggle("%s · %s" % [e.name, Game.employees.title(e)], false, Callable())
+			t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			t.toggled.connect(func(on: bool):
+				if on:
+					if chosen.size() >= needed:
+						t.set_pressed_no_signal(false)
+						return
+					chosen.append(e.id)
+				else:
+					chosen.erase(e.id)
+				confirm.disabled = chosen.size() < needed)
+			row.add_child(t)
+			b.add_child(row)
+		confirm.pressed.connect(func():
+			var r := Game.agency_events.run(ev, chosen)
+			close()
+			if not r.ok:
+				show_info("Evento", r.reason))
+		parts.buttons.add_child(confirm)
+		parts.buttons.add_child(UIKit.button("Cancelar", close))
+		return parts.panel)
+
+
 ## Linha do tempo do colaborador: contratação, cursos, promoções, campanhas, eventos.
 func show_journey(e: Employee) -> void:
 	_open(func():

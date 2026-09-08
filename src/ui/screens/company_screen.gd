@@ -54,6 +54,15 @@ func build() -> void:
 			ov.add_child(UIKit.label(check.reason, 13, UIKit.COLOR_RED))
 	content.add_child(oc)
 
+	var fc := UIKit.card()
+	var fcv := UIKit.card_content(fc)
+	var fx := Game.office.furniture_effects()
+	fcv.add_child(UIKit.label("Mobília", 19, UIKit.COLOR_ACCENT))
+	fcv.add_child(UIKit.muted("Teto de moral %d · estresse ×%.2f · produtividade ×%.2f · moral diária +%.2f" % [int(fx["morale_max"]), float(fx["stress_rate"]), float(fx["productivity"]), float(fx["morale_daily"])], 13))
+	for f in Game.office.furniture_items():
+		fcv.add_child(_furniture_row(f))
+	content.add_child(fc)
+
 	var stats := UIKit.card()
 	var sv := UIKit.card_content(stats)
 	sv.add_child(UIKit.label("Números", 19, UIKit.COLOR_ACCENT))
@@ -71,6 +80,35 @@ func build() -> void:
 			popups().show_info("Salvo", "Partida salva. O jogo também salva sozinho todo mês.")))
 	actions.add_child(UIKit.button("Menu", func(): get_tree().call_group("main", "show_title")))
 	content.add_child(actions)
+
+
+func _furniture_row(f: Dictionary) -> VBoxContainer:
+	var v := UIKit.vbox(2)
+	var top := UIKit.hbox()
+	var owned := Game.office.owns(f["id"])
+	var name := UIKit.label(String(f["name"]), 16, UIKit.COLOR_TEXT if not owned else UIKit.COLOR_GREEN)
+	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(name)
+	if owned:
+		top.add_child(UIKit.label("comprado", 13, UIKit.COLOR_GREEN))
+	else:
+		var check := Game.office.can_buy(f)
+		var b := UIKit.button(UIKit.money(float(f.get("cost", 0))), func():
+			var r := Game.office.buy(f)
+			if not r.ok:
+				popups().show_info("Mobília", r.reason), false, 36)
+		b.size_flags_horizontal = 0
+		b.custom_minimum_size.x = 110
+		b.disabled = not check.ok
+		b.tooltip_text = check.reason
+		top.add_child(b)
+	v.add_child(top)
+	v.add_child(UIKit.muted(String(f.get("desc", "")), 13))
+	if not owned:
+		var check2 := Game.office.can_buy(f)
+		if not check2.ok and check2.reason != "Caixa insuficiente.":
+			v.add_child(UIKit.label(check2.reason, 12, UIKit.COLOR_RED))
+	return v
 
 
 func _row(left: String, right: String, color: Color = UIKit.COLOR_TEXT) -> HBoxContainer:

@@ -121,7 +121,25 @@ func personality_name(e: Employee) -> String:
 func productivity(e: Employee) -> float:
 	var pers: Dictionary = game.content.personalities.get(e.personality, {})
 	var base := float(pers.get("productivity", 1.0))
-	return base * (0.7 + e.motivation / 100.0 * 0.6) * (1.0 - e.stress / 220.0)
+	var buffs: Dictionary = game.hr.buff_multipliers()
+	var furniture: Dictionary = game.office.furniture_effects()
+	return base * (0.7 + e.motivation / 100.0 * 0.6) * (1.0 - e.stress / 220.0) \
+		* float(buffs["productivity"]) * float(furniture["productivity"])
+
+
+## Moral (campo `motivation`) com teto dado pela mobília do escritório.
+func change_morale(e: Employee, delta: float) -> void:
+	e.motivation = clampf(e.motivation + delta, 0.0, game.office.morale_max())
+
+
+func morale_average() -> float:
+	var st: GameState = game.state
+	if st.employees.is_empty():
+		return 0.0
+	var total := 0.0
+	for e in st.employees:
+		total += e.motivation
+	return total / st.employees.size()
 
 
 # --- Candidatos ----------------------------------------------------------------
@@ -163,6 +181,7 @@ func hire(candidate: Employee) -> Dictionary:
 	candidate.candidate_expires = 0
 	st.employees.append(candidate)
 	st.stats["hires"] = int(st.stats["hires"]) + 1
+	game.office.apply_all_furniture_bonuses(candidate)
 	add_journey(candidate, "Entrou na agência como %s" % title(candidate))
 	EventBus.office_feedback.emit(candidate.id, "Oi!", "bubble")
 	game.add_log(_pick(game.content.feed.get("hired", [])).replace("{emp}", candidate.name), "hire")
@@ -319,14 +338,17 @@ func quit(e: Employee, reason: String) -> void:
 
 func on_day() -> void:
 	var st: GameState = game.state
+	var stress_mult: float = float(game.hr.buff_multipliers()["stress_rate"]) * float(game.office.furniture_effects()["stress_rate"])
+	var morale_daily: float = float(game.office.furniture_effects()["morale_daily"])
+	var cap: float = game.office.morale_max()
 	for e in st.employees:
 		var pers: Dictionary = game.content.personalities.get(e.personality, {})
 		if e.project_id != -1:
-			e.stress = clampf(e.stress + 0.7 * float(pers.get("stress_rate", 1.0)), 0.0, 100.0)
+			e.stress = clampf(e.stress + 0.7 * float(pers.get("stress_rate", 1.0)) * stress_mult, 0.0, 100.0)
 		else:
 			e.stress = clampf(e.stress - 1.5, 0.0, 100.0)
-		# motivação tende lentamente para 65
-		e.motivation = clampf(e.motivation + (65.0 - e.motivation) * 0.01, 0.0, 100.0)
+		# moral tende lentamente para 65, ganha o extra da mobília e respeita o teto
+		e.motivation = clampf(e.motivation + (65.0 - e.motivation) * 0.01 + morale_daily, 0.0, cap)
 		if e.training_id != "" and e.busy_until < st.day:
 			_finish_training(e)
 		elif e.busy_reason != "" and e.training_id == "" and e.busy_until < st.day:
