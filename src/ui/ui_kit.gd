@@ -221,6 +221,7 @@ static func toggle(text: String, pressed: bool, callback: Callable) -> Button:
 	b.custom_minimum_size.y = 44
 	b.size_flags_horizontal = 0
 	b.clip_text = false   # toggles têm largura pelo texto
+	b.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	if callback.is_valid():
 		b.toggled.connect(callback)
 	var on := _rounded(COLOR_BLUE.lightened(0.7), COLOR_BLUE, 8, 2)
