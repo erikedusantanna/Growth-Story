@@ -83,12 +83,19 @@ de reputação. Um jogador real tende a crescer mais devagar que o bot; a faixa 
 - **Moral** é o campo `motivation` do funcionário (0 até o teto). Teto base 85 (`data/furniture.json → base_morale_max`),
   elevado por mobília. Toda alteração passa por `EmployeeSystem.change_morale`, que respeita o teto. Produtividade
   = personalidade × (0,7 + moral × 0,6) × (1 − estresse/220) × buffs do RH × mobília.
-- **RH** (`HRSystem`): abre com `hr_actions.json → unlock` (escritório 3 e reputação 30). Cada ação tem custo fixo
+- **RH** (`HRSystem`): fechado até contratar a analista (`hr_actions.json → hire`: custo único, `salary` mensal
+  somado em `FinanceSystem.monthly_costs().hr`, exige escritório 3 e reputação 30). `state.hr_hired` liga o anexo
+  do escritório (`offices.json → hr_room`: divisória, placa, mesa e analista fixa). Cada ação tem custo fixo
   + custo por pessoa, `cooldown_days`, e efeitos: `morale`, `stress`, `loyalty`, `delay_days` (atrasa projetos) e
-  `buff` temporário (`productivity`, `stress_rate`, `days`) guardado em `state.buffs`.
+  `buff` temporário (`productivity`, `stress_rate`, `days`) guardado em `state.buffs`. Ações com `pet` são únicas:
+  adicionam o bicho a `state.pets` (o gato exige `requires_pet: dog`) e somam `morale_daily` permanente.
 - **Mobília** (`OfficeSystem`): `state.furniture` guarda os ids. `furniture_effects()` agrega `morale_max`,
-  `morale_daily`, `stress_rate` e `productivity`; `attr_bonus` é aplicado a todos na compra e a cada contratação.
-  Itens com `sprite` ocupam os `decor_slots` do escritório.
+  `morale_daily` (incluindo pets), `stress_rate` e `productivity`; `attr_bonus` é aplicado a todos na compra e a cada
+  contratação. No escritório: `sprite` ocupa os `decor_slots`, `wall_sprite` ocupa os `wall_slots` da parede e
+  `visual` troca o sprite de um tipo (`chair → chair_ergo`, `desk → desk_wide`, `coffee → coffee_premium`).
+- **Escritório interativo** (`OfficeView`): câmera com zoom entre "cabe inteiro" e 4×; arrastar com um dedo, pinça
+  com dois (eventos de toque; roda do mouse no desktop); toque curto no avatar emite `worker_tapped`. Cada `Worker`
+  desenha a barra de moral sobre a cabeça; `Pet` passeia pelo piso do escritório principal.
 - **Eventos da agência** (`AgencyEventSystem`): abrem com reputação 40. Custam `cost` e `people` por `days`
   (as pessoas ficam com `busy_reason = "Em evento"` e saem pela porta). Ao terminar, aplicam `effects`:
   `reputation`, `prospects` (+`prospect_tier_bonus`), `candidates`, `money` (patrocínio), `morale`, `delay_days`.

@@ -97,6 +97,8 @@ func _run_simulation(game, seed: int, years: int) -> void:
 				if game.office.can_buy(f).ok:
 					game.office.buy(f)
 					break
+		if not game.hr.is_unlocked() and st.money > game.hr.hire_cost() + 30000 and game.hr.can_hire().ok:
+			game.hr.hire()
 		if game.hr.is_unlocked() and st.day % 25 == 0:
 			for a in game.hr.actions():
 				if game.hr.can_use(a).ok and st.money > game.hr.total_cost(a) + 10000:
@@ -222,7 +224,14 @@ func _test_hr_furniture_events(game) -> void:
 		var c = game.employees.generate_candidate("normal")
 		st.candidates.append(c)
 		game.employees.hire(c)
-	check(game.hr.is_unlocked(), "RH abre com escritório 3 e rep 30+")
+	check(not game.hr.is_unlocked(), "RH continua fechado até contratar a analista")
+	check(game.hr.can_hire().ok, "com escritório 3, rep 30+ e caixa dá para contratar")
+	var money_before: float = st.money
+	check(game.hr.hire().ok, "contratou o RH")
+	check(is_equal_approx(st.money, money_before - game.hr.hire_cost()), "pagou a montagem da sala")
+	check(game.hr.is_unlocked(), "RH aberto após contratar")
+	check(not game.hr.can_hire().ok, "não contrata duas vezes")
+	check(float(game.finance.monthly_costs().hr) > 0.0, "salário do RH entra no custo fixo mensal")
 	var pizza = game.hr.action_by_id("pizza")
 	st.employees[1].motivation = 50.0
 	var before: float = st.employees[1].motivation
@@ -238,6 +247,15 @@ func _test_hr_furniture_events(game) -> void:
 		if not st.pending_event.is_empty():
 			game.resolve_event(0)
 	check(st.buffs.is_empty(), "buff expira após 10 dias")
+	var dog = game.hr.action_by_id("pet_dog")
+	var cat = game.hr.action_by_id("pet_cat")
+	check(not game.hr.can_use(cat).ok, "gato exige o cachorro antes")
+	var daily_before: float = float(game.office.furniture_effects().morale_daily)
+	check(game.hr.use(dog).ok, "adotou o cachorro")
+	check(game.hr.has_pet("dog") and not game.hr.can_use(dog).ok, "cachorro é permanente e só uma vez")
+	check(game.hr.use(cat).ok, "adotou o gato")
+	check(st.pets.size() == 2, "dois pets no escritório")
+	check(float(game.office.furniture_effects().morale_daily) > daily_before, "pets dão moral diária")
 	var cadeiras = game.office.furniture_by_id("cadeiras")
 	var cap_before: float = game.office.morale_max()
 	check(game.office.buy(cadeiras).ok, "comprou cadeiras ergonômicas")
@@ -269,6 +287,7 @@ func _test_hr_furniture_events(game) -> void:
 	var saved: Dictionary = st.to_dict()
 	var loaded = GameState.from_dict(saved)
 	check(loaded.furniture.size() == 2 and loaded.hr_last_used.has("pizza"), "mobília e RH sobrevivem ao save")
+	check(loaded.hr_hired and loaded.pets.size() == 2, "contratação do RH e pets sobrevivem ao save")
 
 
 func _test_scoring(game) -> void:

@@ -27,6 +27,7 @@ var training := false
 var door_pos := Vector2.ZERO
 var static_pose := false   # sala de treinamento: fica parado na pose escolhida
 var sitting := false
+var morale := -1.0         # barra de moral sobre a cabeça (-1 = não mostra)
 
 
 func _ready() -> void:
@@ -71,6 +72,9 @@ func sync(e: Employee, day: int) -> void:
 	var was_training := training
 	training = e.busy_until >= day and (e.busy_reason == "Em treinamento" or e.busy_reason == "Em evento")
 	apply_look(e)
+	if not static_pose:
+		morale = e.motivation
+		queue_redraw()
 	if static_pose:
 		return
 	if training and not was_training and state != State.AWAY and state != State.LEAVING:
@@ -160,6 +164,21 @@ func _pick_next() -> void:
 	state = State.WALKING
 
 
-## Sai da mesa por um instante (usado ao receber feedback) sem trocar o estado.
 func head_position() -> Vector2:
 	return position + Vector2(0, -34)
+
+
+## Barra de moral (verde, amarela ou vermelha) flutuando sobre a cabeça.
+func _draw() -> void:
+	if static_pose or morale < 0.0:
+		return
+	var width := 16.0
+	var origin := Vector2(-8, -39)
+	var color := UIKit.COLOR_GREEN
+	if morale < 35.0:
+		color = UIKit.COLOR_RED
+	elif morale < 60.0:
+		color = UIKit.COLOR_GOLD
+	draw_rect(Rect2(origin - Vector2(1, 1), Vector2(width + 2, 5)), Color(0.16, 0.14, 0.2, 0.9))
+	draw_rect(Rect2(origin, Vector2(width, 3)), Color(1, 1, 1, 0.45))
+	draw_rect(Rect2(origin, Vector2(width * clampf(morale / 100.0, 0.0, 1.0), 3)), color)

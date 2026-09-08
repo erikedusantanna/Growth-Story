@@ -33,7 +33,8 @@ func monthly_costs() -> Dictionary:
 		salaries += e.salary
 	var rent: float = game.office.rent()
 	var tools := TOOLS_PER_EMPLOYEE * st.employees.size()
-	return {"salaries": salaries, "rent": rent, "tools": tools, "total": salaries + rent + tools}
+	var hr: float = game.hr.salary()
+	return {"salaries": salaries, "rent": rent, "tools": tools, "hr": hr, "total": salaries + rent + tools + hr}
 
 
 func on_month() -> void:
@@ -41,8 +42,9 @@ func on_month() -> void:
 	var costs := monthly_costs()
 	st.money -= costs.total
 	st.month_expenses += costs.total
-	game.add_log("Fechamento do mês: salários %s, aluguel %s, ferramentas %s." % [
-		format_money(costs.salaries), format_money(costs.rent), format_money(costs.tools)], "money")
+	game.add_log("Fechamento do mês: salários %s, aluguel %s, ferramentas %s%s." % [
+		format_money(costs.salaries), format_money(costs.rent), format_money(costs.tools),
+		(", RH %s" % format_money(costs.hr)) if costs.hr > 0.0 else ""], "money")
 	st.finance_history.append({
 		"month_index": st.month_index() - 1, "revenue": st.month_revenue,
 		"expenses": st.month_expenses, "cash": st.money,

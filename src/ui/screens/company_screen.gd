@@ -16,7 +16,8 @@ func build() -> void:
 	fv.add_child(_row("Despesas no mês", UIKit.money(st.month_expenses)))
 	var costs := Game.finance.monthly_costs()
 	fv.add_child(_row("Custo fixo mensal", UIKit.money(costs.total), UIKit.COLOR_RED))
-	fv.add_child(UIKit.muted("Salários %s · Aluguel %s · Ferramentas %s" % [UIKit.money(costs.salaries), UIKit.money(costs.rent), UIKit.money(costs.tools)], 13))
+	fv.add_child(UIKit.muted("Salários %s · Aluguel %s · Ferramentas %s%s" % [UIKit.money(costs.salaries), UIKit.money(costs.rent), UIKit.money(costs.tools),
+		(" · RH %s" % UIKit.money(costs.hr)) if costs.hr > 0.0 else ""], 13))
 	if not st.finance_history.is_empty():
 		fv.add_child(UIKit.spacer(2))
 		fv.add_child(UIKit.muted("Últimos meses (receita / despesa)", 13))

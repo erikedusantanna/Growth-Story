@@ -1,7 +1,8 @@
 class_name HRSystem
 extends RefCounted
-## Departamento de RH: ações que mexem na moral, no estresse e no ritmo dos projetos.
-## Libera com escritório profissional + reputação 30 (data/hr_actions.json).
+## Departamento de RH: uma analista contratada em tempo integral (custo único + salário mensal)
+## que ganha uma sala no escritório e libera ações de moral, estresse, ritmo e pets
+## (data/hr_actions.json).
 
 var game
 
@@ -10,15 +11,54 @@ func setup(g) -> void:
 	game = g
 
 
-func unlock_requirements() -> Dictionary:
-	return game.content.hr.get("unlock", {"office_level": 3, "reputation": 30})
+# --- Contratação ------------------------------------------------------------------
+
+func hire_data() -> Dictionary:
+	return game.content.hr.get("hire", {"name": "Analista de RH", "cost": 12000, "salary": 3000, "requires_office": 3, "requires_rep": 30})
 
 
 func is_unlocked() -> bool:
-	var req := unlock_requirements()
-	var st: GameState = game.state
-	return st.office_level >= int(req.get("office_level", 3)) and st.reputation >= float(req.get("reputation", 30))
+	return game.state.hr_hired
 
+
+func hire_cost() -> float:
+	return float(hire_data().get("cost", 0))
+
+
+## Salário mensal da analista (zero enquanto não contratada).
+func salary() -> float:
+	return float(hire_data().get("salary", 0)) if game.state.hr_hired else 0.0
+
+
+func can_hire() -> Dictionary:
+	var st: GameState = game.state
+	var h := hire_data()
+	if st.hr_hired:
+		return {"ok": false, "reason": "O RH já está contratado."}
+	if st.office_level < int(h.get("requires_office", 3)):
+		var office_name: String = game.office.level_data(int(h.get("requires_office", 3))).get("name", "")
+		return {"ok": false, "reason": "Precisa do %s para ter uma sala de RH." % office_name}
+	if st.reputation < float(h.get("requires_rep", 0)):
+		return {"ok": false, "reason": "Precisa de %d de reputação." % int(h["requires_rep"])}
+	if st.money < hire_cost():
+		return {"ok": false, "reason": "Caixa insuficiente (%s)." % FinanceSystem.format_money(hire_cost())}
+	return {"ok": true, "reason": ""}
+
+
+func hire() -> Dictionary:
+	var check := can_hire()
+	if not check.ok:
+		return check
+	var st: GameState = game.state
+	var h := hire_data()
+	game.finance.add_money(-hire_cost(), "Contratação do RH", "expense")
+	st.hr_hired = true
+	game.add_log("%s contratada. A sala de RH foi montada no escritório (%s/mês)." % [String(h.get("name", "Analista de RH")), FinanceSystem.format_money(float(h.get("salary", 0)))], "unlock")
+	EventBus.state_changed.emit()
+	return {"ok": true, "reason": ""}
+
+
+# --- Ações ------------------------------------------------------------------------
 
 func actions() -> Array:
 	return game.content.hr.get("actions", [])
@@ -40,10 +80,26 @@ func cooldown_left(a: Dictionary) -> int:
 	return maxi(0, int(a.get("cooldown_days", 0)) - (game.state.day - last))
 
 
+func has_pet(id: String) -> bool:
+	return id in game.state.pets
+
+
+## Ação já realizada e que só acontece uma vez (pets).
+func is_done(a: Dictionary) -> bool:
+	if a.has("pet"):
+		return has_pet(String(a["pet"]))
+	return bool(a.get("once", false)) and game.state.hr_last_used.has(a["id"])
+
+
 func can_use(a: Dictionary) -> Dictionary:
 	var st: GameState = game.state
 	if not is_unlocked():
-		return {"ok": false, "reason": "RH ainda não aberto."}
+		return {"ok": false, "reason": "Contrate o RH primeiro."}
+	if is_done(a):
+		return {"ok": false, "reason": "Já faz parte do escritório."}
+	if a.has("requires_pet") and not has_pet(String(a["requires_pet"])):
+		var prev := action_by_id("pet_%s" % String(a["requires_pet"]))
+		return {"ok": false, "reason": "Primeiro: %s." % String(prev.get("name", a["requires_pet"]))}
 	if st.reputation < float(a.get("requires_rep", 0)):
 		return {"ok": false, "reason": "Precisa de %d de reputação." % int(a["requires_rep"])}
 	if st.office_level < int(a.get("requires_office", 1)):
@@ -82,11 +138,27 @@ func use(a: Dictionary) -> Dictionary:
 		var b: Dictionary = a["buff"]
 		st.buffs.append({"id": a["id"], "name": a["name"], "until_day": st.day + int(b.get("days", 10)),
 			"productivity": float(b.get("productivity", 1.0)), "stress_rate": float(b.get("stress_rate", 1.0))})
+	if a.has("pet"):
+		st.pets.append(String(a["pet"]))
 	st.hr_last_used[a["id"]] = st.day
 	st.stats["hr_actions"] = int(st.stats.get("hr_actions", 0)) + 1
-	game.add_log("RH: %s.%s" % [a["name"], (" Projetos atrasam %d dias." % delay) if delay > 0 else ""], "promo")
+	var extra := ""
+	if delay > 0:
+		extra = " Projetos atrasam %d dias." % delay
+	elif a.has("pet"):
+		extra = " O escritório ganhou um novo morador."
+	game.add_log("RH: %s.%s" % [a["name"], extra], "promo")
 	EventBus.state_changed.emit()
 	return {"ok": true, "reason": ""}
+
+
+## Moral diária extra dada pelos pets adotados.
+func pets_morale_daily() -> float:
+	var total := 0.0
+	for a in actions():
+		if a.has("pet") and has_pet(String(a["pet"])):
+			total += float(a.get("morale_daily", 0))
+	return total
 
 
 ## Multiplicadores ativos dos buffs (produtividade, taxa de estresse).

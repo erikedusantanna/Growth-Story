@@ -73,22 +73,43 @@ func _ready() -> void:
 	await _shot("07_unlocks")
 	st.office_level = 3
 	st.reputation = 45.0
-	st.money = 90000.0
+	st.money = 120000.0
 	Game.office.buy(Game.office.furniture_by_id("plantas"))
 	Game.office.buy(Game.office.furniture_by_id("pingpong"))
 	EventBus.state_changed.emit()
 	await _frames(3)
-	main.show_screen("unlocks")
+	main.show_screen("hr")
 	await _frames(2)
-	await _shot("07b_agencia_rh")
+	await _shot("07b_rh_contratar")
+	Game.hr.hire()
+	Game.hr.use(Game.hr.action_by_id("pet_dog"))
+	Game.hr.use(Game.hr.action_by_id("pet_cat"))
+	for id in ["cadeiras", "monitores", "cafe_premium", "quadro_metas"]:
+		Game.office.buy(Game.office.furniture_by_id(id))
+	EventBus.state_changed.emit()
+	await _frames(3)
+	main.show_screen("hr")
+	await _frames(2)
+	await _shot("07c_rh_acoes")
 	main.show_screen("company")
 	await _frames(2)
 	main.screens["company"].scroll_vertical = 700
 	await _frames(2)
-	await _shot("07c_mobilia")
+	await _shot("07d_mobilia")
+	main.show_screen("unlocks")
+	await get_tree().create_timer(1.5).timeout
+	await _shot("07e_escritorio_mobilia")
+	main.office_view.world.position.x = -9999.0
+	main.office_view._clamp_world()
+	await get_tree().create_timer(1.0).timeout
+	await _shot("07f_escritorio_rh_pets")
+	main.office_view.set_zoom(main.office_view.min_zoom(), Vector2(260, 160))
+	await _frames(2)
+	await _shot("07g_escritorio_zoom_out")
+	main.office_view._layout_world(true)
 	main.popups.show_people_picker(Game.agency_events.event_by_id("workshop"))
 	await _frames(2)
-	await _shot("07d_evento_pessoas")
+	await _shot("07h_evento_pessoas")
 	main.popups.close()
 	await _settle()
 	main.popups.show_new_project(_second_client())

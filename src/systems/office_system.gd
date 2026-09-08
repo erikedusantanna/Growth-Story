@@ -107,6 +107,7 @@ func furniture_effects() -> Dictionary:
 		out["morale_daily"] += float(fx.get("morale_daily", 0))
 		out["stress_rate"] *= 1.0 + float(fx.get("stress_rate", 0))
 		out["productivity"] *= 1.0 + float(fx.get("productivity", 0))
+	out["morale_daily"] += game.hr.pets_morale_daily()
 	out["morale_max"] = minf(out["morale_max"], 100.0)
 	return out
 
