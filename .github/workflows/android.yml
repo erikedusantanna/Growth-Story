@@ -1,0 +1,79 @@
+name: APK Android
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: 4.3-stable
+      GODOT_TEMPLATES_DIR: /home/runner/.local/share/godot/export_templates/4.3.stable
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Baixar Godot
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv Godot_v${GODOT_VERSION}_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Cache dos templates de exportação
+        id: templates-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.GODOT_TEMPLATES_DIR }}
+          key: godot-templates-${{ env.GODOT_VERSION }}
+
+      - name: Baixar templates de exportação
+        if: steps.templates-cache.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          mkdir -p "$(dirname "$GODOT_TEMPLATES_DIR")"
+          unzip -q templates.tpz -d /tmp/templates
+          mv /tmp/templates/templates "$GODOT_TEMPLATES_DIR"
+
+      - name: Preparar Android SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;34.0.0" "platform-tools" "platforms;android-34" > /dev/null
+
+      - name: Keystore de debug
+        run: |
+          keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android \
+            -keystore "$HOME/debug.keystore" -storepass android \
+            -dname "CN=Android Debug,O=Android,C=US" -validity 9999
+
+      - name: Configurar editor headless
+        run: |
+          mkdir -p "$HOME/.config/godot"
+          cat > "$HOME/.config/godot/editor_settings-4.3.tres" <<EOT
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/java_sdk_path = "$JAVA_HOME_17_X64"
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/debug_keystore = "$HOME/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOT
+
+      - name: Importar projeto
+        run: ./godot --headless --path . --import
+
+      - name: Exportar APK (debug)
+        run: |
+          mkdir -p build
+          ./godot --headless --path . --export-debug Android build/growth-story.apk 2>&1 | tail -20
+          test -s build/growth-story.apk
+
+      - name: Publicar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: growth-story-apk
+          path: build/growth-story.apk
+          retention-days: 30

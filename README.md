@@ -28,7 +28,19 @@ godot --headless --path . res://tests/ui_smoke_test.tscn # abre todas as telas e
 xvfb-run godot --path . --rendering-driver opengl3 --resolution 540x960 res://tests/screenshot_tour.tscn
 ```
 
-### Exportar para Android
+### Instalar no celular (APK pronto)
+
+A cada mudança no `main` (e em cada pull request) o GitHub gera o APK sozinho, pelo workflow
+**APK Android** (`.github/workflows/android.yml`). Para pegar o arquivo:
+
+1. No repositório, abra a aba **Actions** → workflow **APK Android** → clique na execução mais recente.
+2. Na seção **Artifacts**, baixe `growth-story-apk` (um zip com o `growth-story.apk` dentro).
+3. Mande o `.apk` para o celular (cabo, Drive, WhatsApp) e abra. O Android pede para permitir
+   "instalar apps de fontes desconhecidas"; aceite só para esse arquivo.
+
+É um build de debug assinado com uma chave temporária: serve para testar, não para publicar na Play Store.
+
+### Exportar para Android no seu computador
 
 O preset `Android` já está em `export_presets.cfg` (arm64, retrato, imersivo).
 Para gerar o APK é preciso, no editor: *Editor → Gerenciar modelos de exportação* (baixar
@@ -57,7 +69,7 @@ Depois: *Projeto → Exportar → Android → Exportar projeto*, ou
 | Eventos | `event_system.gd`, `data/events.json` | 20 eventos com escolhas, condições (reputação, equipe, estresse, projetos…) e cooldown por evento |
 | Jornada | `employee_system.gd`, `popups.gd` | Linha do tempo por colaborador: contratação, cursos, promoções, campanhas, eventos (Equipe → Jornada) |
 | Objetivos | `objective_system.gd`, `data/objectives.json` | 13 objetivos sequenciais que guiam o primeiro ano, com bônus em caixa (GDD §37) |
-| Escritório | `office_system.gd`, `src/office/` | 4 níveis com layout em tiles; funcionários andam entre mesa, café e sofá |
+| Escritório | `office_system.gd`, `src/office/` | 4 níveis (4 / 7 / 12 / 18 lugares) com layout em tiles; ampliação pela aba Equipe ou Empresa; funcionários andam entre mesa, café e sofá |
 | Save/Load | `save_system.gd` | JSON em `user://savegame.json`, autosave mensal, botão na aba Empresa |
 | UI | `src/ui/` | HUD, escritório, feed de humor, 5 abas (Equipe, Clientes, Projetos, Empresa, Desbloqueios), modais |
 

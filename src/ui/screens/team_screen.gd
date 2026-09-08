@@ -6,6 +6,7 @@ extends BaseScreen
 func build() -> void:
 	var st: GameState = Game.state
 	content.add_child(header("Equipe", "%d/%d lugares" % [st.employees.size(), Game.office.capacity()]))
+	content.add_child(_office_banner())
 	for e in st.employees:
 		content.add_child(_employee_card(e))
 	content.add_child(UIKit.spacer(4))
@@ -14,6 +15,37 @@ func build() -> void:
 		content.add_child(UIKit.muted("Nenhum candidato no momento. Novos currículos chegam todo mês."))
 	for c in st.candidates:
 		content.add_child(_candidate_card(c))
+
+
+## Faixa do escritório: mostra lotação e o caminho para ampliar sem precisar achar a aba Empresa.
+func _office_banner() -> PanelContainer:
+	var st: GameState = Game.state
+	var office := Game.office.current()
+	var full: bool = st.employees.size() >= Game.office.capacity()
+	var card := UIKit.card()
+	var v := UIKit.card_content(card)
+	var top := UIKit.hbox()
+	var name := UIKit.label("%s · %d/%d lugares" % [office.get("name", ""), st.employees.size(), Game.office.capacity()], 16, UIKit.COLOR_RED if full else UIKit.COLOR_MUTED)
+	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(name)
+	v.add_child(top)
+	var nxt := Game.office.next_level()
+	if nxt.is_empty():
+		v.add_child(UIKit.muted("Você já está no maior escritório disponível.", 13))
+		return card
+	if full:
+		v.add_child(UIKit.label("Escritório lotado. Amplie para contratar mais gente.", 14, UIKit.COLOR_RED, true))
+	var check := Game.office.can_upgrade()
+	var b := UIKit.button("Ampliar: %s (%s · %d lugares · rep %d)" % [nxt.name, UIKit.money(float(nxt.upgrade_cost)), int(nxt.capacity), int(nxt.rep_required)], func():
+		if Game.office.upgrade():
+			popups().show_info("Mudança feita!", "A agência agora está em %s. Cabem %d pessoas. O aluguel passa a %s/mês." % [nxt.name, int(nxt.capacity), UIKit.money(float(nxt.rent) * Game.state.rent_modifier)]), full)
+	b.disabled = not check.ok
+	v.add_child(b)
+	if not check.ok:
+		v.add_child(UIKit.label(check.reason, 13, UIKit.COLOR_RED))
+	else:
+		v.add_child(UIKit.muted("Aluguel passa a %s/mês." % UIKit.money(float(nxt.rent) * st.rent_modifier), 13))
+	return card
 
 
 func _employee_card(e: Employee) -> PanelContainer:

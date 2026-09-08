@@ -138,7 +138,7 @@ func add_candidate(quality: String = "normal") -> Employee:
 func can_hire(candidate: Employee) -> Dictionary:
 	var st: GameState = game.state
 	if st.employees.size() >= game.office.capacity():
-		return {"ok": false, "reason": "Escritório lotado. Faça um upgrade."}
+		return {"ok": false, "reason": "Escritório lotado. Amplie na faixa acima ou na aba Empresa."}
 	if st.money < candidate.salary:
 		return {"ok": false, "reason": "Caixa insuficiente para o primeiro salário."}
 	return {"ok": true, "reason": ""}
