@@ -1,0 +1,11 @@
+{
+  "courses": [
+    {"id": "copy", "name": "Curso de Copywriting", "cost": 1500, "days": 7, "gains": {"creativity": 4, "communication": 4}},
+    {"id": "performance", "name": "Bootcamp de Performance", "cost": 2500, "days": 10, "gains": {"performance": 7, "technology": 2}},
+    {"id": "criativo", "name": "Workshop Criativo", "cost": 1200, "days": 5, "gains": {"creativity": 6}},
+    {"id": "estrategia", "name": "Formação em Estratégia", "cost": 3000, "days": 12, "gains": {"strategy": 8, "management": 2}},
+    {"id": "lideranca", "name": "Liderança", "cost": 3500, "days": 10, "gains": {"management": 8, "communication": 3}},
+    {"id": "ia", "name": "IA aplicada ao Marketing", "cost": 2800, "days": 8, "gains": {"technology": 7, "creativity": 2}},
+    {"id": "analytics", "name": "Analytics", "cost": 2200, "days": 8, "gains": {"performance": 4, "technology": 4, "strategy": 2}}
+  ]
+}

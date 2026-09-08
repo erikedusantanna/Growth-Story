@@ -1,0 +1,60 @@
+{
+  "services": [
+    {"id": "social_media", "name": "Social Media", "tier": "inicio", "unlock_cost": 0, "rep_required": 0,
+     "weights": {"creativity": 0.4, "communication": 0.4, "performance": 0.2}, "short": "SM"},
+    {"id": "design", "name": "Design", "tier": "inicio", "unlock_cost": 0, "rep_required": 0,
+     "weights": {"creativity": 0.7, "technology": 0.3}, "short": "DS"},
+    {"id": "paid_traffic", "name": "Tráfego Pago", "tier": "inicio", "unlock_cost": 0, "rep_required": 0,
+     "weights": {"performance": 0.6, "strategy": 0.2, "technology": 0.2}, "short": "TP"},
+    {"id": "copywriting", "name": "Copywriting", "tier": "intermediario", "unlock_cost": 6000, "rep_required": 15,
+     "weights": {"creativity": 0.5, "communication": 0.3, "strategy": 0.2}, "short": "CW"},
+    {"id": "branding", "name": "Branding", "tier": "intermediario", "unlock_cost": 9000, "rep_required": 25,
+     "weights": {"creativity": 0.5, "strategy": 0.5}, "short": "BR"},
+    {"id": "seo", "name": "SEO", "tier": "intermediario", "unlock_cost": 8000, "rep_required": 30,
+     "weights": {"technology": 0.4, "strategy": 0.3, "performance": 0.3}, "short": "SEO"},
+    {"id": "content", "name": "Conteúdo", "tier": "intermediario", "unlock_cost": 7000, "rep_required": 30,
+     "weights": {"creativity": 0.4, "communication": 0.4, "strategy": 0.2}, "short": "CT"},
+    {"id": "influencer", "name": "Influencer Marketing", "tier": "intermediario", "unlock_cost": 12000, "rep_required": 35,
+     "weights": {"communication": 0.5, "creativity": 0.3, "management": 0.2}, "short": "INF"},
+    {"id": "crm", "name": "CRM & Automação", "tier": "avancado", "unlock_cost": 20000, "rep_required": 45,
+     "weights": {"technology": 0.5, "strategy": 0.3, "management": 0.2}, "short": "CRM"},
+    {"id": "cro", "name": "CRO", "tier": "avancado", "unlock_cost": 18000, "rep_required": 45,
+     "weights": {"performance": 0.4, "technology": 0.3, "strategy": 0.3}, "short": "CRO"},
+    {"id": "strategy", "name": "Estratégia", "tier": "avancado", "unlock_cost": 25000, "rep_required": 55,
+     "weights": {"strategy": 0.6, "management": 0.2, "communication": 0.2}, "short": "EST"}
+  ],
+  "match_table": {
+    "alimentacao": {"best": ["social_media", "paid_traffic", "design", "influencer"], "poor": ["crm", "seo"]},
+    "varejo": {"best": ["paid_traffic", "design", "copywriting", "cro"], "poor": ["branding"]},
+    "servicos": {"best": ["social_media", "copywriting", "seo", "content"], "poor": ["influencer"]},
+    "tecnologia": {"best": ["paid_traffic", "content", "seo", "crm", "cro"], "poor": ["influencer", "design"]},
+    "fashion": {"best": ["social_media", "influencer", "branding", "design"], "poor": ["crm", "seo"]},
+    "industria": {"best": ["seo", "content", "crm", "strategy"], "poor": ["social_media", "influencer"]},
+    "saude": {"best": ["content", "seo", "branding", "paid_traffic"], "poor": ["influencer"]},
+    "imobiliario": {"best": ["paid_traffic", "crm", "copywriting", "design"], "poor": ["social_media"]}
+  },
+  "problem_solutions": {
+    "leads": ["paid_traffic", "social_media", "seo", "influencer"],
+    "conversao": ["copywriting", "cro", "design", "crm"],
+    "posicionamento": ["branding", "content", "strategy"],
+    "retencao": ["crm", "content", "social_media"],
+    "atendimento": ["crm", "strategy", "copywriting"]
+  },
+  "problem_names": {
+    "leads": "Baixa geração de leads",
+    "conversao": "Muitos leads, baixa conversão",
+    "posicionamento": "Falta de posicionamento",
+    "retencao": "Clientes não voltam",
+    "atendimento": "Atendimento comercial ruim"
+  },
+  "segment_names": {
+    "alimentacao": "Alimentação",
+    "varejo": "Varejo",
+    "servicos": "Serviços",
+    "tecnologia": "Tecnologia",
+    "fashion": "Moda & Beleza",
+    "industria": "Indústria",
+    "saude": "Saúde",
+    "imobiliario": "Imobiliário"
+  }
+}

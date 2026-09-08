@@ -1,0 +1,134 @@
+{
+  "events": [
+    {"id": "nova_plataforma", "title": "Nova plataforma", "weight": 3, "once": true, "min_day": 90,
+     "text": "Uma nova rede social está explodindo. Investir agora pode colocar sua agência na liderança.",
+     "choices": [
+       {"label": "Investir (R$ 4.000)", "effects": [{"type": "money", "value": -4000}, {"type": "reputation", "value": 6}, {"type": "attr_all", "attr": "communication", "value": 4}, {"type": "log", "text": "Sua equipe virou referência na nova rede."}]},
+       {"label": "Ignorar", "effects": [{"type": "reputation", "value": -2}, {"type": "log", "text": "Um concorrente pegou a onda primeiro."}]},
+       {"label": "Esperar", "effects": [{"type": "log", "text": "Você decidiu observar o mercado."}]}
+     ]},
+    {"id": "nova_ia", "title": "Nova IA", "weight": 2, "once": true, "min_day": 200, "min_reputation": 20,
+     "text": "Uma nova ferramenta de IA revolucionou a criação de conteúdo.",
+     "choices": [
+       {"label": "Comprar licenças (R$ 6.000)", "effects": [{"type": "money", "value": -6000}, {"type": "attr_all", "attr": "technology", "value": 8}, {"type": "log", "text": "A equipe produz duas vezes mais rápido."}]},
+       {"label": "Criar equipe interna", "effects": [{"type": "money", "value": -2000}, {"type": "attr_all", "attr": "technology", "value": 3}, {"type": "motivation", "value": 5}]},
+       {"label": "Ignorar", "effects": [{"type": "log", "text": "\"IA é modinha\", você disse. Anotado."}]}
+     ]},
+    {"id": "proposta_concorrente", "title": "Proposta da concorrência", "weight": 4, "min_employees": 2, "min_day": 120,
+     "text": "{best_employee} recebeu uma oferta de uma agência concorrente.",
+     "choices": [
+       {"label": "Aumentar salário (+20%)", "effects": [{"type": "raise_best", "value": 0.2}, {"type": "loyalty_best", "value": 20}]},
+       {"label": "Promover", "effects": [{"type": "promote_best"}, {"type": "loyalty_best", "value": 10}]},
+       {"label": "Deixar sair", "effects": [{"type": "lose_best"}]}
+     ]},
+    {"id": "cliente_ameaca", "title": "Cliente insatisfeito", "weight": 4, "min_active_clients": 1, "min_day": 60,
+     "text": "{random_client} está insatisfeito com os resultados e ameaça cancelar.",
+     "choices": [
+       {"label": "Reunião de alinhamento", "effects": [{"type": "client_relationship", "value": 15}, {"type": "motivation", "value": -3}]},
+       {"label": "Dar desconto (R$ 1.500)", "effects": [{"type": "money", "value": -1500}, {"type": "client_relationship", "value": 25}]},
+       {"label": "Ignorar", "effects": [{"type": "client_relationship", "value": -30}, {"type": "reputation", "value": -3}]}
+     ]},
+    {"id": "premio", "title": "Indicação a prêmio", "weight": 2, "min_reputation": 30, "min_cases": 1,
+     "text": "Sua agência foi indicada ao prêmio Agência Revelação.",
+     "choices": [
+       {"label": "Ir à cerimônia (R$ 2.000)", "effects": [{"type": "money", "value": -2000}, {"type": "reputation", "value": 8}, {"type": "motivation", "value": 10}, {"type": "log", "text": "A agência ganhou o prêmio! Todo mundo tirou foto."}]},
+       {"label": "Não ir", "effects": [{"type": "reputation", "value": 2}]}
+     ]},
+    {"id": "aquisicao", "title": "Proposta de aquisição", "weight": 1, "once": true, "min_reputation": 60, "min_employees": 5,
+     "text": "Um grupo ofereceu R$ 2.000.000 pela sua agência.",
+     "choices": [
+       {"label": "Vender", "effects": [{"type": "money", "value": 2000000}, {"type": "flag", "id": "sold_agency", "value": true}, {"type": "log", "text": "Você vendeu a agência, mas continua como CEO. Bônus na conta."}]},
+       {"label": "Recusar", "effects": [{"type": "reputation", "value": 5}, {"type": "log", "text": "O mercado ouviu falar da sua recusa. Respeito."}]},
+       {"label": "Contraproposta", "effects": [{"type": "money", "value": 300000}, {"type": "flag", "id": "investor", "value": true}, {"type": "log", "text": "Vocês fecharam um investimento minoritário."}]}
+     ]},
+    {"id": "logo_maior", "title": "Pedido clássico", "weight": 5, "min_running_projects": 1,
+     "text": "\"Pode deixar o logo maior?\" Toda a equipe suspirou ao mesmo tempo.",
+     "choices": [
+       {"label": "Fazer o logo maior", "effects": [{"type": "motivation", "value": -8}, {"type": "client_relationship", "value": 5}]},
+       {"label": "Explicar hierarquia visual", "effects": [{"type": "motivation", "value": 3}, {"type": "client_relationship", "value": -5}]}
+     ]},
+    {"id": "viralizou", "title": "Viralizou!", "weight": 2, "min_running_projects": 1, "min_day": 45,
+     "text": "Um post da equipe viralizou de madrugada. Os comentários não param.",
+     "choices": [
+       {"label": "Aproveitar a onda", "effects": [{"type": "reputation", "value": 6}, {"type": "project_boost", "indicator": "creativity", "value": 12}, {"type": "motivation", "value": 8}]}
+     ]},
+    {"id": "estagiario_genial", "title": "Estagiário genial", "weight": 2, "min_day": 30,
+     "text": "Um estagiário mandou portfólio pelo Instagram. Parece bom demais para ser verdade.",
+     "choices": [
+       {"label": "Chamar para entrevista", "effects": [{"type": "spawn_candidate", "quality": "high"}, {"type": "log", "text": "Um novo candidato apareceu na lista."}]},
+       {"label": "Ignorar", "effects": []}
+     ]},
+    {"id": "ferramenta_caiu", "title": "Ferramenta fora do ar", "weight": 3, "min_running_projects": 1,
+     "text": "A plataforma de anúncios caiu no meio da campanha. Suporte responde em 72h.",
+     "choices": [
+       {"label": "Improvisar com outra plataforma", "effects": [{"type": "project_boost", "indicator": "performance", "value": -6}, {"type": "motivation", "value": -4}]},
+       {"label": "Pagar consultoria urgente (R$ 1.200)", "effects": [{"type": "money", "value": -1200}]}
+     ]},
+    {"id": "indicacao", "title": "Indicação", "weight": 3, "min_cases": 1,
+     "text": "Um cliente satisfeito indicou sua agência para um amigo empresário.",
+     "choices": [
+       {"label": "Ótimo!", "effects": [{"type": "spawn_prospect"}, {"type": "reputation", "value": 2}]}
+     ]},
+    {"id": "burnout_alerta", "title": "Sinal amarelo", "weight": 3, "min_employees": 2, "min_avg_stress": 55,
+     "text": "A equipe está exausta. Alguém sugeriu uma \"sexta sem reunião\".",
+     "choices": [
+       {"label": "Dar folga coletiva", "effects": [{"type": "stress_all", "value": -30}, {"type": "motivation", "value": 8}, {"type": "project_delay", "days": 2}]},
+       {"label": "Pedir mais uma semana de força", "effects": [{"type": "stress_all", "value": 10}, {"type": "motivation", "value": -6}]}
+     ]},
+    {"id": "aluguel_sobe", "title": "Aluguel subiu", "weight": 2, "min_office_level": 2,
+     "text": "O proprietário do imóvel reajustou o aluguel. \"É o mercado\", ele disse.",
+     "choices": [
+       {"label": "Aceitar (+15% aluguel)", "effects": [{"type": "rent_mod", "value": 0.15}]},
+       {"label": "Negociar (custa reputação)", "effects": [{"type": "reputation", "value": -2}, {"type": "rent_mod", "value": 0.05}]}
+     ]},
+    {"id": "mercenario_aumento", "title": "Pedido de aumento", "weight": 3, "min_employees": 2, "requires_personality": "mercenario",
+     "text": "{personality_employee} quer 25% de aumento. \"Senão, tenho outras propostas.\"",
+     "choices": [
+       {"label": "Conceder", "effects": [{"type": "raise_personality", "value": 0.25}]},
+       {"label": "Negar", "effects": [{"type": "motivation_personality", "value": -25}, {"type": "loyalty_personality", "value": -30}]}
+     ]},
+    {"id": "workshop_gratis", "title": "Workshop gratuito", "weight": 2,
+     "text": "Uma comunidade de marketing ofereceu um workshop gratuito de criatividade.",
+     "choices": [
+       {"label": "Mandar a equipe", "effects": [{"type": "attr_all", "attr": "creativity", "value": 3}, {"type": "project_delay", "days": 1}]},
+       {"label": "Todo mundo está ocupado", "effects": []}
+     ]},
+    {"id": "crise_reputacao", "title": "Crise de reputação", "weight": 2, "min_reputation": 25, "min_day": 150,
+     "text": "Um post antigo de um cliente seu voltou a circular com o print da sua agência marcada.",
+     "choices": [
+       {"label": "Responder com transparência", "effects": [{"type": "reputation", "value": -3}, {"type": "motivation", "value": 2}]},
+       {"label": "Contratar assessoria de crise (R$ 5.000)", "effects": [{"type": "money", "value": -5000}, {"type": "reputation", "value": 1}]},
+       {"label": "Fingir que não viu", "effects": [{"type": "reputation", "value": -9}]}
+     ]},
+    {"id": "cliente_gigante", "title": "Cliente gigante", "weight": 1, "min_reputation": 40,
+     "text": "Uma grande marca abriu concorrência e chamou sua agência para participar.",
+     "choices": [
+       {"label": "Participar (R$ 3.000 em proposta)", "effects": [{"type": "money", "value": -3000}, {"type": "spawn_prospect", "tier_bonus": 1}]},
+       {"label": "Ainda não é o momento", "effects": []}
+     ]},
+    {"id": "parceria", "title": "Parceria", "weight": 2, "min_reputation": 20,
+     "text": "Uma produtora de vídeo propôs parceria: eles indicam clientes, vocês indicam produção.",
+     "choices": [
+       {"label": "Fechar parceria", "effects": [{"type": "spawn_prospect"}, {"type": "attr_all", "attr": "management", "value": 2}]},
+       {"label": "Recusar", "effects": []}
+     ]},
+    {"id": "so_mais_uma_coisinha", "title": "\"Só mais uma coisinha...\"", "weight": 5, "min_running_projects": 1,
+     "text": "O cliente mandou áudio de 4 minutos às 23h. Resumo: três tarefas novas no projeto.",
+     "choices": [
+       {"label": "Absorver as tarefas", "effects": [{"type": "project_extra_work", "value": 0.15}, {"type": "client_relationship", "value": 6}]},
+       {"label": "Cobrar adicional (R$ 800)", "effects": [{"type": "money", "value": 800}, {"type": "client_relationship", "value": -8}]}
+     ]},
+    {"id": "conflito_interno", "title": "Conflito interno", "weight": 2, "min_employees": 3,
+     "text": "Design e Performance discutiram sobre \"quem manda no criativo\". O clima pesou.",
+     "choices": [
+       {"label": "Mediar a conversa", "effects": [{"type": "motivation", "value": 4}, {"type": "attr_all", "attr": "management", "value": 1}]},
+       {"label": "Deixar resolverem sozinhos", "effects": [{"type": "motivation", "value": -10}]}
+     ]},
+    {"id": "universidade", "title": "Feira de talentos", "weight": 2, "min_reputation": 15,
+     "text": "Uma universidade convidou sua agência para uma feira de carreiras.",
+     "choices": [
+       {"label": "Participar (R$ 1.000)", "effects": [{"type": "money", "value": -1000}, {"type": "spawn_candidate", "quality": "normal"}, {"type": "spawn_candidate", "quality": "normal"}]},
+       {"label": "Não temos tempo", "effects": []}
+     ]}
+  ]
+}

@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://growthstory_uismoke"]
+
+[ext_resource type="Script" path="res://tests/ui_smoke_test.gd" id="1"]
+
+[node name="UISmokeTest" type="Node"]
+script = ExtResource("1")
