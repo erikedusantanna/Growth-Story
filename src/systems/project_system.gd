@@ -23,10 +23,10 @@ func quote(c: Client, kind: int) -> Dictionary:
 	if kind == Project.Kind.RETAINER:
 		budget = c.budget
 	else:
-		budget = c.budget * (2.0 + 0.5 * c.maturity)
+		budget = c.budget * (1.2 + 0.3 * c.maturity)
 	budget = roundf(budget / 100.0) * 100.0
 	var deadline := RETAINER_CYCLE_DAYS if kind == Project.Kind.RETAINER else clampi(15 + int(budget / 1000.0), 20, 60)
-	var effort := 10.0 + budget / 600.0
+	var effort := 12.0 + budget / 350.0
 	return {"budget": budget, "deadline": deadline, "effort": effort}
 
 
@@ -299,7 +299,7 @@ func evaluate(p: Project) -> Dictionary:
 			stars += 1
 	var payment: float = p.budget * PAYMENT_MULT[stars]
 	var tier := c.tier if c != null else 1
-	var rep_delta := (stars - 2.5) * (0.8 + tier * 0.7)
+	var rep_delta := (stars - 2.5) * (0.5 + tier * 0.5)
 	if stars == 5 and p.match_quality == "perfect":
 		rep_delta += 2.0
 	var roi := snappedf((0.5 + score / 100.0 * 4.5) * game.services.match_multiplier(p.match_quality), 0.1)

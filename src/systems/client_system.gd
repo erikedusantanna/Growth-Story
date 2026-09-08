@@ -3,7 +3,7 @@ extends RefCounted
 ## Prospecção, fechamento, diagnóstico e relacionamento com clientes.
 
 const MAX_PROSPECTS := 3
-const PROSPECT_INTERVAL := 12
+const PROSPECT_INTERVAL := 15
 const IDLE_DAYS_BEFORE_DECAY := 45
 
 const PROCEDURAL_NAMES := {
@@ -256,5 +256,7 @@ func on_day() -> void:
 				c.relationship = clampf(c.relationship - 0.2, 0.0, 100.0)
 				if c.relationship <= 5.0:
 					lose_client(c, "cansou de esperar e foi embora")
-	if st.day % PROSPECT_INTERVAL == 0 and st.prospects().size() < MAX_PROSPECTS and st.rng.randf() < 0.45:
+	# Agência desconhecida recebe poucos contatos; reputação traz mais prospects.
+	var max_prospects: int = 2 if st.reputation < 20.0 else MAX_PROSPECTS
+	if st.day % PROSPECT_INTERVAL == 0 and st.prospects().size() < max_prospects and st.rng.randf() < 0.15 + st.reputation / 160.0:
 		spawn_prospect()

@@ -77,7 +77,7 @@ Detalhes de fórmulas e fluxo em `docs/ARQUITETURA.md`.
 
 ## Próximos passos sugeridos
 
-1. **Balanceamento** com testes de jogadores reais (ver `tests/sim_test.gd` para a política automática usada como régua).
+1. **Balanceamento** com testes de jogadores reais. A simulação em `tests/sim_test.gd` imprime a curva ano a ano e falha se fugir da régua do GDD §53 (ver `docs/ARQUITETURA.md`).
 2. Arte definitiva: substituir `assets/sprites/*.png` mantendo os tamanhos (16×16 personagens, 32×16 mesa/sofá).
 3. Fonte pixel art e sons (`GDD §40–41`).
 4. Conteúdo: mais clientes, eventos, eras históricas (GDD §23) e serviços de endgame.

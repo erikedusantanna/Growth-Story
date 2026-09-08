@@ -14,7 +14,7 @@ func add(delta: float) -> void:
 	var before := st.reputation
 	# Ganhos ficam mais difíceis conforme a reputação sobe (retornos decrescentes).
 	if delta > 0.0:
-		delta *= clampf(1.0 - st.reputation / 130.0, 0.15, 1.0)
+		delta *= clampf(1.0 - st.reputation / 100.0, 0.05, 1.0)
 	else:
 		# Quem ainda é desconhecido tem menos a perder.
 		delta *= clampf(0.3 + st.reputation / 100.0 * 0.7, 0.3, 1.0)

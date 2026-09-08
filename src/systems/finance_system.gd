@@ -2,7 +2,7 @@ class_name FinanceSystem
 extends RefCounted
 ## Caixa, custos mensais, histórico e falência.
 
-const TOOLS_PER_EMPLOYEE := 150.0
+const TOOLS_PER_EMPLOYEE := 250.0
 const BANKRUPT_AT := -30000.0
 
 var game

@@ -5,6 +5,7 @@ extends Node
 
 var failures := 0
 var completed := 0
+var year_report: Array = []
 var stars_hist := [0, 0, 0, 0, 0, 0]
 
 
@@ -42,8 +43,11 @@ func _run_simulation(game, seed: int, years: int) -> void:
 	var hires := 0
 	EventBus.project_completed.connect(_on_project_completed)
 	var total_days := years * 360
+	year_report = []
 	for i in total_days:
 		game.on_day()
+		if st.day % 360 == 0:
+			year_report.append(_snapshot(game))
 		if st.game_over:
 			break
 		# política automática
@@ -91,6 +95,20 @@ func _run_simulation(game, seed: int, years: int) -> void:
 		st.day, st.year(), FinanceSystem.format_money(st.money), st.reputation, st.employees.size(),
 		st.active_clients().size(), completed, events_resolved, hires, game.reputation.phase_name()])
 	print("  estrelas: 1=%d 2=%d 3=%d 4=%d 5=%d" % [stars_hist[1], stars_hist[2], stars_hist[3], stars_hist[4], stars_hist[5]])
+	print("  ritmo (régua GDD §53: ano 3 ≈ 6 pessoas, R$ 300 mil/ano, agência local):")
+	for r in year_report:
+		print("    ano %d (%d): equipe=%d clientes=%d receita=%s caixa=%s rep=%.0f escritório=%d projetos=%d" % [
+			r.year, r.calendar, r.employees, r.clients, FinanceSystem.format_money(r.revenue),
+			FinanceSystem.format_money(r.cash), r.rep, r.office, r.projects])
+	if year_report.size() >= 3:
+		var y3: Dictionary = year_report[2]
+		check(y3.employees >= 3 and y3.employees <= 10, "ano 3: equipe entre 3 e 10 (%d)" % y3.employees)
+		check(y3.revenue >= 120000.0 and y3.revenue <= 700000.0, "ano 3: receita anual entre R$ 120 mil e R$ 700 mil (%s)" % FinanceSystem.format_money(y3.revenue))
+		check(y3.rep >= 20.0 and y3.rep <= 70.0, "ano 3: reputação entre 20 e 70 (%.0f)" % y3.rep)
+	if year_report.size() >= 1:
+		var y1: Dictionary = year_report[0]
+		check(y1.employees >= 2 and y1.employees <= 5, "ano 1: equipe entre 2 e 5 (%d)" % y1.employees)
+		check(y1.rep >= 8.0 and y1.rep <= 35.0, "ano 1: reputação entre 8 e 35 (%.0f)" % y1.rep)
 	check(not st.game_over, "não faliu com política simples")
 	check(completed >= 6, "concluiu pelo menos 6 projetos/ciclos (%d)" % completed)
 	check(events_resolved >= 3, "eventos dispararam (%d)" % events_resolved)
@@ -114,6 +132,22 @@ func _run_simulation(game, seed: int, years: int) -> void:
 	print("  log recente:")
 	for entry in st.log.slice(maxi(st.log.size() - 6, 0), st.log.size()):
 		print("    [%s] %s" % [entry.kind, entry.text])
+
+
+func _snapshot(game) -> Dictionary:
+	var st = game.state
+	var year_idx: int = st.day / 360 - 1
+	var revenue := 0.0
+	var projects := 0
+	for h in st.finance_history:
+		if int(h.get("month_index", 0)) / 12 == year_idx:
+			revenue += float(h.get("revenue", 0))
+	for p in st.projects:
+		if p.finished_on >= year_idx * 360 and p.finished_on < (year_idx + 1) * 360 and p.status == Project.Status.DONE:
+			projects += 1
+	return {"year": year_idx + 1, "calendar": GameState.START_YEAR + year_idx, "employees": st.employees.size(),
+		"clients": st.active_clients().size(), "revenue": revenue, "cash": st.money, "rep": st.reputation,
+		"office": st.office_level, "projects": projects}
 
 
 func _on_project_completed(_p, result: Dictionary) -> void:
