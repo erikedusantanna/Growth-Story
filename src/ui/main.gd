@@ -1,8 +1,8 @@
 extends Control
 ## Cena principal: HUD, escritório, feed, telas e navegação inferior.
 
-const SCREEN_ORDER := ["team", "clients", "projects", "company", "unlocks"]
-const SCREEN_LABELS := {"team": "Equipe", "clients": "Clientes", "projects": "Projetos", "company": "Empresa", "unlocks": "Agência"}
+const SCREEN_ORDER := ["team", "clients", "projects", "company", "hr", "unlocks"]
+const SCREEN_LABELS := {"team": "Equipe", "clients": "Clientes", "projects": "Projetos", "company": "Empresa", "hr": "RH", "unlocks": "Agência"}
 
 var hud: Hud
 var office_view: OfficeView
@@ -68,6 +68,7 @@ func _ready() -> void:
 	screens["clients"] = ClientsScreen.new()
 	screens["projects"] = ProjectsScreen.new()
 	screens["company"] = CompanyScreen.new()
+	screens["hr"] = HRScreen.new()
 	screens["unlocks"] = UnlocksScreen.new()
 	for key in SCREEN_ORDER:
 		holder.add_child(screens[key])
@@ -77,7 +78,7 @@ func _ready() -> void:
 	for key in SCREEN_ORDER:
 		var name: String = key
 		var b := UIKit.button(SCREEN_LABELS[key], func(): show_screen(name), false, 56)
-		b.add_theme_font_size_override("font_size", 14)
+		b.add_theme_font_size_override("font_size", 13)
 		b.clip_text = true
 		nav.add_child(b)
 		nav_buttons[key] = b
@@ -123,7 +124,7 @@ func _on_game_started() -> void:
 	_refresh_feed()
 	if Game.state.day == 0:
 		popups.show_info("Sua história começa aqui",
-			"Você é um freelancer com %s no caixa. Siga os objetivos mostrados acima do feed: feche o primeiro cliente, monte a estratégia e entregue resultado. Dinheiro e reputação abrem clientes maiores. Use os botões 1x, 2x e 3x para controlar o ritmo." % UIKit.money(Game.state.money))
+			"Você é um freelancer com %s no caixa. Siga os objetivos mostrados acima do feed: feche o primeiro cliente, monte a estratégia e entregue resultado. Dinheiro e reputação abrem clientes maiores. Use os botões 1x, 2x e 3x para controlar o ritmo. Arraste o escritório com o dedo e use dois dedos para dar zoom." % UIKit.money(Game.state.money))
 	Game.state.paused = false
 
 

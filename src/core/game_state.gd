@@ -33,6 +33,8 @@ var objective_index: int = 0           # objetivo atual (data/objectives.json)
 var furniture: Array = []               # ids de mobília comprada
 var buffs: Array = []                   # [{id, until_day, productivity, stress_rate}] efeitos temporários do RH
 var hr_last_used: Dictionary = {}       # id da ação -> último dia
+var hr_hired := false                   # analista de RH contratada (sala no escritório)
+var pets: Array = []                    # ["dog", "cat"] pets permanentes do escritório
 var agency_events: Array = []           # [{id, ends_day, people:[ids]}] eventos em andamento
 var agency_events_last: Dictionary = {} # id -> último dia
 var pending_event: Dictionary = {}
@@ -158,6 +160,7 @@ func to_dict() -> Dictionary:
 		"last_event_day": last_event_day, "events_seen": events_seen.duplicate(),
 		"events_last_day": events_last_day.duplicate(), "objective_index": objective_index,
 		"furniture": furniture.duplicate(), "buffs": buffs.duplicate(true), "hr_last_used": hr_last_used.duplicate(),
+		"hr_hired": hr_hired, "pets": pets.duplicate(),
 		"agency_events": agency_events.duplicate(true), "agency_events_last": agency_events_last.duplicate(),
 		"pending_event": pending_event.duplicate(true), "cases": cases,
 		"speed": speed, "game_over": game_over, "stats": stats.duplicate(),
@@ -202,6 +205,8 @@ static func from_dict(d: Dictionary) -> GameState:
 	s.furniture = Array(d.get("furniture", []))
 	s.buffs = Array(d.get("buffs", []))
 	s.hr_last_used = d.get("hr_last_used", {})
+	s.hr_hired = bool(d.get("hr_hired", false))
+	s.pets = Array(d.get("pets", []))
 	s.agency_events = Array(d.get("agency_events", []))
 	s.agency_events_last = d.get("agency_events_last", {})
 	s.pending_event = d.get("pending_event", {})

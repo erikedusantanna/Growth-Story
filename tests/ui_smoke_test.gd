@@ -78,7 +78,20 @@ func _ready() -> void:
 	EventBus.state_changed.emit()
 	main.show_screen("unlocks")
 	await get_tree().process_frame
-	print("  aba Agência com RH e eventos: %d nós" % main.screens["unlocks"].content.get_child_count())
+	print("  aba Agência com eventos: %d nós" % main.screens["unlocks"].content.get_child_count())
+	main.show_screen("hr")
+	await get_tree().process_frame
+	print("  aba RH antes de contratar: %d nós" % main.screens["hr"].content.get_child_count())
+	print("  contratou RH: %s" % Game.hr.hire().ok)
+	print("  adotou cachorro: %s" % Game.hr.use(Game.hr.action_by_id("pet_dog")).ok)
+	Game.office.buy(Game.office.furniture_by_id("cadeiras"))
+	await get_tree().process_frame
+	print("  painel do escritório: %s · zoom %.2f · posição %s · ajuste %.2f" % [main.office_view.size, main.office_view.world.scale.x, main.office_view.world.position, main.office_view.fit_zoom])
+	print("  anexo do RH no escritório: %s · pets: %d · largura total: %d tiles" % [main.office_view.hr_worker != null, main.office_view.pets.size(), main.office_view._total_width()])
+	main.office_view.set_zoom(3.5, Vector2(50, 50))
+	print("  zoom do escritório: %.2f (mín %.2f)" % [main.office_view.world.scale.x, main.office_view.min_zoom()])
+	main.office_view.set_zoom(0.5, Vector2(50, 50))
+	print("  zoom mínimo respeitado: %s" % is_equal_approx(main.office_view.world.scale.x, main.office_view.min_zoom()))
 	main.popups.show_people_picker(Game.agency_events.event_by_id("palestra"))
 	await get_tree().process_frame
 	print("  popup de escolha de pessoas: %s" % main.popups.is_open())

@@ -314,6 +314,158 @@ def door():
     return c
 
 
+
+def partition():
+    """Divisória de escritório (tile 8x16, repetido na vertical)."""
+    c = canvas(8, 16, "v")
+    vline(c, 0, 0, 15, "o")
+    vline(c, 7, 0, 15, "o")
+    vline(c, 1, 0, 15, "B")
+    vline(c, 6, 0, 15, "b")
+    hline(c, 1, 6, 7, "b")
+    return c
+
+
+def partition_top():
+    """Topo da divisória (visto de cima, 8x6)."""
+    c = canvas(8, 6, "Y")
+    hline(c, 0, 7, 0, "o")
+    hline(c, 0, 7, 5, "o")
+    vline(c, 0, 0, 5, "o")
+    vline(c, 7, 0, 5, "o")
+    hline(c, 1, 6, 1, "B")
+    return c
+
+
+def hr_sign():
+    c = canvas(20, 12)
+    rect(c, 0, 0, 20, 12, "z")
+    rect(c, 1, 1, 18, 10, "1")
+    letters = {
+        "R": ["WW.", "W.W", "WW.", "W.W", "W.W"],
+        "H": ["W.W", "W.W", "WWW", "W.W", "W.W"],
+    }
+    for i, letter in enumerate("RH"):
+        for dy, row in enumerate(letters[letter]):
+            for dx, ch in enumerate(row):
+                if ch == "W":
+                    put(c, 5 + i * 5 + dx, 3 + dy, "W")
+    return c
+
+
+def chair_ergo():
+    c = canvas(16, 18)
+    rect(c, 5, 0, 6, 2, "z")          # apoio de cabeça
+    rect(c, 3, 2, 10, 8, "z")
+    rect(c, 4, 3, 8, 6, "2")
+    rect(c, 2, 10, 12, 4, "z")
+    rect(c, 3, 11, 10, 2, "2")
+    rect(c, 7, 14, 2, 2, "z")
+    rect(c, 2, 16, 12, 1, "z")
+    for x in (2, 7, 13):
+        put(c, x, 17, "o")
+    return c
+
+
+def desk_wide():
+    c = desk()
+    # monitor ultrawide no lugar do monitor comum
+    rect(c, 3, 0, 26, 11, ".")
+    rect(c, 4, 0, 24, 9, "k")
+    rect(c, 5, 1, 22, 7, "s")
+    rect(c, 6, 2, 6, 2, "S")
+    rect(c, 14, 3, 8, 1, "S")
+    rect(c, 14, 9, 4, 1, "z")
+    rect(c, 12, 10, 8, 1, "z")
+    return c
+
+
+def coffee_premium():
+    c = canvas(18, 28)
+    rect(c, 2, 2, 14, 24, "Y")
+    rect(c, 3, 3, 12, 22, "W")
+    rect(c, 4, 0, 10, 3, "z")          # moedor de grãos
+    rect(c, 4, 4, 10, 5, "k")
+    put(c, 5, 5, "3")
+    rect(c, 7, 5, 5, 1, "s")
+    rect(c, 3, 10, 12, 2, "6")         # faixa vermelha
+    rect(c, 5, 13, 8, 5, "k")
+    rect(c, 7, 18, 4, 3, "W")
+    put(c, 11, 19, "W")
+    rect(c, 7, 21, 4, 1, "d")
+    rect(c, 3, 23, 12, 3, "y")
+    hline(c, 2, 15, 26, "o")
+    vline(c, 2, 2, 26, "o")
+    vline(c, 15, 2, 26, "o")
+    return c
+
+
+def goals_board():
+    c = canvas(24, 20)
+    rect(c, 0, 0, 24, 20, "m")
+    rect(c, 1, 1, 22, 18, "9")
+    for i in range(3):
+        y = 3 + i * 5
+        rect(c, 3, y, 4, 4, "W")
+        rect(c, 3, y, 4, 1, "8")
+        if i < 2:
+            put(c, 4, y + 2, "3")
+            put(c, 5, y + 1, "3")
+            put(c, 5, y + 2, "3")
+        rect(c, 9, y + 1, 8 if i != 1 else 6, 2, "8")
+    # alvo no canto
+    rect(c, 18, 2, 4, 4, "6")
+    rect(c, 19, 3, 2, 2, "W")
+    hline(c, 0, 23, 19, "o")
+    return c
+
+
+def dog():
+    frames = []
+    for walk in (False, True):
+        c = canvas(16, 14)
+        rect(c, 3, 5, 9, 5, "M")            # corpo
+        rect(c, 9, 2, 6, 5, "M")            # cabeça
+        rect(c, 9, 1, 2, 3, "m")            # orelha
+        rect(c, 14, 4, 2, 2, "m")           # focinho
+        put(c, 12, 3, "o")                  # olho
+        put(c, 15, 4, "o")                  # nariz
+        rect(c, 4, 6, 3, 2, "W")            # mancha
+        if walk:
+            rect(c, 3, 10, 2, 3, "m")
+            rect(c, 10, 10, 2, 3, "m")
+            put(c, 2, 3, "m"); put(c, 2, 4, "m"); put(c, 1, 2, "m")   # rabo para cima
+        else:
+            rect(c, 4, 10, 2, 3, "m")
+            rect(c, 9, 10, 2, 3, "m")
+            put(c, 2, 4, "m"); put(c, 1, 3, "m"); put(c, 1, 4, "m")
+        hline(c, 3, 11, 13, "o")
+        frames.append(c)
+    return hstack(frames)
+
+
+def cat():
+    frames = []
+    for walk in (False, True):
+        c = canvas(14, 12)
+        rect(c, 2, 6, 8, 4, "Y")            # corpo
+        rect(c, 8, 2, 5, 5, "Y")            # cabeça
+        put(c, 8, 1, "Y"); put(c, 12, 1, "Y")   # orelhas
+        put(c, 9, 4, "3"); put(c, 11, 4, "3")   # olhos
+        put(c, 10, 5, "q")                  # nariz
+        rect(c, 4, 7, 1, 2, "y"); rect(c, 6, 7, 1, 2, "y")   # listras
+        if walk:
+            rect(c, 2, 10, 2, 2, "y")
+            rect(c, 8, 10, 2, 2, "y")
+            put(c, 1, 5, "y"); put(c, 0, 4, "y"); put(c, 0, 3, "y")   # rabo alto
+        else:
+            rect(c, 3, 10, 2, 2, "y")
+            rect(c, 7, 10, 2, 2, "y")
+            put(c, 1, 6, "y"); put(c, 0, 5, "y"); put(c, 0, 4, "y")
+        frames.append(c)
+    return hstack(frames)
+
+
 # --- Personagem 24x32, 4 poses: parado, andar A, andar B, sentado -----------------
 # Camadas: skin (W), features (contorno/olhos/boca), hair_N (W), shirt (W), legs (fixa)
 
@@ -529,7 +681,10 @@ def main():
     for name, fn in (("desk", desk), ("chair", chair), ("sofa", sofa), ("plant", plant),
                      ("coffee", coffee_machine), ("cooler", water_cooler), ("shelf", shelf),
                      ("window", window), ("whiteboard", whiteboard), ("door", door),
-                     ("projector", projector_screen), ("pingpong", pingpong)):
+                     ("projector", projector_screen), ("pingpong", pingpong),
+                     ("partition", partition), ("partition_top", partition_top), ("hr_sign", hr_sign),
+                     ("chair_ergo", chair_ergo), ("desk_wide", desk_wide), ("coffee_premium", coffee_premium),
+                     ("goals_board", goals_board), ("dog", dog), ("cat", cat)):
         write_png(os.path.join(OUT, "furniture", f"{name}.png"), fn())
     characters()
     for name, rows in ICONS.items():
