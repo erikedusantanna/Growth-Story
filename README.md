@@ -104,7 +104,7 @@ Depois: *Projeto → Exportar → Android → Exportar projeto*, ou
 | Fonte pixel art | `tools/gen_font.py`, `assets/fonts/pixel.fnt` | Bitmap font 5×7 com acentuação (á é í ó ú ã õ â ê ô ç), gerada por código; usada em títulos e números do HUD (`UIKit.pixel_font()`) |
 | Som | `src/core/audio_manager.gd`, `tools/gen_audio.py` | Trilha de ~58 s em loop (acordes, baixo, melodia e bateria 8-bit) que toca desde a tela inicial, e 9 efeitos sonoros — tudo sintetizado por código; autoload `Audio` reage aos sinais do `EventBus`; botão de mudo 🔊/🔇 na tela inicial e no HUD (e toggles na aba Empresa). Som ambiente do escritório em loop de 16 s (ar-condicionado, teclados, mouse, papel, notificação) que fica mais presente conforme a equipe cresce; toggle próprio "🏢 Escritório" |
 
-Detalhes de fórmulas e fluxo em `docs/ARQUITETURA.md`.
+Detalhes de fórmulas e fluxo em `docs/ARQUITETURA.md`. Histórico de desenvolvimento, decisões tomadas e guia de retomada em `docs/HISTORICO.md`.
 
 ## Próximos passos sugeridos
 
