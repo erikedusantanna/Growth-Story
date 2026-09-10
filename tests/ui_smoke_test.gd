@@ -97,6 +97,8 @@ func _ready() -> void:
 	print("  popup de escolha de pessoas: %s" % main.popups.is_open())
 	main.popups.close()
 	# cena de evento: a "câmera" troca o escritório pelo palco com o time
+	# (esvazia a fila de popups antes: o que estiver enfileirado depende do estado aleatório da partida)
+	await _drain_popups(main)
 	var premio: Dictionary = Game.content.events.filter(func(e): return e.get("id", "") == "premio")[0]
 	Game.events.trigger(premio)
 	await get_tree().process_frame
@@ -104,7 +106,7 @@ func _ready() -> void:
 	print("  cena do evento '%s': visível=%s · atores=%d · cenário=%s" % [premio.get("id"), main.event_stage.visible, main.event_stage.actor_count(), main.event_stage.current_kind])
 	main.popups.close()
 	Game.resolve_event(0)
-	await get_tree().process_frame
+	await _drain_popups(main)
 	var scene_hidden: bool = not main.event_stage.visible
 	print("  cena fechou junto com o popup: %s" % scene_hidden)
 	main.popups.show_agency_result(Game.agency_events.event_by_id("palco_principal"), [Game.state.employees[0].id], "+8 reputação")
@@ -112,6 +114,7 @@ func _ready() -> void:
 	var agency_scene: bool = main.event_stage.visible and main.event_stage.current_kind == "stage"
 	print("  resultado de evento da agência com cena: %s" % agency_scene)
 	main.popups.close()
+	await _drain_popups(main)
 	main.show_screen("company")
 	await get_tree().process_frame
 	# avança o tempo pelo _process real (manual_time = false) e resolve eventos automaticamente
@@ -134,3 +137,14 @@ func _ready() -> void:
 	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene
 	print("[%s] UI smoke" % ("OK" if ok else "FALHA"))
 	get_tree().quit(0 if ok else 1)
+
+
+## Fecha o que estiver aberto e o que estiver na fila (eventos, ofertas, avisos), sem resolver nada.
+func _drain_popups(main) -> void:
+	var guard := 0
+	while main.popups.is_open() and guard < 20:
+		main.popups.close()
+		if not Game.state.pending_event.is_empty():
+			Game.resolve_event(0)
+		await get_tree().process_frame
+		guard += 1
