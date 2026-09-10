@@ -91,3 +91,4 @@ Detalhes de fórmulas e fluxo em `docs/ARQUITETURA.md`.
 3. ~~Fonte pixel art e sons (`GDD §40–41`)~~ — feito: `assets/fonts/pixel.fnt` e `src/core/audio_manager.gd`.
 4. ~~Conteúdo: mais clientes, eventos, eras históricas e serviços de endgame~~ — feito: `era_system.gd`, `data/eras.json`.
 5. ~~Departamentos, gerentes e concorrentes~~ — feito: `department_system.gd`, `competitor_system.gd`. Falta: imprensa/aquisições e expansão internacional (resto da Fase 4 do roadmap).
+6. ~~Mais ícones e imagens na interface~~ — feito: emojis em títulos, botões, cartões e na navegação inferior (ícone em cima, rótulo curto embaixo) para reduzir o peso visual de texto puro, principalmente para quem está começando.

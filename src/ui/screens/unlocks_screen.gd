@@ -9,7 +9,7 @@ func build() -> void:
 	_build_competitors()
 	_build_agency_events()
 	var era: Dictionary = Game.era.current()
-	content.add_child(header("Serviços", "%d/%d" % [Game.state.unlocked_services.size(), Game.content.service_order.size()]))
+	content.add_child(header("🧩 Serviços", "%d/%d" % [Game.state.unlocked_services.size(), Game.content.service_order.size()]))
 	content.add_child(UIKit.muted("Cada segmento de cliente combina melhor com certos serviços. Descubra as combinações perfeitas."))
 	if not era.is_empty():
 		content.add_child(UIKit.card([
@@ -25,7 +25,7 @@ func build() -> void:
 			content.add_child(UIKit.label(TIER_NAMES.get(last_tier, last_tier), 17, UIKit.COLOR_ACCENT))
 		content.add_child(_service_card(svc))
 	content.add_child(UIKit.spacer(4))
-	content.add_child(header("Combinações por segmento"))
+	content.add_child(header("🎯 Combinações por segmento"))
 	for seg in Game.content.match_table:
 		var best: Array = Game.content.match_table[seg].get("best", [])
 		var poor: Array = Game.content.match_table[seg].get("poor", [])
@@ -41,7 +41,7 @@ func build() -> void:
 
 func _build_competitors() -> void:
 	var names: Array = Game.competitors.agency_names()
-	content.add_child(header("Concorrência"))
+	content.add_child(header("⚔️ Concorrência"))
 	content.add_child(UIKit.card([
 		UIKit.label("⚔️ O mercado não espera", 15, UIKit.COLOR_RED, true),
 		UIKit.muted("Prospects deixados sem proposta por muito tempo podem ser fechados por uma agência rival antes de você. Faça a proposta ou dispense — não deixe esfriar.", 13),
@@ -54,7 +54,7 @@ func _build_competitors() -> void:
 
 func _build_agency_events() -> void:
 	var st: GameState = Game.state
-	content.add_child(header("Eventos da agência"))
+	content.add_child(header("🎪 Eventos da agência"))
 	if not Game.agency_events.is_unlocked():
 		content.add_child(UIKit.card([UIKit.label("Eventos promovidos pela agência abrem com 40 de reputação.", 15, UIKit.COLOR_TEXT, true),
 			UIKit.muted("Palestras, feiras e patrocínios trazem reputação, prospects, candidatos e até patrocínio.", 13)]))
@@ -137,7 +137,7 @@ func _service_card(svc: Dictionary) -> PanelContainer:
 	v.add_child(UIKit.muted("Usa: %s" % ", ".join(parts), 13))
 	if not unlocked:
 		var check := Game.services.can_unlock(id)
-		var b := UIKit.button("Desbloquear (%s · rep %d)" % [UIKit.money(float(svc.get("unlock_cost", 0))), int(svc.get("rep_required", 0))],
+		var b := UIKit.button("🔓 Desbloquear (%s · rep %d)" % [UIKit.money(float(svc.get("unlock_cost", 0))), int(svc.get("rep_required", 0))],
 			func(): Game.services.unlock(id), true)
 		b.disabled = not check.ok
 		v.add_child(b)

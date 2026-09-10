@@ -2,6 +2,7 @@ extends Control
 ## Cena principal: HUD, escritório, feed, telas e navegação inferior.
 
 const SCREEN_ORDER := ["team", "clients", "projects", "company", "hr", "unlocks"]
+const SCREEN_ICONS := {"team": "👥", "clients": "🤝", "projects": "📣", "company": "🏢", "hr": "❤️", "unlocks": "🏆"}
 const SCREEN_LABELS := {"team": "Equipe", "clients": "Clientes", "projects": "Projetos", "company": "Empresa", "hr": "RH", "unlocks": "Agência"}
 
 var hud: Hud
@@ -77,9 +78,10 @@ func _ready() -> void:
 	var nav := UIKit.hbox(4)
 	for key in SCREEN_ORDER:
 		var name: String = key
-		var b := UIKit.button(SCREEN_LABELS[key], func(): show_screen(name), false, 56)
-		b.add_theme_font_size_override("font_size", 13)
+		var b := UIKit.button("%s\n%s" % [SCREEN_ICONS[key], SCREEN_LABELS[key]], func(): show_screen(name), false, 56)
+		b.add_theme_font_size_override("font_size", 12)
 		b.clip_text = true
+		b.tooltip_text = SCREEN_LABELS[key]
 		nav.add_child(b)
 		nav_buttons[key] = b
 	root.add_child(nav)

@@ -2,18 +2,23 @@ class_name ClientsScreen
 extends BaseScreen
 ## Clientes: prospects para fechar e clientes ativos para diagnosticar/iniciar projetos.
 
+const SEGMENT_ICONS := {
+	"alimentacao": "🍕", "varejo": "🛍️", "servicos": "✂️", "tecnologia": "💻",
+	"fashion": "👗", "industria": "🏭", "saude": "🏥", "imobiliario": "🏠",
+}
+
 
 func build() -> void:
 	var st: GameState = Game.state
 	var prospects := st.prospects()
-	content.add_child(header("Prospects", "até tier %d" % Game.clients.max_tier()))
+	content.add_child(header("🔎 Prospects", "até tier %d" % Game.clients.max_tier()))
 	if prospects.is_empty():
 		content.add_child(UIKit.muted("Nenhum prospect agora. Novos aparecem com o tempo e com reputação."))
 	for c in prospects:
 		content.add_child(_prospect_card(c))
 	content.add_child(UIKit.spacer(4))
 	var actives := st.active_clients()
-	content.add_child(header("Clientes ativos", "%d" % actives.size()))
+	content.add_child(header("🤝 Clientes ativos", "%d" % actives.size()))
 	if actives.is_empty():
 		content.add_child(UIKit.muted("Feche um contrato para começar a trabalhar."))
 	for c in actives:
@@ -22,7 +27,7 @@ func build() -> void:
 
 func _client_header(c: Client, v: VBoxContainer) -> void:
 	var top := UIKit.hbox()
-	var name := UIKit.label(c.name, 20)
+	var name := UIKit.label("%s %s" % [SEGMENT_ICONS.get(c.segment, "🏢"), c.name], 20)
 	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(name)
 	top.add_child(UIKit.label("Tier %d" % c.tier, 14, UIKit.COLOR_ACCENT))
@@ -38,8 +43,8 @@ func _prospect_card(c: Client) -> PanelContainer:
 	v.add_child(UIKit.muted("Orçamento de referência: %s/mês" % UIKit.money(c.budget)))
 	var chance := Game.clients.proposal_chance(c)
 	var actions := UIKit.hbox()
-	actions.add_child(UIKit.button("Proposta (%d%% no preço base)" % int(chance), func(): popups().show_proposal(c), true))
-	actions.add_child(UIKit.button("Dispensar", func(): Game.clients.drop_prospect(c)))
+	actions.add_child(UIKit.button("🤝 Proposta (%d%%)" % int(chance), func(): popups().show_proposal(c), true))
+	actions.add_child(UIKit.button("✖️ Dispensar", func(): Game.clients.drop_prospect(c)))
 	v.add_child(actions)
 	if c.proposal_attempts > 0:
 		v.add_child(UIKit.label("Tentativas: %d de 3" % c.proposal_attempts, 13, UIKit.COLOR_RED))
@@ -67,13 +72,13 @@ func _active_card(c: Client) -> PanelContainer:
 	var running := st.project_for_client(c.id)
 	var actions := UIKit.hbox()
 	if not c.diagnosed and c.diagnosis_days_left == 0:
-		var diag := UIKit.button("Diagnóstico (%s, %d dias)" % [UIKit.money(Game.clients.diagnosis_cost(c)), Game.clients.diagnosis_days(c)], func():
+		var diag := UIKit.button("🔍 Diagnóstico (%s, %d dias)" % [UIKit.money(Game.clients.diagnosis_cost(c)), Game.clients.diagnosis_days(c)], func():
 			var r := Game.clients.start_diagnosis(c)
 			if not r.ok:
 				popups().show_info("Diagnóstico", r.reason))
 		actions.add_child(diag)
 	if running == null:
-		actions.add_child(UIKit.button("Novo projeto", func(): popups().show_new_project(c), true))
+		actions.add_child(UIKit.button("📣 Novo projeto", func(): popups().show_new_project(c), true))
 	v.add_child(actions)
 	if running != null:
 		v.add_child(UIKit.label("Em andamento: %s (%d%%)" % [running.title, int(running.progress() * 100)], 14, UIKit.COLOR_BLUE))

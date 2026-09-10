@@ -11,13 +11,13 @@ func _ready() -> void:
 func build() -> void:
 	var st: GameState = Game.state
 	var running := st.running_projects()
-	content.add_child(header("Em execução", "%d" % running.size()))
+	content.add_child(header("⚙️ Em execução", "%d" % running.size()))
 	if running.is_empty():
 		content.add_child(UIKit.muted("Nenhum projeto rodando. Vá em Clientes e inicie um."))
 	for p in running:
 		content.add_child(_running_card(p))
 	content.add_child(UIKit.spacer(4))
-	content.add_child(header("Histórico"))
+	content.add_child(header("📜 Histórico"))
 	var done := Game.projects.recent_finished(10)
 	if done.is_empty():
 		content.add_child(UIKit.muted("Suas campanhas entregues aparecem aqui."))
@@ -55,14 +55,14 @@ func _running_card(p: Project) -> PanelContainer:
 		row.move_child(row.get_child(row.get_child_count() - 1), 0)
 		v.add_child(row)
 	if p.addresses_problem:
-		v.add_child(UIKit.label("A estratégia ataca o problema real do cliente.", 13, UIKit.COLOR_GREEN))
-	v.add_child(UIKit.button("Cancelar projeto", func(): _confirm_cancel(p)))
+		v.add_child(UIKit.label("🎯 A estratégia ataca o problema real do cliente.", 13, UIKit.COLOR_GREEN))
+	v.add_child(UIKit.button("🗑️ Cancelar projeto", func(): _confirm_cancel(p)))
 	return card
 
 
 func _confirm_cancel(p: Project) -> void:
-	popups().show_choice("Cancelar %s?" % p.title, "O cliente não paga nada e perde confiança na agência.",
-		["Cancelar projeto", "Voltar"], func(i: int):
+	popups().show_choice("🗑️ Cancelar %s?" % p.title, "O cliente não paga nada e perde confiança na agência.",
+		["🗑️ Cancelar projeto", "↩️ Voltar"], func(i: int):
 			if i == 0:
 				var c: Client = Game.state.client_by_id(p.client_id)
 				Game.projects.cancel(p)
@@ -81,10 +81,10 @@ func _done_card(p: Project) -> PanelContainer:
 	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	top.add_child(title)
 	if p.status == Project.Status.CANCELLED:
-		top.add_child(UIKit.label("cancelado", 14, UIKit.COLOR_RED))
+		top.add_child(UIKit.label("❌ cancelado", 14, UIKit.COLOR_RED))
 	else:
 		top.add_child(UIKit.star_row(int(p.result.get("stars", 0)), 2))
 	v.add_child(top)
 	if p.status != Project.Status.CANCELLED:
-		v.add_child(UIKit.muted("%s · ROI %.1fx · %s" % [UIKit.money(float(p.result.get("payment", 0))), float(p.result.get("roi", 0)), ServiceSystem.MATCH_NAMES.get(p.match_quality, "")], 13))
+		v.add_child(UIKit.muted("💰 %s · ROI %.1fx · %s" % [UIKit.money(float(p.result.get("payment", 0))), float(p.result.get("roi", 0)), ServiceSystem.MATCH_NAMES.get(p.match_quality, "")], 13))
 	return card
