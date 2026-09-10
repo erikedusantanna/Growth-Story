@@ -21,6 +21,14 @@ func _ready() -> void:
 	main.popups.close()
 	await _frames(2)
 	await _shot("02b_escritorio_inicial")
+	main.show_screen("clients")
+	await get_tree().create_timer(0.4).timeout
+	await _shot("02c_guia_proposta")
+	main.popups.show_proposal(Game.state.prospects()[0])
+	await get_tree().create_timer(0.4).timeout
+	await _shot("02d_guia_enviar")
+	main.popups.close()
+	Game.state.tutorial_done = true
 	Game.manual_time = true
 	# prepara um estado interessante: 3 pessoas, cliente ativo, projeto rodando
 	var st: GameState = Game.state
@@ -163,6 +171,17 @@ func _ready() -> void:
 	await _frames(3)
 	await get_tree().create_timer(0.4).timeout
 	await _shot("09e_cena_palestra")
+	main.popups.close()
+	await _settle()
+	# prêmios do marketing: finge um ano com uma campanha 5 estrelas
+	var done_list: Array = st.projects.filter(func(pp): return pp.status == Project.Status.DONE)
+	if not done_list.is_empty():
+		done_list[0].result["stars"] = 5
+		done_list[0].result["score"] = 90.0
+	main.popups.show_awards(Game.awards.evaluate_year(st.year()))
+	await _frames(3)
+	await get_tree().create_timer(0.4).timeout
+	await _shot("09f_premios")
 	main.popups.close()
 	await _settle()
 	if st.running_projects().is_empty():

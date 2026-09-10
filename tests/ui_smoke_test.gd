@@ -19,6 +19,18 @@ func _ready() -> void:
 	print("  jogo iniciado: %s" % Game.state.agency_name)
 	main.popups.close()  # fecha o aviso inicial
 	await get_tree().process_frame
+	# guia dos primeiros objetivos: fora da aba Clientes aponta para ela; nela, para a proposta
+	main.show_screen("team")
+	await get_tree().create_timer(0.3).timeout
+	var guide_nav: String = String(main.tutorial.step.get("target", ""))
+	main.show_screen("clients")
+	await get_tree().create_timer(0.3).timeout
+	var guide_proposal: String = String(main.tutorial.step.get("target", ""))
+	print("  guia: %s → %s" % [guide_nav, guide_proposal])
+	var guide_ok: bool = guide_nav == "nav:clients" and guide_proposal == "proposal" and main.tutorial.card.visible
+	main.tutorial.skip_tutorial()
+	await get_tree().process_frame
+	guide_ok = guide_ok and Game.state.tutorial_done and not main.tutorial.card.visible
 	for key in main.SCREEN_ORDER:
 		main.show_screen(key)
 		await get_tree().process_frame
@@ -115,6 +127,12 @@ func _ready() -> void:
 	print("  resultado de evento da agência com cena: %s" % agency_scene)
 	main.popups.close()
 	await _drain_popups(main)
+	main.popups.show_awards(Game.awards.evaluate_year(GameState.START_YEAR))
+	await get_tree().process_frame
+	var awards_scene: bool = main.popups.is_open() and main.event_stage.visible
+	print("  cerimônia de prêmios com cena: %s (%s)" % [awards_scene, main.event_stage.current_kind])
+	main.popups.close()
+	await _drain_popups(main)
 	# dezembro: o escritório ganha decoração de Natal; janeiro a tira de novo
 	Game.state.day = GameState.DAYS_PER_MONTH * 11
 	EventBus.state_changed.emit()
@@ -145,7 +163,7 @@ func _ready() -> void:
 	main.show_title()
 	await get_tree().process_frame
 	print("  workers no escritório: %d" % main.office_view.workers.size())
-	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone
+	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene
 	print("[%s] UI smoke" % ("OK" if ok else "FALHA"))
 	get_tree().quit(0 if ok else 1)
 

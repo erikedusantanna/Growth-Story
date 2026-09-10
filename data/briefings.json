@@ -1,0 +1,25 @@
+{
+  "comment": "Briefings: cada cliente ativo recebe um tema para o próximo projeto. weights multiplicam o peso dos indicadores na nota; key_services rendem +4 cada (até +8); deadline_mult/budget_mult ajustam o contrato; segments/problems/months filtram quando o tema pode aparecer (mês 0 = janeiro).",
+  "briefings": [
+    {"id": "lancamento", "name": "Lançamento de produto", "icon": "🚀", "desc": "{client} vai lançar uma novidade e quer barulho: tudo precisa estar no ar na data certa.",
+     "weights": {"creativity": 1.3, "execution": 1.2}, "deadline_mult": 0.8, "budget_mult": 1.15, "key_services": ["social_media", "paid_traffic", "design"]},
+    {"id": "rebranding", "name": "Rebranding", "icon": "🎨", "desc": "{client} quer uma identidade nova: nome, visual e tom de voz alinhados ao que a empresa virou.",
+     "weights": {"creativity": 1.4, "strategy": 1.2, "performance": 0.6}, "deadline_mult": 1.3, "budget_mult": 1.2, "key_services": ["branding", "design", "copywriting"], "problems": ["posicionamento"]},
+    {"id": "leads", "name": "Máquina de leads", "icon": "🧲", "desc": "{client} quer o telefone tocando: volume de contatos qualificados, medido toda semana.",
+     "weights": {"performance": 1.4, "strategy": 1.1, "creativity": 0.7}, "deadline_mult": 1.0, "budget_mult": 1.0, "key_services": ["paid_traffic", "seo", "crm", "cro"], "problems": ["leads", "conversao", "atendimento"]},
+    {"id": "crise", "name": "Gestão de crise", "icon": "🔥", "desc": "{client} teve um problema público e precisa responder rápido, sem errar o tom. A reputação de vocês dois está em jogo.",
+     "weights": {"execution": 1.5, "strategy": 1.2}, "deadline_mult": 0.6, "budget_mult": 1.3, "key_services": ["social_media", "copywriting", "strategy"], "rep_mult": 1.5},
+    {"id": "institucional", "name": "Campanha institucional", "icon": "🏛️", "desc": "{client} quer contar sua história e ganhar a confiança do mercado, sem pressa.",
+     "weights": {"strategy": 1.3, "creativity": 1.1, "performance": 0.7}, "deadline_mult": 1.4, "budget_mult": 0.9, "key_services": ["content", "branding", "strategy"]},
+    {"id": "influencers", "name": "Ação com influenciadores", "icon": "🤳", "desc": "{client} quer aparecer na rotina de quem o público já segue.",
+     "weights": {"creativity": 1.3, "execution": 1.1}, "deadline_mult": 0.9, "budget_mult": 1.1, "key_services": ["influencer", "social_media", "content"], "segments": ["fashion", "alimentacao", "varejo", "saude"]},
+    {"id": "fidelizacao", "name": "Programa de fidelidade", "icon": "💌", "desc": "{client} vende bem, mas o cliente não volta. Quer relacionamento contínuo.",
+     "weights": {"strategy": 1.2, "performance": 1.2, "creativity": 0.8}, "deadline_mult": 1.2, "budget_mult": 1.0, "key_services": ["crm", "content", "copywriting"], "problems": ["retencao"]},
+    {"id": "expansao", "name": "Abertura de nova unidade", "icon": "📍", "desc": "{client} vai abrir em outra cidade e precisa chegar conhecido.",
+     "weights": {"strategy": 1.2, "execution": 1.2}, "deadline_mult": 0.9, "budget_mult": 1.2, "key_services": ["paid_traffic", "seo", "social_media"], "segments": ["varejo", "alimentacao", "servicos", "saude", "imobiliario"]},
+    {"id": "black_friday", "name": "Black Friday", "icon": "🏷️", "desc": "{client} aposta tudo na Black Friday: a campanha precisa converter na semana certa.",
+     "weights": {"performance": 1.5, "execution": 1.2, "creativity": 0.8}, "deadline_mult": 0.75, "budget_mult": 1.3, "key_services": ["paid_traffic", "cro", "design"], "months": [8, 9, 10], "segments": ["varejo", "fashion", "tecnologia", "alimentacao"]},
+    {"id": "natal", "name": "Campanha de fim de ano", "icon": "🎄", "desc": "{client} quer a campanha mais lembrada do Natal.",
+     "weights": {"creativity": 1.4, "execution": 1.1}, "deadline_mult": 0.9, "budget_mult": 1.2, "key_services": ["design", "social_media", "content"], "months": [9, 10, 11]}
+  ]
+}

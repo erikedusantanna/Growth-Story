@@ -18,6 +18,8 @@ var era := EraSystem.new()
 var departments := DepartmentSystem.new()
 var competitors := CompetitorSystem.new()
 var seasons := SeasonSystem.new()
+var chemistry := ChemistrySystem.new()
+var awards := AwardSystem.new()
 var save := SaveSystem.new()
 var time := TimeSystem.new()
 
@@ -30,7 +32,7 @@ var ui_blocking := false
 func _ready() -> void:
 	content = ContentDB.new()
 	content.load_all()
-	for system in [services, employees, clients, projects, finance, reputation, events, office, objectives, hr, agency_events, era, departments, competitors, seasons, time]:
+	for system in [services, employees, clients, projects, finance, reputation, events, office, objectives, hr, agency_events, era, departments, competitors, seasons, chemistry, awards, time]:
 		system.setup(self)
 	EventBus.state_changed.connect(func(): if state != null: objectives.check())
 
@@ -136,6 +138,7 @@ func on_year() -> void:
 	if String(old_era.get("id", "")) != String(new_era.get("id", "")):
 		add_log("O mercado mudou: %d é a era de %s. %s" % [
 			state.year(), String(new_era.get("name", "")), String(new_era.get("flavor", ""))], "year")
+	awards.on_year(year)
 	EventBus.year_passed.emit(year)
 
 

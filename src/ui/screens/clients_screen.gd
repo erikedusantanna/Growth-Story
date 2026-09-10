@@ -43,7 +43,9 @@ func _prospect_card(c: Client) -> PanelContainer:
 	v.add_child(UIKit.muted("Orçamento de referência: %s/mês" % UIKit.money(c.budget)))
 	var chance := Game.clients.proposal_chance(c)
 	var actions := UIKit.hbox()
-	actions.add_child(UIKit.button("🤝 Proposta (%d%%)" % int(chance), func(): popups().show_proposal(c), true))
+	var propose := UIKit.button("🤝 Proposta (%d%%)" % int(chance), func(): popups().show_proposal(c), true)
+	propose.set_meta("tutorial", "proposal")
+	actions.add_child(propose)
 	actions.add_child(UIKit.button("✖️ Dispensar", func(): Game.clients.drop_prospect(c)))
 	v.add_child(actions)
 	if c.proposal_attempts > 0:
@@ -70,15 +72,22 @@ func _active_card(c: Client) -> PanelContainer:
 	else:
 		v.add_child(UIKit.muted("Problema real: ??? (faça um diagnóstico para descobrir)"))
 	var running := st.project_for_client(c.id)
+	if running == null:
+		var briefing: Dictionary = Game.projects.briefing_for(c)
+		if not briefing.is_empty():
+			v.add_child(UIKit.label("%s Briefing: %s" % [String(briefing.get("icon", "📋")), String(briefing.get("name", ""))], 15, UIKit.COLOR_PURPLE, true))
 	var actions := UIKit.hbox()
 	if not c.diagnosed and c.diagnosis_days_left == 0:
 		var diag := UIKit.button("🔍 Diagnóstico (%s, %d dias)" % [UIKit.money(Game.clients.diagnosis_cost(c)), Game.clients.diagnosis_days(c)], func():
 			var r := Game.clients.start_diagnosis(c)
 			if not r.ok:
 				popups().show_info("Diagnóstico", r.reason))
+		diag.set_meta("tutorial", "diagnosis")
 		actions.add_child(diag)
 	if running == null:
-		actions.add_child(UIKit.button("📣 Novo projeto", func(): popups().show_new_project(c), true))
+		var new_project := UIKit.button("📣 Novo projeto", func(): popups().show_new_project(c), true)
+		new_project.set_meta("tutorial", "new_project")
+		actions.add_child(new_project)
 	v.add_child(actions)
 	if running != null:
 		v.add_child(UIKit.label("Em andamento: %s (%d%%)" % [running.title, int(running.progress() * 100)], 14, UIKit.COLOR_BLUE))

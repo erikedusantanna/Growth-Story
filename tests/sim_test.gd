@@ -21,6 +21,7 @@ func _ready() -> void:
 	_test_departments(game)
 	_test_competitors(game)
 	_test_office_life(game)
+	_test_briefings_chemistry_awards(game)
 	if failures == 0:
 		print("\n[OK] Todos os testes passaram.")
 		get_tree().quit(0)
@@ -208,6 +209,10 @@ func _test_save_roundtrip(game) -> void:
 	var norm_before: String = JSON.stringify(JSON.parse_string(JSON.stringify(before)))
 	var norm_after: String = JSON.stringify(JSON.parse_string(JSON.stringify(after)))
 	check(norm_before == norm_after, "estado idêntico após roundtrip")
+	if norm_before != norm_after:
+		for key in before:
+			if JSON.stringify(before[key]) != JSON.stringify(after.get(key)):
+				printerr("    campo diferente: %s\n      antes: %s\n      depois: %s" % [key, JSON.stringify(before[key]).left(300), JSON.stringify(after.get(key)).left(300)])
 	EventBus.project_completed.disconnect(_on_project_completed)
 	game.state.paused = false
 	for i in 30:
@@ -478,3 +483,96 @@ func _test_office_life(game) -> void:
 	Audio.set_ambience_enabled(false)
 	check(not Audio.ambience_enabled, "toggle desliga o som ambiente")
 	Audio.set_ambience_enabled(true)
+	# guia inicial: passos apontam para objetivos existentes e o estado persiste no save
+	var objective_ids: Array = game.content.objectives.map(func(o): return String(o.get("id", "")))
+	var steps_ok: bool = not game.content.tutorial.is_empty()
+	for s in game.content.tutorial:
+		if not objective_ids.has(String(s.get("objective", ""))) or String(s.get("target", "")) == "":
+			steps_ok = false
+	check(steps_ok, "passos do guia apontam para objetivos e botões válidos (%d passos)" % game.content.tutorial.size())
+	game.state.tutorial_done = true
+	var restored = GameState.from_dict(game.state.to_dict())
+	check(restored.tutorial_done, "tutorial_done sobrevive ao save")
+
+
+func _test_briefings_chemistry_awards(game) -> void:
+	print("== Briefings, química e prêmios ==")
+	game.new_game("Premiada", "Chefe", 4242)
+	var st = game.state
+	st.money = 200000.0
+	st.reputation = 40.0
+	# briefing: cliente ativo ganha tema; entra no título e no contrato
+	var c = st.prospects()[0]
+	c.status = Client.Status.ACTIVE
+	var b: Dictionary = game.projects.briefing_for(c)
+	check(not b.is_empty() and c.briefing == String(b.get("id", "")), "cliente ativo recebe um briefing (%s)" % b.get("name", ""))
+	check(game.projects.briefing_for(c).get("id", "") == b.get("id", ""), "briefing fica fixo até o projeto sair")
+	var base_deadline := clampi(18 + int(c.budget * (1.2 + 0.3 * c.maturity) / 800.0), 24, 60)
+	var q = game.projects.quote(c, Project.Kind.PROJECT)
+	var expected_deadline := maxi(12, int(roundf(float(clampi(18 + int(float(q.budget) / 800.0), 24, 60)) * float(b.get("deadline_mult", 1.0)))))
+	check(int(q.deadline) == expected_deadline, "prazo do contrato segue o briefing (%d dias, base %d)" % [int(q.deadline), base_deadline])
+	var months_ok := true
+	for bb in game.content.briefings:
+		for m in bb.get("months", []):
+			if int(m) < 0 or int(m) > 11:
+				months_ok = false
+	check(months_ok and game.content.briefings.size() >= 8, "%d briefings com meses válidos" % game.content.briefings.size())
+	# química: par criativo + analítico é sinergia; estrela + estrela é atrito
+	var a = game.employees.generate_candidate("normal")
+	a.personality = "criativo"
+	var d = game.employees.generate_candidate("normal")
+	d.personality = "analitico"
+	var chem: Dictionary = game.chemistry.team_chemistry([a, d])
+	check(int(chem.score) == 1 and chem.items.size() == 1, "criativo + analítico = sinergia")
+	var s1 = game.employees.generate_candidate("normal")
+	s1.personality = "estrela"
+	var s2 = game.employees.generate_candidate("normal")
+	s2.personality = "estrela"
+	check(int(game.chemistry.team_chemistry([s1, s2]).score) == -1, "duas estrelas = atrito")
+	check(int(game.chemistry.team_chemistry([a, d, s1, s2]).score) == 0, "soma dos pares")
+	check(not game.chemistry.partners_for("criativo").synergy.is_empty(), "ficha mostra com quem combina")
+	# a nota reflete a química e os serviços-chave do briefing
+	for e in [a, d]:
+		st.candidates.append(e)
+		game.employees.hire(e)
+	var keys: Array = b.get("key_services", [])
+	var chosen: Array = keys.filter(func(sid): return game.services.is_unlocked(sid))
+	if chosen.is_empty():
+		chosen = ["social_media"]
+	var pv = game.projects.predict(c, chosen.slice(0, 2), [a.id, d.id], Project.Kind.PROJECT)
+	var labels: Array = pv.breakdown.map(func(i): return String(i.label))
+	check(labels.any(func(l): return l.begins_with("Química")), "prévia mostra a química da equipe")
+	check(int(pv.chemistry.score) == 1, "prévia devolve a química (%d)" % int(pv.chemistry.score))
+	if not keys.filter(func(sid): return game.services.is_unlocked(sid)).is_empty():
+		check(labels.any(func(l): return l.contains(String(b.get("name", "")))), "serviço-chave do briefing conta na nota")
+	var r = game.projects.create_project(c, chosen.slice(0, 2), [a.id, d.id])
+	check(r.ok, "projeto criado com briefing")
+	var p: Project = st.running_projects()[0]
+	check(p.briefing == String(b.get("id", "")) and p.title.begins_with(String(b.get("name", ""))), "projeto guarda o briefing e o título usa o tema (%s)" % p.title)
+	var stress_before: float = a.stress
+	game.chemistry.apply_daily([s1, s2])
+	check(s1.stress > 0.0, "atrito sobe o estresse por dia")
+	game.chemistry.apply_daily([a, d])
+	check(a.stress == stress_before, "sinergia não estressa")
+	# prêmios: ano com uma campanha 5 estrelas ganha Campanha do Ano
+	game.on_day()
+	p.result = {"stars": 5, "score": 90.0}
+	p.status = Project.Status.DONE
+	p.finished_on = st.day
+	for e in [a, d]:
+		e.project_id = -1
+	var ceremony: Dictionary = game.awards.evaluate_year(GameState.START_YEAR)
+	var by_cat := {}
+	for res in ceremony.results:
+		by_cat[res.category] = res
+	check(String(by_cat.campaign.status) == "won" and by_cat.campaign.people.has(a.id), "Campanha do Ano para a campanha 5 estrelas")
+	check(String(by_cat.professional.status) == "nominated", "uma entrega só: profissional indicado, não vencedor")
+	check(by_cat.agency.has("status") and float(game.awards.agency_threshold(GameState.START_YEAR)) == AwardSystem.AGENCY_BASE, "Agência do Ano usa a régua do primeiro ano")
+	var rep_before: float = st.reputation
+	var awards_before: int = st.awards.size()
+	game.awards.on_year(GameState.START_YEAR)
+	check(st.awards.size() == awards_before + 3, "cerimônia guarda as 3 categorias no histórico")
+	check(st.reputation > rep_before, "vencer rende reputação")
+	check(int(st.stats.get("awards", 0)) >= 1, "contador de prêmios")
+	var restored = GameState.from_dict(st.to_dict())
+	check(restored.awards.size() == st.awards.size() and restored.projects[0].briefing == p.briefing and restored.clients[0].briefing == c.briefing, "prêmios e briefings sobrevivem ao save")

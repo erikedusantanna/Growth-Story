@@ -20,6 +20,7 @@ signal project_completed(project, result: Dictionary)
 signal retainer_offer(client, project)
 signal event_triggered(event: Dictionary)
 signal agency_event_finished(event: Dictionary, people: Array, summary: String)  # evento promovido terminou
+signal awards_ceremony(ceremony: Dictionary)  # Prêmios do Marketing na virada do ano
 signal game_over(reason: String)
 signal office_feedback(employee_id: int, text: String, kind: String)  # balão/número flutuante sobre o personagem
 signal game_started()

@@ -1,0 +1,15 @@
+{
+  "comment": "Química entre personalidades na mesma equipe de projeto. synergy = +1, friction = -1 por par; a soma (limitada a ±3) vale ±3 pontos na nota por ponto, ±5% de ritmo, e mexe em moral (sinergia) ou estresse (atrito) a cada dia.",
+  "pairs": [
+    {"a": "criativo", "b": "analitico", "kind": "synergy", "text": "Ideia com dado: a criatividade ganha direção"},
+    {"a": "visionario", "b": "estrela", "kind": "synergy", "text": "Mentoria: a estrela puxa quem tem potencial"},
+    {"a": "vendedor", "b": "criativo", "kind": "synergy", "text": "Quem vende a ideia ao lado de quem a cria"},
+    {"a": "analitico", "b": "workaholic", "kind": "synergy", "text": "Método e fôlego: entregam muito e bem"},
+    {"a": "leal", "b": "visionario", "kind": "synergy", "text": "Base sólida para ideias novas"},
+    {"a": "estrela", "b": "estrela", "kind": "friction", "text": "Duas estrelas disputam o palco"},
+    {"a": "mercenario", "b": "leal", "kind": "friction", "text": "Valores opostos: um pensa no bolso, o outro na casa"},
+    {"a": "workaholic", "b": "criativo", "kind": "friction", "text": "Ritmo demais para quem precisa de espaço"},
+    {"a": "estrela", "b": "mercenario", "kind": "friction", "text": "Ego e cifrão na mesma sala"},
+    {"a": "vendedor", "b": "analitico", "kind": "friction", "text": "Promessa de venda contra a planilha"}
+  ]
+}

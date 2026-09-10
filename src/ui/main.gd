@@ -14,6 +14,7 @@ var nav_buttons: Dictionary = {}
 var popups: Popups
 var event_stage: EventStage
 var title_screen: TitleScreen
+var tutorial: TutorialOverlay
 var current_screen := "clients"
 
 
@@ -83,6 +84,7 @@ func _ready() -> void:
 		b.add_theme_font_size_override("font_size", 12)
 		b.clip_text = true
 		b.tooltip_text = SCREEN_LABELS[key]
+		b.set_meta("tutorial", "nav:%s" % key)
 		nav.add_child(b)
 		nav_buttons[key] = b
 	root.add_child(nav)
@@ -94,6 +96,11 @@ func _ready() -> void:
 	add_child(stage_layer)
 	event_stage = EventStage.new()
 	stage_layer.add_child(event_stage)
+	var guide_layer := CanvasLayer.new()
+	guide_layer.layer = 12   # acima dos modais: destaca botões dentro deles também
+	add_child(guide_layer)
+	tutorial = TutorialOverlay.new()
+	guide_layer.add_child(tutorial)
 
 	title_screen = TitleScreen.new()
 	title_screen.start_requested.connect(_on_game_started)
@@ -149,7 +156,7 @@ func _on_game_started() -> void:
 	_refresh_feed()
 	if Game.state.day == 0:
 		popups.show_info("Sua história começa aqui",
-			"Você é um freelancer com %s no caixa. Siga os objetivos mostrados acima do feed: feche o primeiro cliente, monte a estratégia e entregue resultado. Dinheiro e reputação abrem clientes maiores. Use os botões 1x, 2x e 3x para controlar o ritmo. Arraste o escritório com o dedo e use dois dedos para dar zoom." % UIKit.money(Game.state.money))
+			"Você é um freelancer com %s no caixa. O guia laranja mostra onde tocar para cumprir os primeiros objetivos (eles aparecem acima do feed). Dinheiro e reputação abrem clientes maiores. Use os botões 1x, 2x e 3x para controlar o ritmo. Arraste o escritório com o dedo e use dois dedos para dar zoom." % UIKit.money(Game.state.money))
 	Game.state.paused = false
 
 

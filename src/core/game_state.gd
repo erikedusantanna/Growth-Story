@@ -30,6 +30,7 @@ var last_event_day: int = -999
 var events_seen: Dictionary = {}
 var events_last_day: Dictionary = {}   # id -> último dia em que disparou
 var objective_index: int = 0           # objetivo atual (data/objectives.json)
+var tutorial_done := false             # guia dos primeiros objetivos encerrado (concluído ou pulado)
 var furniture: Array = []               # ids de mobília comprada
 var buffs: Array = []                   # [{id, until_day, productivity, stress_rate}] efeitos temporários do RH
 var hr_last_used: Dictionary = {}       # id da ação -> último dia
@@ -37,12 +38,13 @@ var hr_hired := false                   # analista de RH contratada (sala no esc
 var pets: Array = []                    # ["dog", "cat"] pets permanentes do escritório
 var agency_events: Array = []           # [{id, ends_day, people:[ids]}] eventos em andamento
 var agency_events_last: Dictionary = {} # id -> último dia
+var awards: Array = []                  # [{year, category, status, title, detail}] Prêmios do Marketing
 var pending_event: Dictionary = {}
 var cases: int = 0
 var speed: int = 1
 var paused: bool = false
 var game_over: bool = false
-var stats: Dictionary = {"projects_done": 0, "five_stars": 0, "hires": 0, "total_revenue": 0.0, "clients_signed": 0, "trainings": 0, "retainers": 0, "diagnoses": 0, "hr_actions": 0, "furniture": 0, "agency_events": 0}
+var stats: Dictionary = {"projects_done": 0, "five_stars": 0, "hires": 0, "total_revenue": 0.0, "clients_signed": 0, "trainings": 0, "retainers": 0, "diagnoses": 0, "hr_actions": 0, "furniture": 0, "agency_events": 0, "awards": 0}
 
 
 func new_id() -> int:
@@ -158,10 +160,11 @@ func to_dict() -> Dictionary:
 		"finance_history": finance_history.duplicate(true),
 		"month_revenue": month_revenue, "month_expenses": month_expenses,
 		"last_event_day": last_event_day, "events_seen": events_seen.duplicate(),
-		"events_last_day": events_last_day.duplicate(), "objective_index": objective_index,
+		"events_last_day": events_last_day.duplicate(), "objective_index": objective_index, "tutorial_done": tutorial_done,
 		"furniture": furniture.duplicate(), "buffs": buffs.duplicate(true), "hr_last_used": hr_last_used.duplicate(),
 		"hr_hired": hr_hired, "pets": pets.duplicate(),
 		"agency_events": agency_events.duplicate(true), "agency_events_last": agency_events_last.duplicate(),
+		"awards": awards.duplicate(true),
 		"pending_event": pending_event.duplicate(true), "cases": cases,
 		"speed": speed, "game_over": game_over, "stats": stats.duplicate(),
 	}
@@ -202,6 +205,7 @@ static func from_dict(d: Dictionary) -> GameState:
 	s.events_seen = d.get("events_seen", {})
 	s.events_last_day = d.get("events_last_day", {})
 	s.objective_index = int(d.get("objective_index", 0))
+	s.tutorial_done = bool(d.get("tutorial_done", false))
 	s.furniture = Array(d.get("furniture", []))
 	s.buffs = Array(d.get("buffs", []))
 	s.hr_last_used = d.get("hr_last_used", {})
@@ -209,6 +213,7 @@ static func from_dict(d: Dictionary) -> GameState:
 	s.pets = Array(d.get("pets", []))
 	s.agency_events = Array(d.get("agency_events", []))
 	s.agency_events_last = d.get("agency_events_last", {})
+	s.awards = Array(d.get("awards", []))
 	s.pending_event = d.get("pending_event", {})
 	s.cases = int(d.get("cases", 0))
 	s.speed = int(d.get("speed", 1))

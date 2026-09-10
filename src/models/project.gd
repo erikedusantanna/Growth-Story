@@ -31,6 +31,7 @@ var targets: Dictionary = {"strategy": 50.0, "creativity": 50.0, "execution": 50
 var boosts: Dictionary = {"strategy": 0.0, "creativity": 0.0, "execution": 0.0, "performance": 0.0}
 var match_quality: String = "neutral" # perfect / good / neutral / poor
 var addresses_problem: bool = false
+var briefing: String = ""             # tema do projeto (data/briefings.json)
 var months_left: int = 0              # retainer
 var cycle: int = 0                    # ciclos concluídos (retainer)
 var result: Dictionary = {}           # último resultado {stars, score, payment, ...}
@@ -57,7 +58,7 @@ func to_dict() -> Dictionary:
 		"services": services.duplicate(), "team": team.duplicate(),
 		"effort_total": effort_total, "effort_done": effort_done,
 		"indicators": indicators.duplicate(), "targets": targets.duplicate(), "boosts": boosts.duplicate(),
-		"match_quality": match_quality, "addresses_problem": addresses_problem,
+		"match_quality": match_quality, "addresses_problem": addresses_problem, "briefing": briefing,
 		"months_left": months_left, "cycle": cycle, "result": result.duplicate(true),
 		"history": history.duplicate(true),
 	}
@@ -76,6 +77,7 @@ static func from_dict(d: Dictionary) -> Project:
 	p.started_on = int(d.get("started_on", 0))
 	p.finished_on = int(d.get("finished_on", -1))
 	p.objective = d.get("objective", "")
+	p.briefing = String(d.get("briefing", ""))
 	p.services = Array(d.get("services", []))
 	p.team = []
 	for t in d.get("team", []):
