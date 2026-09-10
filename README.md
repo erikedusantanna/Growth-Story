@@ -76,6 +76,8 @@ Depois: *Projeto → Exportar → Android → Exportar projeto*, ou
 | Eventos da agência | `agency_event_system.gd`, `data/agency_events.json` | Abrem com reputação 40: custam dinheiro e/ou pessoas por alguns dias e rendem reputação, prospects, candidatos, moral ou patrocínio |
 | Save/Load | `save_system.gd` | JSON em `user://savegame.json`, autosave mensal, botão na aba Empresa |
 | UI | `src/ui/` | HUD, escritório, feed de humor, 6 abas (Equipe, Clientes, Projetos, Empresa, RH, Agência), modais |
+| Fonte pixel art | `tools/gen_font.py`, `assets/fonts/pixel.fnt` | Bitmap font 5×7 com acentuação (á é í ó ú ã õ â ê ô ç), gerada por código; usada em títulos e números do HUD (`UIKit.pixel_font()`) |
+| Som | `src/core/audio_manager.gd`, `tools/gen_audio.py` | Música e 9 efeitos sonoros 8-bit sintetizados por código (sem samples externos); autoload `Audio` reage aos sinais do `EventBus` (contratação, pagamento, projeto concluído, evento, cliente feliz, crise, promoção); liga/desliga na aba Empresa |
 
 Detalhes de fórmulas e fluxo em `docs/ARQUITETURA.md`.
 
@@ -83,6 +85,6 @@ Detalhes de fórmulas e fluxo em `docs/ARQUITETURA.md`.
 
 1. **Balanceamento** com testes de jogadores reais. A simulação em `tests/sim_test.gd` imprime a curva ano a ano e falha se fugir da régua do GDD §53 (ver `docs/ARQUITETURA.md`).
 2. Arte definitiva: substituir `assets/sprites/*.png` mantendo os tamanhos (16×16 personagens, 32×16 mesa/sofá).
-3. Fonte pixel art e sons (`GDD §40–41`).
-4. Conteúdo: mais clientes, eventos, eras históricas (GDD §23) e serviços de endgame.
+3. ~~Fonte pixel art e sons (`GDD §40–41`)~~ — feito: `assets/fonts/pixel.fnt` e `src/core/audio_manager.gd`.
+4. ~~Conteúdo: mais clientes, eventos e serviços de endgame~~ — feito. Falta: eras históricas (GDD §23).
 5. Departamentos, gerentes, concorrentes e aquisições (Fase 4 do roadmap).

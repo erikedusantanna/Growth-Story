@@ -16,6 +16,7 @@ func _ready() -> void:
 	_test_save_roundtrip(game)
 	_test_scoring(game)
 	_test_hr_furniture_events(game)
+	_test_audio(game)
 	if failures == 0:
 		print("\n[OK] Todos os testes passaram.")
 		get_tree().quit(0)
@@ -288,6 +289,27 @@ func _test_hr_furniture_events(game) -> void:
 	var loaded = GameState.from_dict(saved)
 	check(loaded.furniture.size() == 2 and loaded.hr_last_used.has("pizza"), "mobília e RH sobrevivem ao save")
 	check(loaded.hr_hired and loaded.pets.size() == 2, "contratação do RH e pets sobrevivem ao save")
+
+
+func _test_audio(game) -> void:
+	print("== Áudio ==")
+	check(Audio != null, "singleton Audio existe")
+	check(Audio.sfx_enabled, "efeitos começam ligados")
+	check(Audio.music_enabled, "música começa ligada")
+	Audio.set_sfx_enabled(false)
+	check(not Audio.sfx_enabled, "desligar efeitos")
+	Audio.set_music_enabled(false)
+	check(not Audio.music_enabled, "desligar música")
+	var reloaded = load("res://src/core/audio_manager.gd").new()
+	reloaded._load_settings()
+	check(not reloaded.music_enabled and not reloaded.sfx_enabled, "preferência de áudio persiste em disco")
+	reloaded.free()
+	Audio.set_sfx_enabled(true)
+	Audio.set_music_enabled(true)
+	# não deve travar mesmo sem placa de som real (driver headless)
+	Audio.play_sfx("payment")
+	Audio.play_music()
+	check(true, "play_sfx/play_music não travam em ambiente headless")
 
 
 func _test_scoring(game) -> void:

@@ -96,6 +96,9 @@ func _ready() -> void:
 	main.screens["company"].scroll_vertical = 700
 	await _frames(2)
 	await _shot("07d_mobilia")
+	main.screens["company"].scroll_vertical = 4000
+	await _frames(2)
+	await _shot("07d2_som")
 	main.show_screen("unlocks")
 	await get_tree().create_timer(1.5).timeout
 	await _shot("07e_escritorio_mobilia")

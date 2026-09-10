@@ -75,6 +75,15 @@ func build() -> void:
 	sv.add_child(_row("Receita acumulada", UIKit.money(float(st.stats.total_revenue))))
 	content.add_child(stats)
 
+	var sound := UIKit.card()
+	var soundv := UIKit.card_content(sound)
+	soundv.add_child(UIKit.label("Som", 19, UIKit.COLOR_ACCENT))
+	var sound_row := UIKit.hbox()
+	sound_row.add_child(UIKit.toggle("🎵 Música", Audio.music_enabled, func(on): Audio.set_music_enabled(on)))
+	sound_row.add_child(UIKit.toggle("🔊 Efeitos", Audio.sfx_enabled, func(on): Audio.set_sfx_enabled(on)))
+	soundv.add_child(sound_row)
+	content.add_child(sound)
+
 	var actions := UIKit.hbox()
 	actions.add_child(UIKit.button("Salvar jogo", func():
 		if Game.save_game():

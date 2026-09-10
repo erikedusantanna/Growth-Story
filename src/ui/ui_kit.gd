@@ -45,6 +45,19 @@ static func bold_font() -> Font:
 	return _bold
 
 
+static var _pixel: Font = null
+
+
+## Fonte pixel art (matriz de pontos 5x7, res://assets/fonts/pixel.fnt) usada em
+## títulos e números do HUD — o corpo de texto segue na fonte do sistema para não
+## cansar a leitura (GDD §40: "não precisa parecer retrô demais").
+static func pixel_font() -> Font:
+	if _pixel == null:
+		var f: Font = load("res://assets/fonts/pixel.fnt")
+		_pixel = f if f != null else bold_font()
+	return _pixel
+
+
 static func _rounded(bg: Color, border: Color = Color.TRANSPARENT, radius: int = 10, border_w: int = 0) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg
@@ -127,14 +140,15 @@ static func label(text: String, size: int = 18, color: Color = COLOR_TEXT, wrap:
 
 static func title(text: String) -> Label:
 	var l := label(text, 24, COLOR_TEXT)
-	l.add_theme_font_override("font", bold_font())
+	l.add_theme_font_override("font", pixel_font())
+	l.add_theme_constant_override("line_spacing", 2)
 	return l
 
 
-## Número grande em negrito azul-marinho, como nas referências.
+## Número grande em negrito azul-marinho, como nas referências. Usa a fonte pixel art.
 static func number(text: String, size: int = 20, color: Color = COLOR_NUMBER) -> Label:
 	var l := label(text, size, color)
-	l.add_theme_font_override("font", bold_font())
+	l.add_theme_font_override("font", pixel_font())
 	return l
 
 
@@ -194,6 +208,7 @@ static func button(text: String, callback: Callable, accent: bool = false, min_h
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.clip_text = true
 	b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	b.pressed.connect(func(): Audio.play_sfx("click"))
 	if callback.is_valid():
 		b.pressed.connect(callback)
 	if accent:

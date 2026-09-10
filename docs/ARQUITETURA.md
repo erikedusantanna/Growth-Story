@@ -112,6 +112,32 @@ Campos de condição: `min_day`, `min_reputation`, `min_employees`, `min_active_
 `requires_personality`, `once`, `cooldown_days` (padrão 120: o mesmo evento não repete antes disso). Placeholders no texto: `{best_employee}`, `{random_client}`,
 `{personality_employee}`. Efeitos suportados estão em `EventSystem._apply_effect`.
 
+## Fonte pixel art (`tools/gen_font.py`, `assets/fonts/pixel.fnt`)
+
+Bitmap font 5×7 (matriz de pontos), com 2 linhas extras acima para acento — cobre A-Z, a-z,
+0-9, pontuação básica e as vogais acentuadas do português (agudo, grave, circunflexo, til) mais
+ç/Ç. Gerada por código: `tools/gen_font.py` escreve o atlas (`pixel_atlas.png`) e a descrição
+no formato BMFont (`pixel.fnt`), que o Godot importa nativamente como `FontFile`
+(`importer="font_data_bmfont"`). `UIKit.pixel_font()` carrega o resource; `UIKit.title()` e
+`UIKit.number()` já usam essa fonte — o corpo de texto (labels, parágrafos) segue na fonte do
+sistema para não cansar a leitura (GDD §40: "não precisa parecer retrô demais").
+
+## Som (`src/core/audio_manager.gd`, `tools/gen_audio.py`)
+
+Música e efeitos sintetizados por código em ondas quadradas/triangulares (`tools/gen_audio.py`,
+sem samples externos): 9 efeitos em `assets/audio/sfx/` (hire, payment, project_complete,
+level_up, event, client_happy, crisis, promotion, click) e uma trilha em loop em
+`assets/audio/music/theme_loop.wav`. O autoload `Audio` (`src/core/audio_manager.gd`) escuta os
+sinais do `EventBus` — nenhum outro sistema precisa saber que o áudio existe:
+`employee_hired`→hire, `employee_promoted`→promotion, `client_lost`→crisis,
+`event_triggered`→event, `money_changed` (delta>0)→payment, `project_completed`
+(`result.stars>=4`)→client_happy, senão→project_complete, e cruzar uma faixa de reputação
+(20/40/60/80)→level_up. `UIKit.button()` toca "click" em toda pressão. Preferências
+(`music_enabled`/`sfx_enabled`) persistem em `user://audio_settings.cfg` e têm toggle na aba
+Empresa. Em ambiente headless (`DisplayServer.get_name() == "headless"`, usado pelos testes) o
+áudio fica silencioso propositalmente: o driver "Dummy" não libera `AudioStreamPlayback` entre
+chamadas rápidas e os recursos vazariam até o fim do processo.
+
 ## Save
 
 `GameState.to_dict()` → JSON em `user://savegame.json`. O estado do RNG é salvo como string
