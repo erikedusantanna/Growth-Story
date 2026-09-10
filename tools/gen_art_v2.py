@@ -34,7 +34,7 @@ PAL = {
     "leaf": hx("#4f9a4a"), "leaf_hi": hx("#86cc6c"), "leaf_lo": hx("#2f6b33"),
     "pot": hx("#c2673d"), "pot_hi": hx("#e2905f"), "pot_lo": hx("#7f3f25"),
     # personagem (partes fixas)
-    "eye": hx("#1f2633"), "eye_hi": hx("#ffffff"), "mouth": hx("#b8605c"), "blush": hx("#f2b3a2"),
+    "eye": hx("#1f2633"), "eye_hi": hx("#ffffff"), "eye_iris": hx("#4a5f8a"), "mouth": hx("#b8605c"), "blush": hx("#f2b3a2"),
     "badge": hx("#ffffff"), "badge_lo": hx("#c9d2da"), "lanyard": hx("#3b7dd8"), "shoe": hx("#2a2f3a"), "shoe_hi": hx("#4a5160"),
     "shadow": (31, 38, 51, 60),
 }
@@ -312,187 +312,320 @@ def plant():
 
 
 # --- Personagem chibi 32x48 --------------------------------------------------------
-# Cores variaveis: skin, hair, shirt, pants sao nomes registrados por color_set().
+# Cabeca grande (20 px), corpo magro (10 px), 3 tons por material. Cores variaveis sao
+# nomes registrados por color_set(): skin, hair, shirt, pants (+ "_hi" / "_lo").
+# direction: front | back | left | right (direita = espelho da esquerda)
+# pose: idle | walk_a | walk_b | sit
 
-def _head_front(c, skin, hair, style, cx=16, top=3):
-    # cabeca 20x18 (x 6..25, y top..top+17)
-    rect(c, cx - 10, top + 2, 20, 16, skin)
-    rect(c, cx - 9, top + 1, 18, 1, skin)
-    rect(c, cx + 6, top + 4, 4, 14, skin + "_lo")        # sombra lado direito
-    rect(c, cx - 10, top + 15, 20, 3, skin + "_lo")       # queixo
-    rect(c, cx - 9, top + 17, 18, 1, skin + "_lo")
-    # olhos grandes
-    for ex in (cx - 6, cx + 3):
-        rect(c, ex, top + 8, 3, 5, "eye")
-        put(c, ex, top + 8, "eye_hi")
-        put(c, ex + 1, top + 9, "eye_hi")
-    rect(c, cx - 1, top + 14, 2, 1, "mouth")
-    put(c, cx - 8, top + 13, "blush")
-    put(c, cx + 7, top + 13, "blush")
-    # cabelo
-    rect(c, cx - 10, top, 20, 5, hair)
-    rect(c, cx - 11, top + 2, 22, 4, hair)
-    rect(c, cx - 9, top - 1, 18, 1, hair)
-    rect(c, cx - 8, top + 1, 8, 1, hair + "_hi")
-    rect(c, cx - 9, top + 2, 5, 1, hair + "_hi")
-    # franja recortada
-    for x, h in ((cx - 10, 3), (cx - 7, 2), (cx - 3, 4), (cx + 1, 2), (cx + 4, 3), (cx + 7, 2)):
-        rect(c, x, top + 5, 3, h, hair)
-    rect(c, cx + 8, top + 5, 3, 6, hair + "_lo")
-    rect(c, cx - 11, top + 5, 2, 5, hair)
-    if style == "long":
-        rect(c, cx - 12, top + 6, 3, 16, hair)
-        rect(c, cx + 9, top + 6, 3, 16, hair + "_lo")
-        rect(c, cx - 12, top + 20, 3, 5, hair + "_lo")
-        rect(c, cx + 9, top + 20, 3, 5, hair + "_lo")
-    if style == "bun":
-        rect(c, cx - 4, top - 4, 8, 5, hair)
-        rect(c, cx - 3, top - 5, 6, 1, hair)
-        rect(c, cx - 3, top - 4, 3, 1, hair + "_hi")
+HAIR_STYLES = ("short", "long", "bun", "ponytail", "curly", "buzz", "swept")
 
 
-def _body_front(c, skin, shirt, pants, cx=16, top=21, sitting=False):
-    # tronco 14 de largura
-    rect(c, cx - 7, top, 14, 13, shirt)
-    rect(c, cx - 7, top, 14, 1, shirt + "_hi")
-    rect(c, cx + 4, top + 1, 3, 12, shirt + "_lo")
-    rect(c, cx - 1, top, 2, 2, skin)                      # pescoco
-    # cracha com cordao
-    vline(c, cx - 2, top + 1, top + 5, "lanyard")
-    vline(c, cx + 1, top + 1, top + 5, "lanyard")
-    rect(c, cx - 2, top + 6, 5, 4, "badge")
-    rect(c, cx - 1, top + 7, 2, 1, "lanyard")
-    rect(c, cx - 2, top + 9, 5, 1, "badge_lo")
-    # bracos
-    rect(c, cx - 9, top + 2, 2, 8, shirt)
-    rect(c, cx + 7, top + 2, 2, 8, shirt + "_lo")
-    rect(c, cx - 9, top + 10, 2, 3, skin)
-    rect(c, cx + 7, top + 10, 2, 3, skin + "_lo")
-    if sitting:
-        rect(c, cx - 7, top + 13, 14, 4, pants)
-        rect(c, cx - 7, top + 13, 14, 1, pants + "_hi")
-        rect(c, cx - 7, top + 17, 5, 2, "shoe")
-        rect(c, cx + 2, top + 17, 5, 2, "shoe")
+def _eye(c, x0, y0):
+    rect(c, x0, y0, 3, 5, "eye")
+    put(c, x0 + 1, y0 + 2, "eye_iris")
+    put(c, x0 + 1, y0 + 3, "eye_iris")
+    put(c, x0, y0, "eye_hi")
+    put(c, x0 + 1, y0, "eye_hi")
+    put(c, x0, y0 + 1, "eye_hi")
+
+
+def _glasses_front(c, y=10):
+    for x0 in (9, 18):
+        hline(c, x0, x0 + 4, y, "frame")
+        hline(c, x0, x0 + 4, y + 6, "frame")
+        vline(c, x0, y, y + 6, "frame")
+        vline(c, x0 + 4, y, y + 6, "frame")
+        put(c, x0 + 1, y + 1, "glass_hi")
+    hline(c, 14, 17, y + 3, "frame")
+
+
+def _hair_front(c, hair, style):
+    lo, hi = hair + "_lo", hair + "_hi"
+    if style == "buzz":
+        rect(c, 6, 2, 20, 6, hair)
+        rect(c, 7, 1, 18, 1, hair)
+        rect(c, 5, 4, 1, 5, hair); rect(c, 26, 4, 1, 5, lo)
+        rect(c, 8, 2, 7, 1, hi)
+        rect(c, 22, 3, 4, 5, lo)
         return
-    # pernas e sapatos
-    rect(c, cx - 6, top + 13, 5, 8, pants)
-    rect(c, cx + 1, top + 13, 5, 8, pants)
-    rect(c, cx - 6, top + 13, 5, 1, pants + "_hi")
-    rect(c, cx + 4, top + 13, 2, 8, pants + "_lo")
-    rect(c, cx - 6, top + 21, 5, 3, "shoe")
-    rect(c, cx + 1, top + 21, 5, 3, "shoe")
-    put(c, cx - 6, top + 21, "shoe_hi")
-    put(c, cx + 1, top + 21, "shoe_hi")
+    # base: calota + laterais
+    rect(c, 5, 2, 22, 7, hair)
+    rect(c, 6, 1, 20, 1, hair)
+    rect(c, 5, 9, 2, 3, hair)
+    rect(c, 25, 9, 2, 3, lo)
+    rect(c, 8, 2, 7, 1, hi)
+    rect(c, 7, 3, 3, 1, hi)
+    rect(c, 22, 3, 5, 6, lo)
+    if style == "swept":
+        rect(c, 7, 9, 5, 1, hair)
+        rect(c, 11, 9, 8, 2, hair)
+        rect(c, 17, 9, 9, 3, hair)
+        rect(c, 22, 9, 4, 5, lo)
+        return
+    # franja recortada
+    for x, h in ((5, 2), (8, 3), (11, 1), (13, 3), (16, 2), (18, 3), (21, 1), (23, 3)):
+        rect(c, x, 9, 3, h, hair if x < 21 else lo)
+    if style == "long":
+        rect(c, 4, 8, 3, 15, hair); rect(c, 4, 22, 3, 2, lo)
+        rect(c, 25, 8, 3, 15, lo); rect(c, 25, 22, 3, 2, lo)
+        rect(c, 4, 9, 1, 8, hi)
+    elif style == "bun":
+        rect(c, 11, 0, 10, 3, hair); rect(c, 12, -1, 8, 1, hair)
+        rect(c, 12, 0, 4, 1, hi)
+    elif style == "ponytail":
+        rect(c, 25, 9, 3, 6, lo)
+    elif style == "curly":
+        rect(c, 4, 1, 24, 9, hair)
+        for x, y in ((4, 0), (8, 0), (12, -1), (16, -1), (20, 0), (24, 0), (3, 4), (27, 4), (3, 8), (27, 8), (4, 10), (26, 10)):
+            rect(c, x, y, 3, 3, hair)
+        for x, y in ((6, 1), (10, 0), (14, 0), (5, 5)):
+            put(c, x, y, hi)
+        rect(c, 24, 2, 4, 8, lo)
 
 
-def character_front(skin, hair, shirt, pants, style="short", sitting=False):
+def _face_front(c, skin, hair, glasses):
+    lo, hi = skin + "_lo", skin + "_hi"
+    rect(c, 6, 4, 20, 16, skin)
+    rect(c, 7, 3, 18, 1, skin)
+    rect(c, 8, 20, 16, 1, skin)
+    rect(c, 7, 10, 3, 2, hi)                  # luz na testa/bochecha esquerda
+    rect(c, 23, 6, 3, 14, lo)                 # sombra lado direito
+    rect(c, 8, 19, 16, 2, lo)                 # queixo
+    rect(c, 22, 18, 2, 1, lo)
+    hline(c, 6, 25, 9, lo)                    # sombra da franja
+    # sobrancelhas, olhos, nariz, boca, bochechas
+    hline(c, 10, 12, 10, hair + "_lo")
+    hline(c, 19, 21, 10, hair + "_lo")
+    _eye(c, 10, 11)
+    _eye(c, 19, 11)
+    put(c, 16, 15, lo)
+    put(c, 14, 16, "mouth"); put(c, 17, 16, "mouth")
+    hline(c, 15, 16, 17, "mouth")
+    rect(c, 8, 15, 2, 1, "blush"); rect(c, 22, 15, 2, 1, "blush")
+    if glasses:
+        _glasses_front(c)
+
+
+def _legs(c, pants, pose, y0=34, left=(12, 3), right=(17, 3)):
+    """Pernas finas com sapatos; a caminhada dobra uma perna de cada vez."""
+    lo, hi = pants + "_lo", pants + "_hi"
+    la = 2 if pose == "walk_a" else 0
+    ra = 2 if pose == "walk_b" else 0
+    for (x, w), lift, shade in ((left, la, False), (right, ra, True)):
+        h = 9 - lift
+        rect(c, x, y0, w, h, pants)
+        if shade:
+            rect(c, x + w - 1, y0, 1, h, lo)
+        else:
+            rect(c, x, y0, 1, 3, hi)
+        rect(c, x - 1, y0 + h, w + 1, 3, "shoe")
+        put(c, x - 1, y0 + h, "shoe_hi")
+    hline(c, left[0], left[0] + left[1] - 1, y0, lo)
+    hline(c, right[0], right[0] + right[1] - 1, y0, lo)
+
+
+def _torso_front(c, skin, shirt, pants, pose, back=False):
+    lo, hi = shirt + "_lo", shirt + "_hi"
+    rect(c, 14, 21, 4, 1, skin + "_lo")       # pescoco na sombra do queixo
+    rect(c, 11, 22, 10, 12, shirt)
+    rect(c, 11, 23, 2, 9, hi)
+    rect(c, 18, 23, 3, 11, lo)
+    rect(c, 13, 22, 6, 1, lo)                 # gola / sombra do queixo
+    if back:
+        vline(c, 15, 24, 32, lo)
+    else:
+        put(c, 15, 22, skin + "_lo"); put(c, 16, 22, skin + "_lo")
+        put(c, 14, 30, lo); put(c, 14, 31, lo)   # dobra
+    # bracos e maos
+    rect(c, 9, 23, 2, 9, shirt); put(c, 9, 23, hi)
+    rect(c, 21, 23, 2, 9, lo)
+    rect(c, 9, 32, 2, 2, skin)
+    rect(c, 21, 32, 2, 2, skin + "_lo")
+    if pose == "sit":
+        rect(c, 11, 34, 10, 4, pants)
+        rect(c, 11, 34, 10, 1, pants + "_hi")
+        rect(c, 18, 34, 3, 4, pants + "_lo")
+        rect(c, 11, 38, 4, 2, "shoe"); rect(c, 17, 38, 4, 2, "shoe")
+        return
+    _legs(c, pants, pose)
+
+
+def _front(skin, hair, shirt, pants, style, glasses, pose):
     c = canvas(32, 48)
-    _head_front(c, skin, hair, style)
-    _body_front(c, skin, shirt, pants, sitting=sitting)
-    outline(c)
+    _face_front(c, skin, hair, glasses)
+    _hair_front(c, hair, style)
+    _torso_front(c, skin, shirt, pants, pose)
     return c
 
 
-def character_back(skin, hair, shirt, pants, style="short"):
+def _back(skin, hair, shirt, pants, style, glasses, pose):
     c = canvas(32, 48)
-    cx, top = 16, 3
-    rect(c, cx - 10, top + 2, 20, 16, skin)
-    rect(c, cx - 10, top + 15, 20, 3, skin + "_lo")
-    # cabelo cobre a cabeca toda
-    rect(c, cx - 11, top + 1, 22, 15, hair)
-    rect(c, cx - 10, top, 20, 1, hair)
-    rect(c, cx - 9, top - 1, 18, 1, hair)
-    rect(c, cx - 8, top + 1, 7, 1, hair + "_hi")
-    rect(c, cx + 6, top + 3, 5, 13, hair + "_lo")
-    for x, h in ((cx - 11, 2), (cx - 7, 1), (cx - 2, 3), (cx + 3, 1), (cx + 7, 2)):
-        rect(c, x, top + 16, 4, h, hair)
+    lo, hi = hair + "_lo", hair + "_hi"
+    rect(c, 6, 4, 20, 16, skin)
+    rect(c, 8, 20, 16, 1, skin)
+    rect(c, 8, 17, 16, 4, skin + "_lo")       # nuca
+    if style == "buzz":
+        rect(c, 6, 2, 20, 15, hair); rect(c, 7, 1, 18, 1, hair)
+        rect(c, 8, 2, 7, 1, hi); rect(c, 22, 3, 4, 14, lo)
+    else:
+        rect(c, 5, 2, 22, 15, hair)
+        rect(c, 6, 1, 20, 1, hair)
+        rect(c, 8, 2, 7, 1, hi); rect(c, 7, 3, 3, 1, hi)
+        rect(c, 22, 3, 5, 14, lo)
+        for x, h in ((5, 2), (9, 1), (13, 3), (17, 1), (21, 2), (25, 1)):
+            rect(c, x, 17, 3, h, hair if x < 21 else lo)
     if style == "long":
-        rect(c, cx - 11, top + 10, 22, 16, hair)
-        rect(c, cx + 6, top + 10, 5, 16, hair + "_lo")
-        rect(c, cx - 10, top + 26, 20, 2, hair + "_lo")
-    if style == "bun":
-        rect(c, cx - 4, top - 4, 8, 5, hair)
-        rect(c, cx - 3, top - 5, 6, 1, hair)
-        rect(c, cx - 3, top - 4, 3, 1, hair + "_hi")
-    # tronco (sem cracha), costas com costura
-    t = 21
-    rect(c, cx - 7, t, 14, 13, shirt)
-    rect(c, cx - 7, t, 14, 1, shirt + "_hi")
-    rect(c, cx + 4, t + 1, 3, 12, shirt + "_lo")
-    vline(c, cx, t + 2, t + 11, shirt + "_lo")
-    rect(c, cx - 9, t + 2, 2, 8, shirt)
-    rect(c, cx + 7, t + 2, 2, 8, shirt + "_lo")
-    rect(c, cx - 9, t + 10, 2, 3, skin)
-    rect(c, cx + 7, t + 10, 2, 3, skin + "_lo")
-    rect(c, cx - 6, t + 13, 5, 8, pants)
-    rect(c, cx + 1, t + 13, 5, 8, pants)
-    rect(c, cx + 4, t + 13, 2, 8, pants + "_lo")
-    rect(c, cx - 6, t + 21, 5, 3, "shoe")
-    rect(c, cx + 1, t + 21, 5, 3, "shoe")
-    outline(c)
+        rect(c, 4, 8, 24, 18, hair); rect(c, 22, 8, 6, 18, lo)
+        rect(c, 5, 26, 22, 2, lo); rect(c, 4, 9, 1, 10, hi)
+    elif style == "bun":
+        rect(c, 11, 0, 10, 4, hair); rect(c, 12, -1, 8, 1, hair); rect(c, 12, 0, 4, 1, hi)
+        rect(c, 18, 1, 3, 3, lo)
+    elif style == "ponytail":
+        rect(c, 13, 6, 6, 3, lo)
+        rect(c, 14, 15, 4, 14, hair); rect(c, 16, 15, 2, 14, lo)
+        rect(c, 13, 28, 6, 2, lo); rect(c, 14, 15, 1, 6, hi)
+    elif style == "curly":
+        rect(c, 4, 1, 24, 17, hair)
+        for x, y in ((4, 0), (8, 0), (12, -1), (16, -1), (20, 0), (24, 0), (3, 4), (27, 4), (3, 8), (27, 8), (3, 12), (27, 12), (5, 17), (9, 18), (13, 18), (17, 18), (21, 18), (25, 17)):
+            rect(c, x, y, 3, 3, hair)
+        rect(c, 24, 2, 4, 16, lo); put(c, 6, 1, hi); put(c, 10, 0, hi)
+    _torso_front(c, skin, shirt, pants, pose, back=True)
     return c
 
 
-def character_side(skin, hair, shirt, pants, style="short"):
-    """Olhando para a esquerda; a direita e o espelho."""
+def _side(skin, hair, shirt, pants, style, glasses, pose):
+    """Olhando para a esquerda."""
     c = canvas(32, 48)
-    cx, top = 15, 3
-    # cabeca 16 de largura (x 7..22)
-    rect(c, cx - 8, top + 2, 16, 16, skin)
-    rect(c, cx - 7, top + 1, 14, 1, skin)
-    rect(c, cx + 3, top + 4, 5, 14, skin + "_lo")
-    rect(c, cx - 8, top + 15, 16, 3, skin + "_lo")
-    # um olho, nariz e boca de perfil
-    rect(c, cx - 5, top + 8, 3, 5, "eye")
-    put(c, cx - 5, top + 8, "eye_hi")
-    put(c, cx - 4, top + 9, "eye_hi")
-    put(c, cx - 9, top + 12, skin)
-    rect(c, cx - 5, top + 14, 2, 1, "mouth")
-    put(c, cx - 7, top + 13, "blush")
-    # cabelo: cobre a nuca e o topo
-    rect(c, cx - 8, top, 16, 5, hair)
-    rect(c, cx - 9, top + 2, 18, 4, hair)
-    rect(c, cx - 7, top - 1, 14, 1, hair)
-    rect(c, cx - 6, top + 1, 6, 1, hair + "_hi")
-    rect(c, cx + 1, top + 5, 8, 11, hair)
-    rect(c, cx + 5, top + 5, 4, 11, hair + "_lo")
-    for x, h in ((cx - 8, 3), (cx - 5, 2), (cx - 2, 3)):
-        rect(c, x, top + 5, 3, h, hair)
+    slo, shi = skin + "_lo", skin + "_hi"
+    hlo, hhi = hair + "_lo", hair + "_hi"
+    # cabeca 16 de largura (x 8..23)
+    rect(c, 8, 4, 16, 16, skin)
+    rect(c, 9, 3, 14, 1, skin)
+    rect(c, 10, 20, 12, 1, skin)
+    rect(c, 9, 10, 2, 2, shi)
+    rect(c, 20, 6, 4, 14, slo)
+    rect(c, 10, 19, 12, 2, slo)
+    hline(c, 8, 23, 9, slo)
+    put(c, 7, 13, skin); put(c, 7, 14, skin)   # nariz de perfil
+    hline(c, 10, 12, 10, hlo)
+    _eye(c, 10, 11)
+    put(c, 10, 17, "mouth"); put(c, 11, 17, "mouth")
+    rect(c, 9, 15, 2, 1, "blush")
+    if glasses:
+        hline(c, 9, 13, 10, "frame"); hline(c, 9, 13, 16, "frame")
+        vline(c, 9, 10, 16, "frame"); vline(c, 13, 10, 16, "frame")
+        hline(c, 14, 21, 12, "frame"); put(c, 10, 11, "glass_hi")
+    # cabelo: calota + nuca
+    if style == "buzz":
+        rect(c, 8, 2, 16, 6, hair); rect(c, 9, 1, 14, 1, hair)
+        rect(c, 16, 8, 8, 8, hair); rect(c, 20, 8, 4, 8, hlo); rect(c, 10, 2, 6, 1, hhi)
+    else:
+        rect(c, 7, 2, 18, 7, hair); rect(c, 8, 1, 16, 1, hair)
+        rect(c, 16, 9, 9, 8, hair); rect(c, 21, 5, 4, 12, hlo)
+        rect(c, 10, 2, 6, 1, hhi); rect(c, 9, 3, 3, 1, hhi)
+        if style == "swept":
+            rect(c, 7, 9, 8, 2, hair); rect(c, 7, 11, 4, 2, hair)
+        else:
+            for x, h in ((7, 3), (10, 1), (12, 3), (14, 2)):
+                rect(c, x, 9, 2, h, hair)
     if style == "long":
-        rect(c, cx + 2, top + 14, 7, 12, hair)
-        rect(c, cx + 5, top + 14, 4, 12, hair + "_lo")
-    if style == "bun":
-        rect(c, cx + 2, top - 3, 7, 6, hair)
-        rect(c, cx + 3, top - 4, 5, 1, hair)
-        rect(c, cx + 3, top - 3, 3, 1, hair + "_hi")
-    # tronco 10 de largura (x 10..19), um braco na frente
-    t = 21
-    rect(c, cx - 5, t, 11, 13, shirt)
-    rect(c, cx - 5, t, 11, 1, shirt + "_hi")
-    rect(c, cx + 3, t + 1, 3, 12, shirt + "_lo")
-    rect(c, cx - 1, t, 2, 2, skin)
-    vline(c, cx - 4, t + 1, t + 5, "lanyard")
-    rect(c, cx - 5, t + 6, 3, 4, "badge")
-    rect(c, cx - 5, t + 9, 3, 1, "badge_lo")
-    rect(c, cx - 3, t + 3, 3, 8, shirt + "_lo")
-    rect(c, cx - 3, t + 11, 3, 3, skin)
-    # pernas juntas e sapato
-    rect(c, cx - 4, t + 13, 9, 8, pants)
-    rect(c, cx - 4, t + 13, 9, 1, pants + "_hi")
-    rect(c, cx + 2, t + 14, 3, 7, pants + "_lo")
-    rect(c, cx - 6, t + 21, 11, 3, "shoe")
-    rect(c, cx - 6, t + 21, 3, 1, "shoe_hi")
+        rect(c, 17, 9, 9, 17, hair); rect(c, 22, 9, 4, 17, hlo); rect(c, 18, 26, 7, 2, hlo)
+    elif style == "bun":
+        rect(c, 17, 0, 8, 4, hair); rect(c, 18, -1, 6, 1, hair); rect(c, 18, 0, 3, 1, hhi)
+    elif style == "ponytail":
+        rect(c, 23, 8, 4, 14, hair); rect(c, 25, 8, 2, 14, hlo); rect(c, 22, 22, 5, 2, hlo)
+    elif style == "curly":
+        rect(c, 6, 1, 20, 9, hair); rect(c, 16, 9, 10, 9, hair)
+        for x, y in ((6, 0), (10, -1), (14, -1), (18, 0), (22, 0), (5, 4), (25, 4), (25, 8), (25, 12), (24, 16), (20, 18)):
+            rect(c, x, y, 3, 3, hair)
+        rect(c, 23, 2, 4, 15, hlo); put(c, 8, 1, hhi); put(c, 12, 0, hhi)
+    # tronco 8 de largura, braco da frente
+    lo, hi = shirt + "_lo", shirt + "_hi"
+    rect(c, 14, 21, 3, 1, slo)
+    rect(c, 12, 22, 8, 12, shirt)
+    rect(c, 12, 23, 1, 9, hi)
+    rect(c, 18, 23, 2, 11, lo)
+    rect(c, 13, 22, 6, 1, lo)
+    rect(c, 13, 24, 3, 8, lo); rect(c, 13, 24, 1, 8, shirt)
+    rect(c, 13, 32, 3, 2, skin)
+    if pose == "sit":
+        rect(c, 8, 34, 10, 4, pants); rect(c, 8, 34, 10, 1, pants + "_hi")
+        rect(c, 7, 38, 5, 2, "shoe")
+        return c
+    # pernas de perfil: a de tras aparece um pouco atras
+    plo, phi = pants + "_lo", pants + "_hi"
+    la = 2 if pose == "walk_a" else 0
+    ra = 2 if pose == "walk_b" else 0
+    rect(c, 16, 34, 3, 9 - ra, plo)
+    rect(c, 15, 34 + 9 - ra, 5, 3, "shoe")
+    rect(c, 12, 34, 5, 9 - la, pants)
+    rect(c, 12, 34, 1, 3, phi); hline(c, 12, 16, 34, plo)
+    rect(c, 10, 34 + 9 - la, 7, 3, "shoe"); put(c, 10, 34 + 9 - la, "shoe_hi")
+    return c
+
+
+def clear(c, pts):
+    for x, y in pts:
+        put(c, x, y, None)
+
+
+def round_head_front(c):
+    """Tira os cantos duros da calota, do queixo e dos ombros (antes do contorno)."""
+    top = min((y for y in range(0, 6) for x in range(4, 28) if c[y][x] is not None), default=1)
+    xs = [x for x in range(3, 29) if c[top][x] is not None]
+    if xs:
+        l, r = min(xs), max(xs)
+        clear(c, [(l, top), (l + 1, top), (r, top), (r - 1, top), (l, top + 1), (r, top + 1)])
+    clear(c, [(6, 19), (6, 20), (7, 20), (25, 19), (25, 20), (24, 20), (11, 22), (20, 22)])
+
+
+def round_head_side(c):
+    top = min((y for y in range(0, 6) for x in range(4, 28) if c[y][x] is not None), default=1)
+    xs = [x for x in range(3, 29) if c[top][x] is not None]
+    if xs:
+        l, r = min(xs), max(xs)
+        clear(c, [(l, top), (l + 1, top), (r, top), (r - 1, top), (l, top + 1), (r, top + 1)])
+    clear(c, [(8, 19), (8, 20), (9, 20), (23, 19), (23, 20), (22, 20), (12, 22), (19, 22)])
+
+
+def character(direction, skin, hair, shirt, pants, style="short", glasses=False, pose="idle"):
+    if direction == "front":
+        c = _front(skin, hair, shirt, pants, style, glasses, pose)
+        round_head_front(c)
+    elif direction == "back":
+        c = _back(skin, hair, shirt, pants, style, glasses, pose)
+        round_head_front(c)
+    else:
+        c = _side(skin, hair, shirt, pants, style, glasses, pose)
+        round_head_side(c)
+        if direction == "right":
+            c = mirror(c)
     outline(c)
     return c
 
 
 # --- Prova de estilo ---------------------------------------------------------------
-def style_proof(path, scale=3):
-    color_set("skin_a", "#f0c49c"); color_set("hair_a", "#5b3a22"); color_set("shirt_a", "#f4f4f6"); color_set("pants_a", "#2f3542")
-    color_set("skin_b", "#e5b592"); color_set("hair_b", "#3a2416"); color_set("shirt_b", "#2d3340"); color_set("pants_b", "#1f2430")
-    color_set("skin_c", "#8d5a3c"); color_set("hair_c", "#1e1a1a"); color_set("shirt_c", "#3f4756"); color_set("pants_c", "#c9b48f")
-    color_set("skin_d", "#f3cdb0"); color_set("hair_d", "#d8702a"); color_set("shirt_d", "#f4f4f6"); color_set("pants_d", "#5c6b3a")
+def _register_cast():
+    cast = {
+        "a": ("#f0c49c", "#5b3a22", "#f4f4f6", "#2f3542"),
+        "b": ("#e5b592", "#3a2416", "#2d3340", "#1f2430"),
+        "c": ("#8d5a3c", "#1e1a1a", "#3f4756", "#c9b48f"),
+        "d": ("#f3cdb0", "#d8702a", "#f4f4f6", "#5c6b3a"),
+        "e": ("#c68a5f", "#2b1d16", "#d94a3d", "#2f3542"),
+        "f": ("#f5d6bd", "#e8c65a", "#4b8fd8", "#3a3f4a"),
+        "g": ("#6b4028", "#111111", "#7dc466", "#2f3542"),
+    }
+    for k, (skin, hair, shirt, pants) in cast.items():
+        color_set(f"skin_{k}", skin); color_set(f"hair_{k}", hair)
+        color_set(f"shirt_{k}", shirt); color_set(f"pants_{k}", pants)
 
+
+def _args(k):
+    return (f"skin_{k}", f"hair_{k}", f"shirt_{k}", f"pants_{k}")
+
+
+def style_proof(path, scale=3):
+    _register_cast()
     W, H = 14, 8
     scene = canvas(W * TILE, H * TILE)
     wall, pil, fl, flw = wall_tile(), pillar(), floor_tile(), floor_tile(True)
@@ -505,8 +638,6 @@ def style_proof(path, scale=3):
     win = window()
     blit(scene, win, 1 * TILE + 8, 12)
     blit(scene, win, 8 * TILE + 8, 12)
-
-    # tapete da ilha (zona) desenhado sob a mobilia
     for y in range(2 * TILE + 4, 6 * TILE + 8):
         for x in range(TILE - 8, 5 * TILE + 8):
             scene[y][x] = "floor_worn"
@@ -514,63 +645,57 @@ def style_proof(path, scale=3):
         for x in range(6 * TILE + 12, 10 * TILE + 28):
             scene[y][x] = "floor_worn"
 
-    sprites = []   # (bottom_y, x, canvas)
+    sprites = []
     dk, ch = desk(), chair()
-    chars = [
-        ("a", "short", "sit"), ("b", "long", "sit"), ("c", "short", "sit"), ("d", "bun", "sit"),
-    ]
+    seated = [("a", "short", False), ("b", "long", False), ("c", "curly", True), ("d", "bun", False)]
     islands = [(1, 3), (3, 3), (1, 5), (3, 5), (7, 3), (9, 3), (7, 5), (9, 5)]
     for i, (tx, ty) in enumerate(islands):
         bx, by = tx * TILE, (ty + 1) * TILE
         sprites.append((by - 26, bx + 2, ch))
         if i < 4:
-            k, style, _ = chars[i]
-            sprites.append((by - 22, bx + 2, character_front(f"skin_{k}", f"hair_{k}", f"shirt_{k}", f"pants_{k}", style, sitting=True)))
+            k, style, gl = seated[i]
+            sprites.append((by - 22, bx + 2, character("front", *_args(k), style=style, glasses=gl, pose="sit")))
         sprites.append((by, bx, dk))
-    # divisoria entre as ilhas
     part, cap = partition_tile(), partition_cap()
     px = 5 * TILE + 26
     for y in range(2 * TILE, 6 * TILE, 32):
         sprites.append((y + 32, px, part))
     sprites.append((2 * TILE + 4, px, cap))
-    # personagens andando: frente, costas, esquerda e direita
     walkers = [
-        ("a", "short", character_front, 7 * TILE + 4, 7 * TILE + 26),
-        ("d", "bun", character_back, 11 * TILE + 8, 4 * TILE + 20),
-        ("b", "long", character_side, 10 * TILE + 8, 7 * TILE + 20),
-        ("c", "short", lambda *a: mirror(character_side(*a)), 3 * TILE + 8, 7 * TILE + 30),
+        ("a", "short", False, "front", "walk_a", 7 * TILE + 4, 7 * TILE + 26),
+        ("e", "ponytail", False, "back", "walk_b", 11 * TILE + 8, 4 * TILE + 20),
+        ("f", "swept", True, "left", "walk_a", 10 * TILE + 8, 7 * TILE + 20),
+        ("g", "buzz", False, "right", "idle", 3 * TILE + 8, 7 * TILE + 30),
     ]
-    for k, style, fn, x, bottom in walkers:
-        sprites.append((bottom, x, fn(f"skin_{k}", f"hair_{k}", f"shirt_{k}", f"pants_{k}", style)))
+    for k, style, gl, d, pose, x, bottom in walkers:
+        sprites.append((bottom, x, character(d, *_args(k), style=style, glasses=gl, pose=pose)))
     pl = plant()
     for x, bottom in ((12 * TILE + 12, 3 * TILE + 8), (11 * TILE + 24, 8 * TILE - 4), (5 * TILE + 20, 8 * TILE - 2)):
         sprites.append((bottom, x, pl))
-
     for bottom, x, spr in sorted(sprites, key=lambda s: s[0]):
         blit_bottom(scene, spr, x, bottom)
     write_png(path, scene, scale)
 
 
 def sheet(path, scale=3):
-    """Ficha: personagem nas 4 direcoes + sentado, e as pecas soltas."""
-    color_set("skin_a", "#f0c49c"); color_set("hair_a", "#5b3a22"); color_set("shirt_a", "#f4f4f6"); color_set("pants_a", "#2f3542")
-    color_set("skin_d", "#f3cdb0"); color_set("hair_d", "#d8702a"); color_set("shirt_d", "#f4f4f6"); color_set("pants_d", "#5c6b3a")
-    c = canvas(300, 130, "floor")
-    args_a = ("skin_a", "hair_a", "shirt_a", "pants_a")
-    args_d = ("skin_d", "hair_d", "shirt_d", "pants_d")
+    """Ficha: 4 direcoes + caminhada + sentado para um personagem; e os 7 cabelos (+ oculos)."""
+    _register_cast()
+    c = canvas(330, 176, "floor")
     x = 6
-    for spr in (character_front(*args_a), character_back(*args_a), character_side(*args_a), mirror(character_side(*args_a)),
-                character_front(*args_a, sitting=True)):
-        blit(c, spr, x, 6); x += 36
+    for d, pose in (("front", "idle"), ("back", "idle"), ("left", "idle"), ("right", "idle"),
+                    ("front", "walk_a"), ("front", "walk_b"), ("left", "walk_a"), ("left", "walk_b"), ("front", "sit")):
+        blit(c, character(d, *_args("a"), style="short", pose=pose), x, 4); x += 34
     x = 6
-    for spr in (character_front(*args_d, style="bun"), character_back(*args_d, style="bun"), character_side(*args_d, style="bun"),
-                mirror(character_side(*args_d, style="bun"))):
-        blit(c, spr, x, 62); x += 36
-    blit(c, desk(), 190, 8)
-    blit(c, chair(), 258, 12)
-    blit(c, plant(), 200, 76)
-    blit(c, partition_tile(), 240, 70)
-    blit(c, partition_cap(), 240, 62)
+    for i, style in enumerate(HAIR_STYLES):
+        k = "abcdefg"[i]
+        blit(c, character("front", *_args(k), style=style, glasses=(i % 3 == 2)), x, 62); x += 34
+    x = 6
+    for i, style in enumerate(HAIR_STYLES):
+        k = "abcdefg"[i]
+        blit(c, character("left", *_args(k), style=style, glasses=(i % 3 == 2)), x, 118); x += 34
+    x = 6 + 34 * len(HAIR_STYLES) + 6
+    for i, style in enumerate(("long", "ponytail", "curly")):
+        blit(c, character("back", *_args("bce"[i]), style=style), x, 118); x += 34
     write_png(path, c, scale)
 
 
