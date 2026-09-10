@@ -138,6 +138,7 @@ func below_office_y() -> float:
 func show_title() -> void:
 	if Game.has_game():
 		Game.state.paused = true
+	Audio.stop_ambience()
 	title_screen.open()
 
 

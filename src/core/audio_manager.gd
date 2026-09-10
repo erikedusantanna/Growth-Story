@@ -5,17 +5,21 @@ extends Node
 
 const SFX_DIR := "res://assets/audio/sfx/"
 const MUSIC_PATH := "res://assets/audio/music/theme_loop.wav"
+const AMBIENCE_PATH := "res://assets/audio/ambience/office_loop.wav"
 const SETTINGS_PATH := "user://audio_settings.cfg"
 const POOL_SIZE := 6
 
 var music_enabled := true
 var sfx_enabled := true
+var ambience_enabled := true          # sons do escritório (teclado, ar-condicionado, notificações)
 var music_volume_db := -7.0
 var sfx_volume_db := -4.0
+var ambience_volume_db := -18.0       # base; sobe um pouco com o tamanho da equipe
 
 var _pool: Array = []
 var _pool_index := 0
 var _music_player: AudioStreamPlayer
+var _ambience_player: AudioStreamPlayer
 var _last_rep_tier := -1
 var _streams: Dictionary = {}
 ## Sem placa de som real (testes headless, CI): guardamos o estado normalmente, mas não
@@ -36,16 +40,13 @@ func _ready() -> void:
 	_music_player = AudioStreamPlayer.new()
 	_music_player.bus = "Master"
 	add_child(_music_player)
-	var music: AudioStream = load(MUSIC_PATH)
-	if music != null:
-		if music is AudioStreamWAV:
-			music.loop_mode = AudioStreamWAV.LOOP_FORWARD
-			# loop_end 0 faria o stream voltar ao início a cada quadro (silêncio); o import já
-			# marca o fim, mas garantimos aqui: 16 bits mono = 2 bytes por amostra
-			if music.loop_end <= 0:
-				music.loop_end = music.data.size() / 2
-		_music_player.stream = music
-		_music_player.volume_db = music_volume_db
+	_music_player.stream = _load_loop(MUSIC_PATH)
+	_music_player.volume_db = music_volume_db
+	_ambience_player = AudioStreamPlayer.new()
+	_ambience_player.bus = "Master"
+	add_child(_ambience_player)
+	_ambience_player.stream = _load_loop(AMBIENCE_PATH)
+	_ambience_player.volume_db = ambience_volume_db
 	EventBus.employee_hired.connect(func(_e): play_sfx("hire"))
 	EventBus.employee_promoted.connect(func(_e): play_sfx("promotion"))
 	EventBus.client_lost.connect(func(_c, _r = ""): play_sfx("crisis"))
@@ -53,12 +54,50 @@ func _ready() -> void:
 	EventBus.money_changed.connect(_on_money_changed)
 	EventBus.reputation_changed.connect(_on_reputation_changed)
 	EventBus.project_completed.connect(_on_project_completed)
-	EventBus.game_started.connect(func(): _last_rep_tier = -1; play_music())
+	EventBus.game_started.connect(func(): _last_rep_tier = -1; play_music(); play_ambience())
 	call_deferred("play_music")   # toca desde a tela inicial
+
+
+## Carrega um WAV em loop. loop_end 0 faria o stream voltar ao início a cada quadro (silêncio);
+## o import já marca o fim, mas garantimos aqui: 16 bits mono = 2 bytes por amostra.
+func _load_loop(path: String) -> AudioStream:
+	var stream: AudioStream = load(path)
+	if stream != null and stream is AudioStreamWAV:
+		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		if stream.loop_end <= 0:
+			stream.loop_end = stream.data.size() / 2
+	return stream
 
 
 func toggle_music() -> void:
 	set_music_enabled(not music_enabled)
+
+
+# --- Som ambiente do escritório ------------------------------------------------------
+
+func play_ambience() -> void:
+	if _silent:
+		return
+	if ambience_enabled and _ambience_player.stream != null and not _ambience_player.playing:
+		_ambience_player.play()
+
+
+func stop_ambience() -> void:
+	_ambience_player.stop()
+
+
+func set_ambience_enabled(on: bool) -> void:
+	ambience_enabled = on
+	if on and Game.has_game():
+		play_ambience()
+	elif not on:
+		stop_ambience()
+	_save_settings()
+
+
+## Mais gente na equipe, mais teclado e conversa: até +6 dB com 10 pessoas.
+func set_ambience_people(count: int) -> void:
+	_ambience_player.volume_db = ambience_volume_db + clampf(float(count) - 1.0, 0.0, 9.0) * 0.66
 
 
 ## Libera as streams em uso antes do motor encerrar (evita aviso de recurso vazado ao sair).
@@ -68,6 +107,8 @@ func _exit_tree() -> void:
 		p.stream = null
 	_music_player.stop()
 	_music_player.stream = null
+	_ambience_player.stop()
+	_ambience_player.stream = null
 	_streams.clear()
 
 
@@ -155,10 +196,12 @@ func _load_settings() -> void:
 	if cfg.load(SETTINGS_PATH) == OK:
 		music_enabled = cfg.get_value("audio", "music_enabled", true)
 		sfx_enabled = cfg.get_value("audio", "sfx_enabled", true)
+		ambience_enabled = cfg.get_value("audio", "ambience_enabled", true)
 
 
 func _save_settings() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("audio", "music_enabled", music_enabled)
 	cfg.set_value("audio", "sfx_enabled", sfx_enabled)
+	cfg.set_value("audio", "ambience_enabled", ambience_enabled)
 	cfg.save(SETTINGS_PATH)

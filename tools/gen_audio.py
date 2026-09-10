@@ -12,6 +12,7 @@ import wave
 ROOT = os.path.join(os.path.dirname(__file__), "..")
 OUT_SFX = os.path.join(ROOT, "assets", "audio", "sfx")
 OUT_MUSIC = os.path.join(ROOT, "assets", "audio", "music")
+OUT_AMB = os.path.join(ROOT, "assets", "audio", "ambience")
 RATE = 22050
 
 
@@ -230,6 +231,78 @@ def gen_music():
     write_wav(os.path.join(OUT_MUSIC, "theme_loop.wav"), mix(*tracks))
 
 
+def _add_at(dst: list, src: list, t: float, gain: float = 1.0) -> None:
+    start = int(RATE * t)
+    for i, v in enumerate(src):
+        j = start + i
+        if 0 <= j < len(dst):
+            dst[j] += v * gain
+
+
+def gen_ambience():
+    """Som ambiente do escritório em loop (16 s): ar-condicionado grave, teclados em rajadas,
+    cliques de mouse, papel e uma notificação de mensagem. Bem baixo, por baixo da música."""
+    import random
+    dur = 16.0
+    n = int(RATE * dur)
+    rng = random.Random(11)
+
+    # ar-condicionado: zumbido em 60/120 Hz (ciclos inteiros no loop) + ruído filtrado
+    hum = [0.0] * n
+    for i in range(n):
+        t = i / RATE
+        wob = 1.0 + 0.15 * math.sin(2 * math.pi * 0.25 * t)
+        hum[i] = (0.05 * math.sin(2 * math.pi * 60 * t) + 0.025 * math.sin(2 * math.pi * 120 * t)) * wob
+    raw = [(rng.random() * 2 - 1) for _ in range(n)]
+    acc, bed = 0.0, [0.0] * n
+    for i, v in enumerate(raw):
+        acc += (v - acc) * 0.04          # passa-baixa simples: "vento" do ar-condicionado
+        bed[i] = acc * 0.35
+    hum = [h + b for h, b in zip(hum, bed)]
+
+    # teclados: 3 pessoas digitando em rajadas irregulares
+    keys = [0.0] * n
+    for typist in range(3):
+        t = rng.uniform(0.0, 1.5)
+        pitch = 1400 + typist * 350
+        while t < dur:
+            burst = rng.randint(4, 11)
+            for _ in range(burst):
+                click = noise(0.012, 0.6, 0.0035, seed=rng.randint(0, 9999))
+                tick = note(pitch, 0.008, "sine", 0.25, attack=0.001, release=0.004)
+                _add_at(keys, click, t, rng.uniform(0.5, 1.0))
+                _add_at(keys, tick, t, 0.6)
+                t += rng.uniform(0.07, 0.13)
+            t += rng.uniform(0.6, 2.4)
+
+    # mouse: cliques duplos esparsos
+    mouse = [0.0] * n
+    for _ in range(9):
+        t = rng.uniform(0.0, dur - 0.3)
+        _add_at(mouse, noise(0.01, 0.5, 0.003, seed=rng.randint(0, 9999)), t)
+        _add_at(mouse, noise(0.01, 0.4, 0.003, seed=rng.randint(0, 9999)), t + 0.11)
+
+    # papel: farfalhar curto e abafado
+    paper = [0.0] * n
+    for t in (3.2, 9.7, 13.1):
+        rustle = noise(0.22, 0.18, 0.09, seed=int(t * 100))
+        acc = 0.0
+        soft = []
+        for v in rustle:
+            acc += (v - acc) * 0.25
+            soft.append(acc)
+        _add_at(paper, soft, t)
+
+    # notificação de mensagem: dois toques suaves em senoide, uma vez por loop
+    ping = seq(note(1318.5, 0.07, "sine", 0.22, attack=0.004, release=0.05),
+               note(1760.0, 0.11, "sine", 0.2, attack=0.004, release=0.08))
+    notif = [0.0] * n
+    _add_at(notif, ping, 7.4)
+
+    write_wav(os.path.join(OUT_AMB, "office_loop.wav"), mix(hum, keys, mouse, paper, notif))
+
+
 if __name__ == "__main__":
     gen_sfx()
     gen_music()
+    gen_ambience()
