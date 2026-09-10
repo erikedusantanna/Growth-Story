@@ -9,7 +9,7 @@ Estética pixel art simples. Este repositório contém **as bases e as mecânica
 
 - **Godot 4.3** (GDScript), renderer *Mobile*, viewport 540×960 em retrato.
 - Conteúdo em JSON (`data/`), lógica em sistemas independentes (`src/systems/`).
-- Sprites placeholder gerados por script (`tools/gen_sprites.py`, sem dependências).
+- Arte pixel art gerada por script, sem dependências: `tools/gen_art.py` (tile de 32 px, estilo chibi com contorno escuro e 3 tons; personagens em camadas recoloríveis, 7 cabelos, óculos e 4 direções) e `tools/gen_icons.py` (ícones do HUD).
 - Testes headless (`tests/`) executados também no CI (`.github/workflows/tests.yml`).
 
 ## Como rodar
@@ -87,7 +87,7 @@ Detalhes de fórmulas e fluxo em `docs/ARQUITETURA.md`.
 ## Próximos passos sugeridos
 
 1. **Balanceamento** com testes de jogadores reais. A simulação em `tests/sim_test.gd` imprime a curva ano a ano e falha se fugir da régua do GDD §53 (ver `docs/ARQUITETURA.md`).
-2. Arte definitiva: substituir `assets/sprites/*.png` mantendo os tamanhos (16×16 personagens, 32×16 mesa/sofá).
+2. ~~Arte definitiva~~ — feito: arte v2 em `tools/gen_art.py` (tile 32 px). Para trocar por arte desenhada à mão, mantenha os tamanhos gerados e a estrutura de camadas dos personagens (`assets/art/characters/`).
 3. ~~Fonte pixel art e sons (`GDD §40–41`)~~ — feito: `assets/fonts/pixel.fnt` e `src/core/audio_manager.gd`.
 4. ~~Conteúdo: mais clientes, eventos, eras históricas e serviços de endgame~~ — feito: `era_system.gd`, `data/eras.json`.
 5. ~~Departamentos, gerentes e concorrentes~~ — feito: `department_system.gd`, `competitor_system.gd`. Falta: imprensa/aquisições e expansão internacional (resto da Fase 4 do roadmap).

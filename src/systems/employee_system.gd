@@ -98,6 +98,7 @@ func _randomize_look(e: Employee) -> void:
 	var rng: RandomNumberGenerator = game.state.rng
 	e.skin = Employee.SKIN_TONES[rng.randi_range(0, Employee.SKIN_TONES.size() - 1)]
 	e.hair_style = rng.randi_range(0, Employee.HAIR_STYLES - 1)
+	e.glasses = rng.randf() < 0.25
 	e.hair_color = Employee.HAIR_COLORS[rng.randi_range(0, Employee.HAIR_COLORS.size() - 1)]
 
 

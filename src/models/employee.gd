@@ -5,7 +5,7 @@ extends RefCounted
 const ATTRS := ["creativity", "strategy", "performance", "communication", "management", "technology"]
 const SKIN_TONES := ["#f1d3b3", "#e0b48c", "#c68f63", "#9c6b45", "#6f4a30"]
 const HAIR_COLORS := ["#2a2432", "#4a2e1c", "#8a5a2b", "#c98a3a", "#e6c15a", "#b8b8c0", "#a34a4a", "#3b3b6e"]
-const HAIR_STYLES := 4
+const HAIR_STYLES := 7            # curto, longo, coque, rabo, cacheado, raspado, franja de lado
 const ATTR_NAMES := {
 	"creativity": "Criatividade", "strategy": "Estratégia", "performance": "Performance",
 	"communication": "Comunicação", "management": "Gestão", "technology": "Tecnologia",
@@ -29,6 +29,7 @@ var color: String = "#e4572e"         # cor da camisa
 var skin: String = "#f1d3b3"
 var hair_style: int = 0
 var hair_color: String = "#4a2e1c"
+var glasses: bool = false
 var hired_on: int = -1                 # dia da contratação (-1 = candidato)
 var candidate_expires: int = 0         # dia em que o candidato some da lista
 var project_id: int = -1               # projeto atual (-1 = livre)
@@ -88,7 +89,7 @@ func to_dict() -> Dictionary:
 		"id": id, "name": name, "role": role, "personality": personality, "is_founder": is_founder,
 		"attrs": attrs.duplicate(), "motivation": motivation, "stress": stress, "loyalty": loyalty,
 		"experience": experience, "potential": potential, "salary": salary, "career_level": career_level,
-		"age": age, "color": color, "skin": skin, "hair_style": hair_style, "hair_color": hair_color,
+		"age": age, "color": color, "skin": skin, "hair_style": hair_style, "hair_color": hair_color, "glasses": glasses,
 		"hired_on": hired_on, "candidate_expires": candidate_expires,
 		"project_id": project_id, "training_id": training_id, "busy_until": busy_until,
 		"busy_reason": busy_reason, "months_since_raise": months_since_raise,
@@ -116,8 +117,9 @@ static func from_dict(d: Dictionary) -> Employee:
 	e.age = int(d.get("age", 24))
 	e.color = d.get("color", "#e4572e")
 	e.skin = d.get("skin", SKIN_TONES[e.id % SKIN_TONES.size()])
-	e.hair_style = int(d.get("hair_style", e.id % 4))
+	e.hair_style = int(d.get("hair_style", e.id % HAIR_STYLES))
 	e.hair_color = d.get("hair_color", HAIR_COLORS[(e.id * 3) % HAIR_COLORS.size()])
+	e.glasses = bool(d.get("glasses", (e.id * 7) % 4 == 0))
 	e.hired_on = int(d.get("hired_on", -1))
 	e.candidate_expires = int(d.get("candidate_expires", 0))
 	e.project_id = int(d.get("project_id", -1))

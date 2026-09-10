@@ -1,14 +1,16 @@
 class_name Worker
 extends Node2D
-## Personagem pixel art (24x32, visão 3/4) montado em camadas: contorno, pele, pernas, camisa, cabelo.
+## Personagem pixel art chibi (32x48, visão 3/4) montado em camadas: contorno (+ rosto e óculos), pele,
+## pernas, camisa e cabelo. A folha tem 4 poses por linha e 4 direções (frente, costas, esquerda, direita).
 ## A posição do nó é o pé do personagem (usada pelo y-sort do escritório).
 
 enum State { AT_DESK, WALKING, AT_SPOT, LEAVING, AWAY, RETURNING }
 enum Frame { IDLE, WALK_A, WALK_B, SIT }
+enum Dir { FRONT, BACK, LEFT, RIGHT }
 
 const WALK_SPEED := 26.0
 const FRAME_TIME := 0.18
-const SPRITE_OFFSET := Vector2(-12, -32)
+const SPRITE_OFFSET := Vector2(-16, -48)
 
 var employee_id: int = -1
 var employee_name: String = ""
@@ -28,6 +30,7 @@ var door_pos := Vector2.ZERO
 var static_pose := false   # sala de treinamento: fica parado na pose escolhida
 var sitting := false
 var morale := -1.0         # barra de moral sobre a cabeça (-1 = não mostra)
+var facing: int = Dir.FRONT
 
 
 func _ready() -> void:
@@ -35,6 +38,7 @@ func _ready() -> void:
 		var s := Sprite2D.new()
 		s.centered = false
 		s.hframes = 4
+		s.vframes = 4
 		s.offset = SPRITE_OFFSET
 		add_child(s)
 		layers[name] = s
@@ -56,8 +60,9 @@ func apply_look(e: Employee) -> void:
 	if layers.is_empty():
 		return
 	var style: int = clampi(e.hair_style, 0, Employee.HAIR_STYLES - 1)
-	layers["outline"].texture = load("res://assets/art/characters/outline_%d.png" % style)
-	layers["hair"].texture = load("res://assets/art/characters/hair_%d.png" % style)
+	var tag := "%d%s" % [style, "g" if e.glasses else ""]
+	layers["outline"].texture = load("res://assets/art/characters/outline_%s.png" % tag)
+	layers["hair"].texture = load("res://assets/art/characters/hair_%s.png" % tag)
 	layers["skin"].texture = load("res://assets/art/characters/skin.png")
 	layers["legs"].texture = load("res://assets/art/characters/legs.png")
 	layers["shirt"].texture = load("res://assets/art/characters/shirt.png")
@@ -91,8 +96,7 @@ func sync(e: Employee, day: int) -> void:
 func _process(delta: float) -> void:
 	var frame := Frame.IDLE
 	if static_pose:
-		for s in layers.values():
-			s.frame = Frame.SIT if sitting else Frame.IDLE
+		_apply_frame(Frame.SIT if sitting else Frame.IDLE)
 		return
 	match state:
 		State.AWAY:
@@ -109,7 +113,7 @@ func _process(delta: float) -> void:
 					wait_time = rng.randf_range(8.0, 20.0)
 			else:
 				position += dir.normalized() * WALK_SPEED * delta
-				_set_flip(dir.x < 0.0)
+				_face(dir)
 				frame_timer += delta
 				if frame_timer >= FRAME_TIME:
 					frame_timer = 0.0
@@ -118,6 +122,7 @@ func _process(delta: float) -> void:
 		State.AT_DESK:
 			wait_time -= delta
 			frame = Frame.SIT
+			facing = Dir.FRONT
 			if wait_time <= 0.0:
 				_pick_next()
 		State.AT_SPOT:
@@ -132,20 +137,26 @@ func _process(delta: float) -> void:
 				wait_time = rng.randf_range(3.0, 7.0) if state == State.AT_SPOT else rng.randf_range(8.0, 20.0)
 			else:
 				position += dir.normalized() * WALK_SPEED * delta
-				_set_flip(dir.x < 0.0)
+				_face(dir)
 				frame_timer += delta
 				if frame_timer >= FRAME_TIME:
 					frame_timer = 0.0
 					walk_frame = 1 - walk_frame
 				frame = Frame.WALK_A if walk_frame == 0 else Frame.WALK_B
-	for s in layers.values():
-		s.frame = frame
+	_apply_frame(frame)
 
 
-func _set_flip(flip: bool) -> void:
+## Escolhe a direção pela componente dominante do movimento.
+func _face(dir: Vector2) -> void:
+	if absf(dir.x) > absf(dir.y):
+		facing = Dir.LEFT if dir.x < 0.0 else Dir.RIGHT
+	else:
+		facing = Dir.BACK if dir.y < 0.0 else Dir.FRONT
+
+
+func _apply_frame(frame: int) -> void:
 	for s in layers.values():
-		s.flip_h = flip
-		s.offset = Vector2(-12, -32)
+		s.frame = facing * 4 + frame
 
 
 func _pick_next() -> void:
@@ -160,20 +171,19 @@ func _pick_next() -> void:
 		target = spots[rng.randi_range(0, spots.size() - 1)] + Vector2(rng.randf_range(-8, 8), rng.randf_range(0, 6))
 	else:
 		target = desk_pos
-	_set_flip(false)
 	state = State.WALKING
 
 
 func head_position() -> Vector2:
-	return position + Vector2(0, -34)
+	return position + Vector2(0, -50)
 
 
 ## Barra de moral (verde, amarela ou vermelha) flutuando sobre a cabeça.
 func _draw() -> void:
 	if static_pose or morale < 0.0:
 		return
-	var width := 16.0
-	var origin := Vector2(-8, -39)
+	var width := 20.0
+	var origin := Vector2(-10, -56)
 	var color := UIKit.COLOR_GREEN
 	if morale < 35.0:
 		color = UIKit.COLOR_RED

@@ -8,11 +8,11 @@ extends Control
 ## Mobília comprada troca sprites (cadeira, mesa, café) ou ocupa slots; o RH contratado ganha
 ## um anexo com divisória, mesa e analista fixa; pets adotados passeiam pelo piso.
 
-const TILE := 16
+const TILE := 32
 const WALL_ROWS := 2
-const MAX_ZOOM := 4.0
-const DEFAULT_ZOOM_MIN := 2.0
-const DEFAULT_ZOOM_MAX := 3.0
+const MAX_ZOOM := 2.0
+const DEFAULT_ZOOM_MIN := 1.0
+const DEFAULT_ZOOM_MAX := 1.5
 const TAP_SLOP := 8.0
 const FURNITURE := {
 	"desk": "res://assets/art/furniture/desk.png",
@@ -36,14 +36,14 @@ const FURNITURE := {
 	"hr_sign": "res://assets/art/furniture/hr_sign.png",
 }
 ## Deslocamento vertical dos objetos de parede (a partir do topo da parede).
-const WALL_PROP_Y := {"window": 6, "whiteboard": 6, "shelf": 2, "door": 2, "goals_board": 6, "hr_sign": 9}
+const WALL_PROP_Y := {"window": 10, "whiteboard": 10, "shelf": 0, "door": 4, "goals_board": 10, "hr_sign": 18}
 ## Tapetes que agrupam as ilhas de mesas: cor de preenchimento por tinta do layout.
 const ZONE_TINTS := {
-	"cool": Color(0.31, 0.49, 0.82, 0.19),
-	"green": Color(0.26, 0.60, 0.37, 0.18),
-	"purple": Color(0.58, 0.42, 0.85, 0.19),
-	"warm": Color(0.96, 0.56, 0.26, 0.16),
-	"lounge": Color(0.39, 0.41, 0.52, 0.17),
+	"cool": Color(0.31, 0.49, 0.82, 0.11),
+	"green": Color(0.26, 0.60, 0.37, 0.10),
+	"purple": Color(0.58, 0.42, 0.85, 0.11),
+	"warm": Color(0.96, 0.56, 0.26, 0.09),
+	"lounge": Color(0.39, 0.41, 0.52, 0.10),
 }
 
 var world: Node2D
@@ -52,6 +52,7 @@ var scene_layer: Node2D      # y-sort: mobília + personagens + pets
 var fx_layer: Node2D
 var floor_tex := preload("res://assets/art/tiles/floor_wood.png")
 var wall_tex := preload("res://assets/art/tiles/wall.png")
+var pillar_tex := preload("res://assets/art/tiles/wall_pillar.png")
 var layout: Dictionary = {}
 var desk_positions: Array = []
 var spot_positions: Array = []
@@ -163,11 +164,11 @@ func _build(data: Dictionary) -> void:
 	desk_positions.clear()
 	spot_positions.clear()
 	var swaps := _visual_swaps()
-	door_pos = Vector2(float(data.get("width", 10)) * TILE - 24, WALL_ROWS * TILE + 8)
+	door_pos = Vector2(float(data.get("width", 10)) * TILE - 48, WALL_ROWS * TILE + 16)
 	for p in data.get("wall", []):
 		_add_wall_prop(String(p.type), float(p.x))
 		if p.type == "door":
-			door_pos = Vector2(float(p.x) * TILE + 10, WALL_ROWS * TILE + 6)
+			door_pos = Vector2(float(p.x) * TILE + 20, WALL_ROWS * TILE + 12)
 	# quadros comprados vão para os espaços livres da parede
 	var wall_slots: Array = data.get("wall_slots", [])
 	var wall_index := 0
@@ -178,9 +179,9 @@ func _build(data: Dictionary) -> void:
 			wall_index += 1
 	for d in data.get("desks", []):
 		var bottom := Vector2(float(d[0]) * TILE, (float(d[1]) + 1.0) * TILE)
-		_add_furniture(swaps.get("chair", "chair"), bottom + Vector2(8, -20))
+		_add_furniture(swaps.get("chair", "chair"), bottom + Vector2(2, -26))
 		_add_furniture(swaps.get("desk", "desk"), bottom)
-		desk_positions.append(bottom + Vector2(16, -16))   # pés do personagem, atrás da mesa
+		desk_positions.append(bottom + Vector2(18, -22))   # pés do personagem, sentado à esquerda do monitor
 	for p in data.get("props", []):
 		_add_furniture(swaps.get(p.type, p.type), Vector2(float(p.pos[0]) * TILE, (float(p.pos[1]) + 1.0) * TILE))
 	for sp in data.get("spots", []):
@@ -217,8 +218,8 @@ func _add_divider(px: float, top: float, bottom: float) -> void:
 	var cap := Sprite2D.new()
 	cap.texture = load(FURNITURE["partition_top"])
 	cap.centered = false
-	cap.offset = Vector2(0, -6)
-	cap.position = Vector2(px, top + 2.0)
+	cap.offset = Vector2(0, -12)
+	cap.position = Vector2(px, top + 4.0)
 	scene_layer.add_child(cap)
 
 
@@ -241,14 +242,14 @@ func _build_hr_room(data: Dictionary) -> void:
 	var room: Dictionary = data["hr_room"]
 	var w := int(data.get("width", 10))
 	var h := int(data.get("height", 7))
-	var px := float(w) * TILE - 4.0
+	var px := float(w) * TILE - 8.0
 	var top := float(WALL_ROWS * TILE)
-	var bottom := float(h * TILE) - 22.0    # passagem no fim da divisória
+	var bottom := float(h * TILE) - 44.0    # passagem no fim da divisória
 	_add_divider(px, top, bottom)
 	_add_wall_prop("hr_sign", float(w) + float(room.get("sign_x", 1.5)))
 	var d: Array = room.get("desk", [1, 4])
 	var desk_bottom := Vector2(float(w + int(d[0])) * TILE, (float(d[1]) + 1.0) * TILE)
-	_add_furniture("chair_ergo", desk_bottom + Vector2(8, -20))
+	_add_furniture("chair_ergo", desk_bottom + Vector2(2, -26))
 	_add_furniture("desk", desk_bottom)
 	var pl: Array = room.get("plant", [3, h - 2])
 	_add_furniture("plant", Vector2(float(w + int(pl[0])) * TILE, (float(pl[1]) + 1.0) * TILE))
@@ -260,7 +261,7 @@ func _build_hr_room(data: Dictionary) -> void:
 	look.hair_style = 1
 	look.hair_color = "#4a2c1a"
 	look.color = "#ff8f3d"
-	hr_worker.setup(look, desk_bottom + Vector2(16, -16), [], 4242)
+	hr_worker.setup(look, desk_bottom + Vector2(18, -22), [], 4242)
 	hr_worker.static_pose = true
 	hr_worker.sitting = true
 	scene_layer.add_child(hr_worker)
@@ -340,6 +341,8 @@ func _draw_world() -> void:
 		world.draw_texture(wall_tex, Vector2(x * TILE, 0))
 		for y in range(WALL_ROWS, h):
 			world.draw_texture(floor_tex, Vector2(x * TILE, y * TILE))
+	world.draw_texture(pillar_tex, Vector2(0, 0))
+	world.draw_texture(pillar_tex, Vector2(w * TILE - pillar_tex.get_width(), 0))
 	for z in layout.get("zones", []):
 		var r: Array = z.get("rect", [])
 		if r.size() < 4:
@@ -382,7 +385,7 @@ func _sync_pets() -> void:
 	var st: GameState = Game.state
 	var w := float(layout.get("width", 10)) * TILE
 	var h := float(layout.get("height", 7)) * TILE
-	var area := Rect2(10.0, WALL_ROWS * TILE + 10.0, w - 20.0, h - WALL_ROWS * TILE - 14.0)
+	var area := Rect2(20.0, WALL_ROWS * TILE + 20.0, w - 40.0, h - WALL_ROWS * TILE - 28.0)
 	for kind in st.pets:
 		if pets.has(kind):
 			continue
@@ -399,7 +402,7 @@ func show_feedback(employee_id: int, text: String, kind: String) -> void:
 		return
 	var label := Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 7)
+	label.add_theme_font_size_override("font_size", 12)
 	label.z_index = 10
 	var color := UIKit.COLOR_TEXT
 	if kind == "good":
@@ -423,10 +426,10 @@ func show_feedback(employee_id: int, text: String, kind: String) -> void:
 		label.add_theme_color_override("font_outline_color", Color.WHITE)
 	fx_layer.add_child(label)
 	label.reset_size()
-	var start := worker.head_position() - Vector2(label.size.x * 0.5, 6)
+	var start := worker.head_position() - Vector2(label.size.x * 0.5, 10)
 	label.position = start
 	var tween := create_tween()
-	tween.tween_property(label, "position", start + Vector2(0, -10), 1.4).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "position", start + Vector2(0, -18), 1.4).set_ease(Tween.EASE_OUT)
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 1.4).set_delay(0.6)
 	tween.tween_callback(label.queue_free)
 
@@ -485,15 +488,15 @@ func _gui_input(event: InputEvent) -> void:
 func _tap(screen_pos: Vector2) -> void:
 	var local: Vector2 = (screen_pos - world.position) / world.scale.x
 	var best_id := -1
-	var best_dist := 26.0
+	var best_dist := 44.0
 	for id in workers:
 		var w: Worker = workers[id]
 		if not w.visible:
 			continue
-		# retângulo do sprite (24x32 acima dos pés), com folga para o dedo
-		var rect := Rect2(w.position + Vector2(-14, -40), Vector2(28, 44))
+		# retângulo do sprite (32x48 acima dos pés), com folga para o dedo
+		var rect := Rect2(w.position + Vector2(-20, -56), Vector2(40, 60))
 		if rect.has_point(local):
-			var d: float = (w.position + Vector2(0, -16)).distance_to(local)
+			var d: float = (w.position + Vector2(0, -24)).distance_to(local)
 			if d < best_dist:
 				best_dist = d
 				best_id = id

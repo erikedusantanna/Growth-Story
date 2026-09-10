@@ -98,7 +98,12 @@ de reputação. Um jogador real tende a crescer mais devagar que o bot; a faixa 
   `OfficeView.ZONE_TINTS`) e `dividers` (`x`, `y0`, `y1` — divisórias verticais montadas com o mesmo par de sprites
   do anexo do RH). Entre as ilhas fica um corredor de piso de madeira, e os níveis 3 e 4 têm ala de convivência
   com mesa de reunião (`meeting_table`), sofá, café e bebedouro.
-- **Escritório interativo** (`OfficeView`): câmera com zoom entre "cabe inteiro" e 4×; arrastar com um dedo, pinça
+- **Arte e personagens** (`tools/gen_art.py`): tile de 32 px, contorno escuro, 3 tons por material. O personagem
+  (32×48) sai em folhas de 4 poses × 4 direções (`hframes`/`vframes` = 4; quadro = direção × 4 + pose) em camadas:
+  `skin.png`, `shirt.png` e `hair_<estilo>[g].png` são cinzas modulados pela cor do funcionário (base 216, brilho
+  255, sombra 160), `legs.png` e `outline_<estilo>[g].png` (contorno + rosto + óculos) têm cor fixa. O sufixo `g`
+  é a variante de óculos (`Employee.glasses`). `Worker._face()` escolhe a direção pelo eixo dominante do movimento.
+- **Escritório interativo** (`OfficeView`): câmera com zoom entre "cabe inteiro" e 2×; arrastar com um dedo, pinça
   com dois (eventos de toque; roda do mouse no desktop); toque curto no avatar emite `worker_tapped`. Cada `Worker`
   desenha a barra de moral sobre a cabeça; `Pet` passeia pelo piso do escritório principal.
 - **Eventos da agência** (`AgencyEventSystem`): abrem com reputação 40. Custam `cost` e `people` por `days`
