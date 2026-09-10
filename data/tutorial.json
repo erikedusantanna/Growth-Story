@@ -1,0 +1,20 @@
+{
+  "comment": "Guia dos primeiros objetivos: para o objetivo atual, o último passo da lista cujo botão-alvo está visível na tela é o destacado. 'when' filtra por situação da partida.",
+  "steps": [
+    {"objective": "first_client", "target": "nav:clients", "text": "Seus prospects ficam na aba Clientes. Toque aqui para vê-los."},
+    {"objective": "first_client", "target": "proposal", "text": "Envie uma proposta ao prospect. A porcentagem é a chance de fechar."},
+    {"objective": "first_client", "target": "send_proposal", "text": "Ajuste o preço: barato fecha fácil, caro rende mais. Depois toque em Enviar."},
+
+    {"objective": "first_diagnosis", "target": "nav:clients", "text": "Cliente fechado! Volte à aba Clientes.", "when": "diagnosis_idle"},
+    {"objective": "first_diagnosis", "target": "diagnosis", "text": "Pague um diagnóstico: ele revela o problema real do cliente. Campanhas certeiras rendem mais estrelas."},
+    {"objective": "first_diagnosis", "target": "speed2", "text": "Diagnóstico em andamento. Toque em 2x para os dias passarem mais rápido.", "when": "diagnosis_running"},
+
+    {"objective": "first_project", "target": "nav:clients", "text": "Problema real descoberto. Abra a aba Clientes para começar o trabalho.", "when": "no_project_running"},
+    {"objective": "first_project", "target": "new_project", "text": "Comece um projeto para o cliente.", "when": "no_project_running"},
+    {"objective": "first_project", "target": "start_project", "text": "Escolha serviços que atacam o problema real e quem vai trabalhar. A prévia mostra o que esperar. Depois toque em Iniciar."},
+    {"objective": "first_project", "target": "nav:projects", "text": "O projeto está rodando: acompanhe na aba Projetos. Use 2x para acelerar os dias.", "when": "project_running"},
+
+    {"objective": "first_hire", "target": "nav:team", "text": "Campanha entregue! Sozinho você não escala: veja os candidatos na aba Equipe."},
+    {"objective": "first_hire", "target": "hire", "text": "Contrate a primeira pessoa. Olhe os atributos, o potencial e o salário mensal."}
+  ]
+}

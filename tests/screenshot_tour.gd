@@ -21,6 +21,14 @@ func _ready() -> void:
 	main.popups.close()
 	await _frames(2)
 	await _shot("02b_escritorio_inicial")
+	main.show_screen("clients")
+	await get_tree().create_timer(0.4).timeout
+	await _shot("02c_guia_proposta")
+	main.popups.show_proposal(Game.state.prospects()[0])
+	await get_tree().create_timer(0.4).timeout
+	await _shot("02d_guia_enviar")
+	main.popups.close()
+	Game.state.tutorial_done = true
 	Game.manual_time = true
 	# prepara um estado interessante: 3 pessoas, cliente ativo, projeto rodando
 	var st: GameState = Game.state

@@ -265,6 +265,7 @@ func show_proposal(c: Client) -> void:
 		var hint := UIKit.muted("", 13)
 		b.add_child(hint)
 		var send := UIKit.button("📨 Enviar proposta", Callable(), true)
+		send.set_meta("tutorial", "send_proposal")
 		var refresh := func():
 			var factor: float = slider.value / 100.0
 			var pct := int(roundf((factor - 1.0) * 100.0))

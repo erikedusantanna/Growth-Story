@@ -43,7 +43,9 @@ func _prospect_card(c: Client) -> PanelContainer:
 	v.add_child(UIKit.muted("Orçamento de referência: %s/mês" % UIKit.money(c.budget)))
 	var chance := Game.clients.proposal_chance(c)
 	var actions := UIKit.hbox()
-	actions.add_child(UIKit.button("🤝 Proposta (%d%%)" % int(chance), func(): popups().show_proposal(c), true))
+	var propose := UIKit.button("🤝 Proposta (%d%%)" % int(chance), func(): popups().show_proposal(c), true)
+	propose.set_meta("tutorial", "proposal")
+	actions.add_child(propose)
 	actions.add_child(UIKit.button("✖️ Dispensar", func(): Game.clients.drop_prospect(c)))
 	v.add_child(actions)
 	if c.proposal_attempts > 0:
@@ -76,9 +78,12 @@ func _active_card(c: Client) -> PanelContainer:
 			var r := Game.clients.start_diagnosis(c)
 			if not r.ok:
 				popups().show_info("Diagnóstico", r.reason))
+		diag.set_meta("tutorial", "diagnosis")
 		actions.add_child(diag)
 	if running == null:
-		actions.add_child(UIKit.button("📣 Novo projeto", func(): popups().show_new_project(c), true))
+		var new_project := UIKit.button("📣 Novo projeto", func(): popups().show_new_project(c), true)
+		new_project.set_meta("tutorial", "new_project")
+		actions.add_child(new_project)
 	v.add_child(actions)
 	if running != null:
 		v.add_child(UIKit.label("Em andamento: %s (%d%%)" % [running.title, int(running.progress() * 100)], 14, UIKit.COLOR_BLUE))

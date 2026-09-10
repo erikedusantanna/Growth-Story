@@ -181,6 +181,7 @@ func _candidate_card(c: Employee) -> PanelContainer:
 			popups().show_info("Não foi possível contratar", r.reason), true)
 	hire.disabled = not check.ok
 	hire.tooltip_text = check.reason
+	hire.set_meta("tutorial", "hire")
 	actions.add_child(hire)
 	actions.add_child(UIKit.button("✖️ Recusar", func(): Game.employees.decline(c)))
 	v.add_child(actions)

@@ -131,6 +131,7 @@ func _ready() -> void:
 	var buttons := UIKit.hbox()
 	buttons.add_child(UIKit.button("✖️ Cancelar", popups.close))
 	start_button = UIKit.button("🚀 Iniciar projeto", _start, true)
+	start_button.set_meta("tutorial", "start_project")
 	buttons.add_child(start_button)
 	v.add_child(buttons)
 	_update_preview()

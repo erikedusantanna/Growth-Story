@@ -478,3 +478,13 @@ func _test_office_life(game) -> void:
 	Audio.set_ambience_enabled(false)
 	check(not Audio.ambience_enabled, "toggle desliga o som ambiente")
 	Audio.set_ambience_enabled(true)
+	# guia inicial: passos apontam para objetivos existentes e o estado persiste no save
+	var objective_ids: Array = game.content.objectives.map(func(o): return String(o.get("id", "")))
+	var steps_ok: bool = not game.content.tutorial.is_empty()
+	for s in game.content.tutorial:
+		if not objective_ids.has(String(s.get("objective", ""))) or String(s.get("target", "")) == "":
+			steps_ok = false
+	check(steps_ok, "passos do guia apontam para objetivos e botões válidos (%d passos)" % game.content.tutorial.size())
+	game.state.tutorial_done = true
+	var restored = GameState.from_dict(game.state.to_dict())
+	check(restored.tutorial_done, "tutorial_done sobrevive ao save")

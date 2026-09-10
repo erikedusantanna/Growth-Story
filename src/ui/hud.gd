@@ -50,6 +50,8 @@ func _ready() -> void:
 		var b := UIKit.button("%dx" % speed, func(): Game.set_speed(speed), false, 36)
 		b.size_flags_horizontal = 0
 		b.custom_minimum_size.x = 48
+		if speed == 2:
+			b.set_meta("tutorial", "speed2")
 		bottom.add_child(b)
 		speed_buttons.append(b)
 	music_button = UIKit.button("🔊", func():
