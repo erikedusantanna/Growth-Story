@@ -106,6 +106,14 @@ de reputação. Um jogador real tende a crescer mais devagar que o bot; a faixa 
 - **Escritório interativo** (`OfficeView`): câmera com zoom entre "cabe inteiro" e 2×; arrastar com um dedo, pinça
   com dois (eventos de toque; roda do mouse no desktop); toque curto no avatar emite `worker_tapped`. Cada `Worker`
   desenha a barra de moral sobre a cabeça; `Pet` passeia pelo piso do escritório principal.
+- **Cenas de evento** (`EventStage`, `data/scenes.json`): eventos com o campo `scene` (aleatórios e da agência)
+  trocam o painel do escritório por um cenário 270×168 em 2× (`assets/art/scenes/<kind>.png`) numa `CanvasLayer`
+  acima do escurecimento dos popups. Cada cenário define `marks` (pés, direção e pose de cada pessoa; a primeira é
+  a protagonista e recebe `hold`, o troféu), adereços de primeiro plano (`front`) e o fundo. Os atores são `Worker`
+  em `static_pose`, montados com as camadas do funcionário real. `Popups._scene_top()` abre a cena e devolve a
+  altura em que o painel deve começar (`Main.below_office_y()`); `Popups.close()` esconde a cena. Ao terminar um
+  evento promovido, `AgencyEventSystem.on_day()` emite `EventBus.agency_event_finished(ev, people, summary)` e o
+  popup de resultado mostra quem foi.
 - **Eventos da agência** (`AgencyEventSystem`): abrem com reputação 40. Custam `cost` e `people` por `days`
   (as pessoas ficam com `busy_reason = "Em evento"` e saem pela porta). Ao terminar, aplicam `effects`:
   `reputation`, `prospects` (+`prospect_tier_bonus`), `candidates`, `money` (patrocínio), `morale`, `delay_days`.
@@ -193,4 +201,5 @@ para não perder precisão. Versão do save em `version` (1).
 - **Era**: `data/eras.json` (`year_start`/`year_end`, `trends` com ids de serviço existentes).
 - **Departamento**: `data/departments.json → departments` (`id`, `name`, `attr`).
 - **Agência concorrente**: `data/competitors.json → agencies` (só o nome, entra no sorteio).
+- **Cenário de evento**: `data/scenes.json → scenes` (`backdrop`, `marks`, `front`, `hold`); para um evento ganhar cena, basta `"scene": "<kind>"` na entrada dele.
 - **Jornada**: chame `Game.employees.add_journey(e, texto)` em qualquer marco novo.

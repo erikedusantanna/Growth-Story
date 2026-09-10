@@ -240,7 +240,8 @@
             }
           ]
         }
-      ]
+      ],
+      "scene": "stage"
     },
     {
       "id": "aquisicao",
@@ -300,7 +301,8 @@
             }
           ]
         }
-      ]
+      ],
+      "scene": "boardroom"
     },
     {
       "id": "logo_maior",
@@ -364,7 +366,8 @@
             }
           ]
         }
-      ]
+      ],
+      "scene": "press"
     },
     {
       "id": "estagiario_genial",
@@ -574,7 +577,8 @@
           "label": "Todo mundo está ocupado",
           "effects": []
         }
-      ]
+      ],
+      "scene": "auditorium"
     },
     {
       "id": "crise_reputacao",
@@ -619,7 +623,8 @@
             }
           ]
         }
-      ]
+      ],
+      "scene": "press"
     },
     {
       "id": "cliente_gigante",
@@ -645,7 +650,8 @@
           "label": "Ainda não é o momento",
           "effects": []
         }
-      ]
+      ],
+      "scene": "boardroom"
     },
     {
       "id": "parceria",
@@ -769,7 +775,8 @@
           "label": "Não temos tempo",
           "effects": []
         }
-      ]
+      ],
+      "scene": "booth"
     },
     {
       "id": "cliente_internacional",
@@ -809,7 +816,8 @@
             }
           ]
         }
-      ]
+      ],
+      "scene": "boardroom"
     },
     {
       "id": "boom_ia_generativa",
@@ -906,7 +914,8 @@
             }
           ]
         }
-      ]
+      ],
+      "scene": "stage"
     },
     {
       "id": "concorrente_cresce",
@@ -990,7 +999,8 @@
             }
           ]
         }
-      ]
+      ],
+      "scene": "boardroom"
     },
     {
       "id": "reuniao_desnecessaria",

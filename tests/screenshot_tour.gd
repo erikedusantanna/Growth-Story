@@ -128,6 +128,22 @@ func _ready() -> void:
 	main.popups.close()
 	Game.resolve_event(0)
 	await _settle()
+	# cenas de evento: a câmera sai do escritório e vai para o palco / auditório / coletiva
+	for pair in [["premio", "09b_cena_premio"], ["viralizou", "09c_cena_coletiva"], ["investidor_de_peso", "09d_cena_reuniao"]]:
+		var ev: Dictionary = Game.content.events.filter(func(e): return e.get("id", "") == pair[0])[0]
+		Game.events.trigger(ev)
+		await _frames(3)
+		await get_tree().create_timer(0.4).timeout
+		await _shot(pair[1])
+		main.popups.close()
+		Game.resolve_event(0)
+		await _settle()
+	main.popups.show_agency_result(Game.agency_events.event_by_id("palestra"), [st.employees[0].id, st.employees[1].id], "+6 reputação, 1 prospect")
+	await _frames(3)
+	await get_tree().create_timer(0.4).timeout
+	await _shot("09e_cena_palestra")
+	main.popups.close()
+	await _settle()
 	if st.running_projects().is_empty():
 		var c2 := _second_client()
 		Game.projects.create_project(c2, ["social_media"], [st.employees[0].id])

@@ -936,6 +936,7 @@ def export_all(root):
                      ("meeting_table", meeting_table), ("dog", dog), ("cat", cat)):
         write_png(os.path.join(art, "furniture", f"{name}.png"), fn())
     export_characters(os.path.join(art, "characters"))
+    export_scenes(root)
 
 
 def furniture_sheet(path, scale=2):
@@ -951,6 +952,285 @@ def furniture_sheet(path, scale=2):
         blit(c, it, x, y)
         x += w + 8
         row_h = max(row_h, h)
+    write_png(path, c, scale)
+
+
+# --- Cenarios de evento (270x168, exibidos em 2x no lugar do escritorio) -------------------
+SCENE_W, SCENE_H = 270, 168
+PAL.update({
+    "night": hx("#1b2438"), "night_hi": hx("#2a3654"), "night_lo": hx("#111826"),
+    "spot": (255, 236, 190, 34), "spot_hi": (255, 246, 220, 52),
+    "curtain": hx("#a8322b"), "curtain_hi": hx("#c9463c"), "curtain_lo": hx("#6e1f1a"),
+    "gold_hi": hx("#f6d675"), "gold_lo": hx("#a87a14"),
+    "hall": hx("#dfe6ea"), "hall_lo": hx("#c3cdd4"), "hall_floor": hx("#b9c2c8"),
+    "sky_night": hx("#243559"), "city": hx("#0f1727"), "city_win": hx("#f2d27a"),
+    "foam": hx("#2c2f3a"), "foam_hi": hx("#3a3e4c"),
+    "onair": hx("#ff5a4a"), "onair_lo": hx("#5a1b16"),
+    "paper": hx("#f7f4ec"), "flash": (255, 255, 255, 150),
+})
+
+
+def _spotlight(c, x_top, x_bottom_l, x_bottom_r, y_bottom):
+    """Cone de luz translucido do topo ate o palco."""
+    for y in range(0, y_bottom):
+        t = y / max(1, y_bottom - 1)
+        l = int(x_top + (x_bottom_l - x_top) * t)
+        r = int(x_top + (x_bottom_r - x_top) * t)
+        for x in range(l, r + 1):
+            if c[y][x] is not None and c[y][x] != "spot" and c[y][x] != "spot_hi":
+                c[y][x] = "spot_hi" if abs(x - (l + r) / 2) < (r - l) * 0.25 else "spot"
+
+
+def _planks(c, y0, y1, hi_rows=1):
+    rect(c, 0, y0, SCENE_W, y1 - y0, "wood")
+    for y in range(y0, y1, 6):
+        hline(c, 0, SCENE_W - 1, y, "wood_lo")
+    for y in range(y0 + 1, y0 + 1 + hi_rows):
+        hline(c, 0, SCENE_W - 1, y, "wood_hi")
+
+
+def _stars(c, pts, col="gold_hi"):
+    for x, y in pts:
+        put(c, x, y, col); put(c, x - 1, y, col); put(c, x + 1, y, col); put(c, x, y - 1, col); put(c, x, y + 1, col)
+
+
+def _trophy_big(c, cx, y, col="gold", hi="gold_hi", lo="gold_lo"):
+    rect(c, cx - 10, y, 20, 14, col); rect(c, cx - 9, y, 8, 2, hi); rect(c, cx + 6, y + 2, 4, 12, lo)
+    rect(c, cx - 14, y + 2, 4, 8, col); rect(c, cx + 10, y + 2, 4, 8, col)
+    rect(c, cx - 8, y + 14, 16, 3, col); rect(c, cx - 3, y + 17, 6, 6, lo); rect(c, cx - 9, y + 23, 18, 4, col)
+    rect(c, cx - 9, y + 23, 18, 1, hi)
+
+
+def scene_stage():
+    c = canvas(SCENE_W, SCENE_H, "night")
+    rect(c, 0, 0, SCENE_W, 48, "curtain")
+    for x in range(0, SCENE_W, 14):
+        rect(c, x, 0, 4, 48, "curtain_hi"); rect(c, x + 9, 0, 3, 48, "curtain_lo")
+    for x in range(0, SCENE_W, 14):
+        rect(c, x + 2, 44, 10, 4, "curtain_lo")
+    rect(c, 0, 48, SCENE_W, 4, "gold"); hline(c, 0, SCENE_W - 1, 48, "gold_hi")
+    # painel de fundo com trofeu e estrelas
+    rect(c, 70, 58, 130, 60, "night_lo"); rect(c, 72, 60, 126, 56, "sky_night")
+    rect(c, 70, 58, 130, 2, "gold"); rect(c, 70, 116, 130, 2, "gold"); rect(c, 70, 58, 2, 60, "gold"); rect(c, 198, 58, 2, 60, "gold")
+    _trophy_big(c, 135, 70)
+    _stars(c, ((88, 72), (182, 70), (96, 100), (176, 104), (110, 66), (160, 112)))
+    _spotlight(c, 40, 80, 140, 128); _spotlight(c, 230, 130, 190, 128)
+    _planks(c, 128, 152); rect(c, 0, 152, SCENE_W, 16, "wood_lo"); hline(c, 0, SCENE_W - 1, 152, "wood")
+    for x in range(6, SCENE_W, 12):
+        put(c, x, 158, "gold_hi")
+    # confete
+    cols = ("red_hi", "gold_hi", "screen_hi", "leaf_hi", "purple", "mug")
+    for i in range(70):
+        x = (i * 37 + 11) % SCENE_W; y = (i * 53 + 7) % 120
+        rect(c, x, y, 2, 1, cols[i % len(cols)])
+    return c
+
+
+def scene_auditorium():
+    c = canvas(SCENE_W, SCENE_H, "night_hi")
+    rect(c, 0, 0, SCENE_W, 16, "night"); rect(c, 0, 16, SCENE_W, 2, "night_lo")
+    # telao
+    rect(c, 62, 22, 146, 76, "metal_lo"); rect(c, 66, 26, 138, 68, "paper"); rect(c, 66, 26, 138, 2, "metal_hi")
+    for i, bh in enumerate((14, 22, 18, 30, 36, 44, 40)):
+        rect(c, 82 + i * 16, 84 - bh, 10, bh, "screen" if i % 2 == 0 else "leaf")
+        rect(c, 82 + i * 16, 84 - bh, 10, 2, "screen_hi" if i % 2 == 0 else "leaf_hi")
+    hline(c, 76, 196, 85, "metal_lo"); rect(c, 76, 32, 40, 4, "frame"); rect(c, 76, 39, 26, 2, "metal_lo")
+    _spotlight(c, 30, 20, 60, 110); _spotlight(c, 240, 210, 250, 110)
+    _planks(c, 110, 134); rect(c, 0, 134, SCENE_W, 10, "wood_lo"); hline(c, 0, SCENE_W - 1, 134, "wood")
+    # pulpito
+    rect(c, 26, 92, 30, 42, "wood_lo"); rect(c, 24, 88, 34, 6, "wood"); rect(c, 24, 88, 34, 1, "wood_hi"); rect(c, 30, 98, 22, 30, "wood")
+    rect(c, 36, 82, 3, 8, "metal_lo"); rect(c, 34, 78, 7, 5, "frame")
+    # plateia de costas
+    rect(c, 0, 144, SCENE_W, 24, "night_lo")
+    for row, (y, off) in enumerate(((146, 0), (156, 12))):
+        for x in range(off, SCENE_W, 24):
+            rect(c, x + 2, y, 14, 12, "night_hi"); rect(c, x + 3, y - 2, 12, 5, ("wood_lo" if (x // 24 + row) % 3 else "frame"))
+    return c
+
+
+def scene_booth():
+    c = canvas(SCENE_W, SCENE_H, "hall")
+    rect(c, 0, 0, SCENE_W, 12, "hall_lo")
+    # outros estandes ao fundo
+    for x, col in ((6, "screen"), (60, "purple"), (196, "leaf"), (236, "gold")):
+        rect(c, x, 24, 40, 34, col); rect(c, x, 24, 40, 3, "paper"); rect(c, x + 4, 30, 32, 20, "paper")
+        rect(c, x + 8, 34, 24, 3, col); rect(c, x + 8, 40, 16, 3, col)
+    rect(c, 0, 100, SCENE_W, 68, "hall_floor")
+    for y in range(100, SCENE_H, 12):
+        hline(c, 0, SCENE_W - 1, y, "hall_lo")
+    # nosso estande: painel laranja com o logo (barras) e baloes
+    rect(c, 96, 18, 78, 90, "wood"); rect(c, 96, 18, 78, 4, "wood_hi"); rect(c, 170, 22, 4, 86, "wood_lo")
+    rect(c, 104, 28, 62, 44, "night"); rect(c, 106, 30, 58, 40, "night_hi")
+    for i, bh in enumerate((10, 16, 22, 30)):
+        rect(c, 114 + i * 12, 64 - bh, 8, bh, "leaf" if i % 2 else "screen")
+        rect(c, 114 + i * 12, 64 - bh, 8, 2, "leaf_hi" if i % 2 else "screen_hi")
+    for i in range(4):
+        put(c, 112 + i * 12, 66 - (10, 16, 22, 30)[i] - 2 - i, "gold_hi")
+    rect(c, 104, 76, 62, 24, "paper"); rect(c, 110, 82, 50, 3, "wood_lo"); rect(c, 110, 88, 36, 3, "wood_lo"); rect(c, 110, 94, 44, 2, "wood_lo")
+    for x, y, col in ((82, 26, "red"), (90, 36, "screen"), (186, 30, "gold"), (194, 42, "leaf")):
+        rect(c, x - 5, y - 6, 10, 12, col); rect(c, x - 4, y - 7, 8, 1, col); rect(c, x - 4, y + 6, 8, 1, col)
+        put(c, x - 3, y - 4, "paper"); vline(c, x, y + 7, y + 30, "metal_lo")
+    return c
+
+
+def scene_meetup():
+    c = canvas(SCENE_W, SCENE_H, "wall")
+    hline(c, 0, SCENE_W - 1, 0, "o"); rect(c, 0, 1, SCENE_W, 4, "wall_hi"); rect(c, 0, 58, SCENE_W, 6, "wall_lo")
+    rect(c, 0, 64, SCENE_W, 104, "floor")
+    for x in range(0, SCENE_W, 32):
+        vline(c, x, 64, SCENE_H - 1, "floor_line")
+    for y in range(64, SCENE_H, 32):
+        hline(c, 0, SCENE_W - 1, y, "floor_line")
+    # varal de luzes
+    for x in range(0, SCENE_W, 4):
+        put(c, x, 10 + int(3 * abs(((x % 60) / 30) - 1)), "metal_lo")
+    for x in range(6, SCENE_W, 12):
+        rect(c, x, 12 + int(3 * abs(((x % 60) / 30) - 1)), 3, 4, ("gold_hi", "red_hi", "screen_hi", "leaf_hi")[(x // 12) % 4])
+    # faixa
+    rect(c, 82, 24, 106, 18, "paper"); rect(c, 82, 24, 106, 2, "red"); rect(c, 82, 40, 106, 2, "red")
+    rect(c, 90, 30, 30, 4, "night"); rect(c, 126, 30, 20, 4, "night"); rect(c, 152, 30, 28, 4, "night")
+    # mesa de lanches e baloes
+    rect(c, 178, 80, 82, 10, "wood_hi"); rect(c, 178, 90, 82, 6, "wood"); rect(c, 180, 96, 6, 22, "wood_lo"); rect(c, 252, 96, 6, 22, "wood_lo")
+    rect(c, 184, 72, 18, 8, "wood_lo"); rect(c, 184, 72, 18, 2, "wood"); rect(c, 206, 74, 14, 6, "paper"); rect(c, 224, 70, 8, 10, "mug"); rect(c, 236, 72, 8, 8, "red")
+    for x, y, col in ((14, 30, "red"), (24, 40, "gold"), (250, 34, "screen")):
+        rect(c, x - 5, y - 6, 10, 12, col); put(c, x - 3, y - 4, "paper"); vline(c, x, y + 6, y + 26, "metal_lo")
+    return c
+
+
+def scene_studio():
+    c = canvas(SCENE_W, SCENE_H, "foam")
+    for y in range(0, 110, 14):
+        for x in range(0, SCENE_W, 14):
+            rect(c, x + 1, y + 1, 12, 12, "foam_hi"); rect(c, x + 4, y + 4, 6, 6, "foam")
+    rect(c, 0, 110, SCENE_W, 58, "night_lo")
+    # letreiro ON AIR
+    rect(c, 96, 14, 78, 22, "onair_lo"); rect(c, 98, 16, 74, 18, "night_lo")
+    glyphs = {"O": ["111", "101", "101", "101", "111"], "N": ["101", "111", "111", "101", "101"],
+              "A": ["111", "101", "111", "101", "101"], "I": ["111", "010", "010", "010", "111"],
+              "R": ["111", "101", "111", "110", "101"]}
+    x = 104
+    for ch in "ON AIR":
+        if ch == " ":
+            x += 6; continue
+        for gy, row in enumerate(glyphs[ch]):
+            for gx, bit in enumerate(row):
+                if bit == "1":
+                    rect(c, x + gx * 3, 19 + gy * 3, 3, 3, "onair")
+        x += 12
+    # monitores nas laterais (a mesa e adereco de primeiro plano)
+    rect(c, 22, 60, 26, 18, "frame"); rect(c, 24, 62, 22, 12, "screen"); rect(c, 26, 64, 8, 2, "screen_hi"); rect(c, 30, 78, 10, 3, "metal_lo")
+    rect(c, 222, 60, 26, 18, "frame"); rect(c, 224, 62, 22, 12, "leaf"); rect(c, 226, 64, 6, 2, "leaf_hi"); rect(c, 230, 78, 10, 3, "metal_lo")
+    return c
+
+
+def scene_boardroom():
+    c = canvas(SCENE_W, SCENE_H, "hall_lo")
+    rect(c, 0, 0, SCENE_W, 8, "hall")
+    # janela panoramica com skyline
+    rect(c, 20, 12, 230, 80, "metal"); rect(c, 24, 16, 222, 72, "sky"); rect(c, 24, 16, 222, 20, "sky_hi")
+    for i, (x, w, h) in enumerate(((28, 18, 40), (50, 12, 56), (66, 24, 30), (94, 16, 62), (114, 20, 44), (138, 14, 70), (156, 26, 36), (186, 18, 58), (208, 14, 48), (226, 18, 34))):
+        rect(c, x, 88 - h, w, h, "city")
+        for wy in range(90 - h, 86, 6):
+            for wx in range(x + 2, x + w - 2, 5):
+                if (wx + wy + i) % 3:
+                    rect(c, wx, wy, 2, 2, "city_win")
+    rect(c, 133, 16, 4, 72, "metal"); rect(c, 24, 50, 222, 3, "metal")
+    rect(c, 0, 100, SCENE_W, 68, "night_hi")
+    for y in range(100, SCENE_H, 10):
+        hline(c, 0, SCENE_W - 1, y, "night")
+    rect(c, 246, 40, 16, 40, "leaf"); put(c, 250, 44, "leaf_hi"); rect(c, 248, 80, 12, 14, "pot")
+    return c
+
+
+def scene_press():
+    c = canvas(SCENE_W, SCENE_H, "paper")
+    for y in range(6, 110, 26):
+        for x in range((y // 26) % 2 * 20, SCENE_W, 40):
+            for i, bh in enumerate((3, 5, 7)):
+                rect(c, x + 4 + i * 4, y + 10 - bh, 3, bh, "hall_lo")
+    rect(c, 0, 110, SCENE_W, 58, "night_hi"); rect(c, 0, 110, SCENE_W, 3, "night")
+    for x, y in ((30, 30), (230, 22), (60, 80), (200, 70)):
+        for dx, dy in ((0, 0), (-3, 0), (3, 0), (0, -3), (0, 3), (-2, -2), (2, 2), (-2, 2), (2, -2), (-5, 0), (5, 0), (0, -5), (0, 5)):
+            put(c, x + dx, y + dy, "flash")
+        rect(c, x - 1, y - 1, 3, 3, "mug")
+    return c
+
+
+# adereços de primeiro plano (na frente das pessoas)
+def prop_trophy():
+    c = canvas(16, 26)
+    rect(c, 3, 0, 10, 10, "gold"); rect(c, 4, 0, 4, 1, "gold_hi"); rect(c, 11, 1, 2, 9, "gold_lo")
+    rect(c, 0, 1, 3, 6, "gold"); rect(c, 13, 1, 3, 6, "gold")
+    rect(c, 5, 10, 6, 2, "gold"); rect(c, 7, 12, 2, 6, "gold_lo"); rect(c, 3, 18, 10, 3, "gold"); rect(c, 3, 18, 10, 1, "gold_hi")
+    rect(c, 2, 21, 12, 4, "wood_lo")
+    outline(c)
+    return c
+
+
+def prop_mic_stand():
+    c = canvas(14, 48)
+    rect(c, 4, 0, 6, 10, "frame"); rect(c, 5, 1, 4, 2, "metal_lo"); rect(c, 5, 5, 4, 3, "metal_lo")
+    rect(c, 6, 10, 2, 32, "metal"); rect(c, 7, 10, 1, 32, "metal_lo")
+    rect(c, 1, 42, 12, 4, "metal_lo"); rect(c, 1, 42, 12, 1, "metal")
+    outline(c)
+    return c
+
+
+def prop_lectern():
+    c = canvas(40, 56)
+    rect(c, 2, 0, 36, 8, "wood"); rect(c, 2, 0, 36, 2, "wood_hi"); rect(c, 6, 8, 28, 46, "wood"); rect(c, 30, 8, 4, 46, "wood_lo")
+    rect(c, 12, 16, 16, 12, "night"); rect(c, 14, 18, 12, 8, "night_hi")
+    for i, bh in enumerate((2, 4, 6)):
+        rect(c, 15 + i * 3, 25 - bh, 2, bh, "leaf_hi")
+    rect(c, 8, 50, 24, 4, "wood_lo")
+    outline(c)
+    return c
+
+
+def prop_table_long():
+    c = canvas(200, 40)
+    rect(c, 2, 2, 196, 10, "wood_hi"); rect(c, 2, 2, 196, 1, "wood"); rect(c, 2, 12, 196, 8, "wood"); hline(c, 2, 197, 19, "wood_lo")
+    for x in (20, 70, 120, 170):
+        rect(c, x, 4, 12, 5, "paper"); hline(c, x + 1, x + 10, 6, "metal_lo")
+    rect(c, 90, 0, 20, 5, "frame"); rect(c, 91, 1, 18, 3, "screen"); rect(c, 88, 5, 24, 2, "metal")
+    rect(c, 150, 4, 6, 5, "mug"); put(c, 156, 6, "mug_lo")
+    rect(c, 8, 20, 8, 18, "wood_lo"); rect(c, 184, 20, 8, 18, "wood_lo")
+    outline(c)
+    return c
+
+
+def prop_counter():
+    c = canvas(150, 44)
+    rect(c, 0, 0, 150, 8, "wood_hi"); rect(c, 0, 0, 150, 1, "wood"); rect(c, 0, 8, 150, 34, "wood"); rect(c, 0, 40, 150, 2, "wood_lo")
+    rect(c, 40, 12, 70, 24, "night"); rect(c, 42, 14, 66, 20, "night_hi")
+    for i, bh in enumerate((6, 10, 14, 18)):
+        rect(c, 56 + i * 10, 32 - bh, 6, bh, "leaf" if i % 2 else "screen")
+    rect(c, 8, 2, 16, 5, "paper"); rect(c, 120, 1, 14, 6, "paper"); rect(c, 122, 3, 10, 2, "red")
+    outline(c)
+    return c
+
+
+def export_scenes(root):
+    out = os.path.join(root, "assets", "art", "scenes")
+    for name, fn in (("stage", scene_stage), ("auditorium", scene_auditorium), ("booth", scene_booth),
+                     ("meetup", scene_meetup), ("studio", scene_studio), ("boardroom", scene_boardroom),
+                     ("press", scene_press)):
+        write_png(os.path.join(out, f"{name}.png"), fn())
+    for name, fn in (("trophy", prop_trophy), ("mic_stand", prop_mic_stand), ("lectern", prop_lectern),
+                     ("table_long", prop_table_long), ("counter", prop_counter)):
+        write_png(os.path.join(out, f"{name}.png"), fn())
+
+
+def scenes_sheet(path, scale=2):
+    _register_cast()
+    c = canvas(SCENE_W * 2 + 12, SCENE_H * 4 + 30, "night_lo")
+    scenes = [scene_stage(), scene_auditorium(), scene_booth(), scene_meetup(), scene_studio(), scene_boardroom(), scene_press()]
+    for i, sc in enumerate(scenes):
+        x = 4 + (i % 2) * (SCENE_W + 4); y = 4 + (i // 2) * (SCENE_H + 6)
+        blit(c, sc, x, y)
+    x = 4 + SCENE_W + 4; y = 4 + 3 * (SCENE_H + 6)
+    for pr in (prop_trophy(), prop_mic_stand(), prop_lectern(), prop_counter()):
+        blit(c, pr, x, y); x += len(pr[0]) + 6
     write_png(path, c, scale)
 
 
@@ -1059,5 +1339,8 @@ if __name__ == "__main__":
     if "--furniture" in sys.argv:
         out = sys.argv[sys.argv.index("--furniture") + 1]
         furniture_sheet(out)
+    if "--scenes" in sys.argv:
+        out = sys.argv[sys.argv.index("--scenes") + 1]
+        scenes_sheet(out)
     if "--export" in sys.argv:
         export_all(ROOT)

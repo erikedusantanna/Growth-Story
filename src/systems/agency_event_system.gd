@@ -88,7 +88,7 @@ func run(ev: Dictionary, people: Array) -> Dictionary:
 	return {"ok": true, "reason": ""}
 
 
-func _apply_effects(ev: Dictionary) -> void:
+func _apply_effects(ev: Dictionary) -> String:
 	var st: GameState = game.state
 	var fx: Dictionary = ev.get("effects", {})
 	var parts: Array = []
@@ -113,6 +113,7 @@ func _apply_effects(ev: Dictionary) -> void:
 	if int(fx.get("delay_days", 0)) > 0:
 		game.projects.delay_all(int(fx["delay_days"]))
 	game.add_log("Resultado do evento %s: %s." % [ev["name"], ", ".join(parts)], "unlock")
+	return ", ".join(parts)
 
 
 func on_day() -> void:
@@ -120,13 +121,16 @@ func on_day() -> void:
 	var finished: Array = st.agency_events.filter(func(r): return int(r.get("ends_day", 0)) <= st.day)
 	for r in finished:
 		var ev := event_by_id(String(r.get("id", "")))
+		var summary := ""
 		if not ev.is_empty():
-			_apply_effects(ev)
+			summary = _apply_effects(ev)
 		for id in r.get("people", []):
 			var e: Employee = st.employee_by_id(int(id))
 			if e != null and e.busy_reason == "Em evento":
 				e.busy_until = st.day - 1
 				e.busy_reason = ""
+		if not ev.is_empty():
+			EventBus.agency_event_finished.emit(ev, r.get("people", []), summary)
 	if not finished.is_empty():
 		st.agency_events = st.agency_events.filter(func(r): return int(r.get("ends_day", 0)) > st.day)
 		EventBus.state_changed.emit()

@@ -96,6 +96,22 @@ func _ready() -> void:
 	await get_tree().process_frame
 	print("  popup de escolha de pessoas: %s" % main.popups.is_open())
 	main.popups.close()
+	# cena de evento: a "câmera" troca o escritório pelo palco com o time
+	var premio: Dictionary = Game.content.events.filter(func(e): return e.get("id", "") == "premio")[0]
+	Game.events.trigger(premio)
+	await get_tree().process_frame
+	var scene_seen: bool = main.event_stage.visible and main.event_stage.actor_count() > 0
+	print("  cena do evento '%s': visível=%s · atores=%d · cenário=%s" % [premio.get("id"), main.event_stage.visible, main.event_stage.actor_count(), main.event_stage.current_kind])
+	main.popups.close()
+	Game.resolve_event(0)
+	await get_tree().process_frame
+	var scene_hidden: bool = not main.event_stage.visible
+	print("  cena fechou junto com o popup: %s" % scene_hidden)
+	main.popups.show_agency_result(Game.agency_events.event_by_id("palco_principal"), [Game.state.employees[0].id], "+8 reputação")
+	await get_tree().process_frame
+	var agency_scene: bool = main.event_stage.visible and main.event_stage.current_kind == "stage"
+	print("  resultado de evento da agência com cena: %s" % agency_scene)
+	main.popups.close()
 	main.show_screen("company")
 	await get_tree().process_frame
 	# avança o tempo pelo _process real (manual_time = false) e resolve eventos automaticamente
@@ -115,6 +131,6 @@ func _ready() -> void:
 	main.show_title()
 	await get_tree().process_frame
 	print("  workers no escritório: %d" % main.office_view.workers.size())
-	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen
+	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene
 	print("[%s] UI smoke" % ("OK" if ok else "FALHA"))
 	get_tree().quit(0 if ok else 1)

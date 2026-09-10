@@ -52,7 +52,7 @@ func trigger(ev: Dictionary) -> void:
 		targets["client_id"] = c.id
 		text = text.replace("{random_client}", c.name)
 	st.pending_event = {"id": ev["id"], "title": ev.get("title", "Evento"), "text": text,
-		"choices": ev.get("choices", []), "targets": targets}
+		"choices": ev.get("choices", []), "targets": targets, "scene": ev.get("scene", "")}
 	st.last_event_day = st.day
 	st.events_seen[ev["id"]] = int(st.events_seen.get(ev["id"], 0)) + 1
 	st.events_last_day[ev["id"]] = st.day
