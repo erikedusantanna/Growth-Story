@@ -96,6 +96,9 @@ func _ready() -> void:
 	main.screens["company"].scroll_vertical = 700
 	await _frames(2)
 	await _shot("07d_mobilia")
+	main.screens["company"].scroll_vertical = 4000
+	await _frames(2)
+	await _shot("07d2_som")
 	main.show_screen("unlocks")
 	await get_tree().create_timer(1.5).timeout
 	await _shot("07e_escritorio_mobilia")
@@ -144,6 +147,19 @@ func _ready() -> void:
 	main.show_screen("company")
 	await _frames(2)
 	await _shot("11_company_after")
+	main.show_screen("unlocks")
+	await _frames(2)
+	await _shot("12_concorrencia")
+	st.office_level = 4
+	st.money = 200000.0
+	st.employees[0].career_level = 5
+	Game.departments.assign(st.employees[0], "criacao")
+	if st.employees.size() > 1:
+		Game.departments.assign(st.employees[1], "criacao")
+	EventBus.state_changed.emit()
+	main.show_screen("team")
+	await _frames(3)
+	await _shot("13_departamentos")
 	print("screenshots em %s" % ProjectSettings.globalize_path(out_dir))
 	get_tree().quit(0)
 

@@ -5,11 +5,11 @@ extends BaseScreen
 
 func build() -> void:
 	var st: GameState = Game.state
-	content.add_child(header(st.agency_name, Game.reputation.phase_name()))
+	content.add_child(header("🏢 %s" % st.agency_name, Game.reputation.phase_name()))
 
 	var fin := UIKit.card()
 	var fv := UIKit.card_content(fin)
-	fv.add_child(UIKit.label("Finanças", 19, UIKit.COLOR_ACCENT))
+	fv.add_child(UIKit.label("💰 Finanças", 19, UIKit.COLOR_ACCENT))
 	fv.add_child(_row("Caixa", UIKit.money(st.money), UIKit.COLOR_GREEN if st.money >= 0 else UIKit.COLOR_RED))
 	fv.add_child(_row("MRR (retainers)", UIKit.money(st.mrr())))
 	fv.add_child(_row("Receita no mês", UIKit.money(st.month_revenue)))
@@ -32,7 +32,7 @@ func build() -> void:
 
 	var rep := UIKit.card()
 	var rv := UIKit.card_content(rep)
-	rv.add_child(UIKit.label("Reputação", 19, UIKit.COLOR_ACCENT))
+	rv.add_child(UIKit.label("⭐ Reputação", 19, UIKit.COLOR_ACCENT))
 	rv.add_child(UIKit.stat_row(Game.reputation.tier_name(), st.reputation, UIKit.COLOR_ACCENT, 190))
 	rv.add_child(UIKit.muted("Reputação maior atrai clientes de tiers mais altos e candidatos melhores.", 13))
 	rv.add_child(UIKit.label("Como ganhar: 3 estrelas ou mais em campanhas. Diagnóstico, combinação perfeita, especialistas na equipe e entrega no prazo somam pontos na nota. 1 estrela tira reputação.", 13, UIKit.COLOR_TEXT, true))
@@ -41,14 +41,14 @@ func build() -> void:
 	var office := Game.office.current()
 	var oc := UIKit.card()
 	var ov := UIKit.card_content(oc)
-	ov.add_child(UIKit.label("Escritório", 19, UIKit.COLOR_ACCENT))
+	ov.add_child(UIKit.label("🏢 Escritório", 19, UIKit.COLOR_ACCENT))
 	ov.add_child(_row(office.get("name", ""), "%d/%d pessoas" % [st.employees.size(), Game.office.capacity()]))
 	ov.add_child(_row("Aluguel", UIKit.money(Game.office.rent())))
 	var nxt := Game.office.next_level()
 	if not nxt.is_empty():
 		var check := Game.office.can_upgrade()
 		ov.add_child(UIKit.muted("Próximo: %s · %d lugares · %s · aluguel %s/mês" % [nxt.name, int(nxt.capacity), UIKit.money(float(nxt.upgrade_cost)), UIKit.money(float(nxt.rent))], 13))
-		var b := UIKit.button("Mudar para %s" % nxt.name, func(): Game.office.upgrade(), true)
+		var b := UIKit.button("🏗️ Mudar para %s" % nxt.name, func(): Game.office.upgrade(), true)
 		b.disabled = not check.ok
 		ov.add_child(b)
 		if not check.ok:
@@ -58,7 +58,7 @@ func build() -> void:
 	var fc := UIKit.card()
 	var fcv := UIKit.card_content(fc)
 	var fx := Game.office.furniture_effects()
-	fcv.add_child(UIKit.label("Mobília", 19, UIKit.COLOR_ACCENT))
+	fcv.add_child(UIKit.label("🛋️ Mobília", 19, UIKit.COLOR_ACCENT))
 	fcv.add_child(UIKit.muted("Teto de moral %d · estresse ×%.2f · produtividade ×%.2f · moral diária +%.2f" % [int(fx["morale_max"]), float(fx["stress_rate"]), float(fx["productivity"]), float(fx["morale_daily"])], 13))
 	for f in Game.office.furniture_items():
 		fcv.add_child(_furniture_row(f))
@@ -66,8 +66,9 @@ func build() -> void:
 
 	var stats := UIKit.card()
 	var sv := UIKit.card_content(stats)
-	sv.add_child(UIKit.label("Números", 19, UIKit.COLOR_ACCENT))
+	sv.add_child(UIKit.label("📊 Números", 19, UIKit.COLOR_ACCENT))
 	sv.add_child(_row("Ano de jogo", "%d (%d)" % [st.game_year(), st.year()]))
+	sv.add_child(_row("Era do mercado", String(Game.era.current().get("name", "")), UIKit.COLOR_ACCENT))
 	sv.add_child(_row("Campanhas entregues", str(int(st.stats.projects_done))))
 	sv.add_child(_row("Cases de sucesso (5 estrelas)", str(st.cases)))
 	sv.add_child(_row("Clientes fechados", str(int(st.stats.clients_signed))))
@@ -75,11 +76,20 @@ func build() -> void:
 	sv.add_child(_row("Receita acumulada", UIKit.money(float(st.stats.total_revenue))))
 	content.add_child(stats)
 
+	var sound := UIKit.card()
+	var soundv := UIKit.card_content(sound)
+	soundv.add_child(UIKit.label("🔊 Som", 19, UIKit.COLOR_ACCENT))
+	var sound_row := UIKit.hbox()
+	sound_row.add_child(UIKit.toggle("🎵 Música", Audio.music_enabled, func(on): Audio.set_music_enabled(on)))
+	sound_row.add_child(UIKit.toggle("🔊 Efeitos", Audio.sfx_enabled, func(on): Audio.set_sfx_enabled(on)))
+	soundv.add_child(sound_row)
+	content.add_child(sound)
+
 	var actions := UIKit.hbox()
-	actions.add_child(UIKit.button("Salvar jogo", func():
+	actions.add_child(UIKit.button("💾 Salvar jogo", func():
 		if Game.save_game():
 			popups().show_info("Salvo", "Partida salva. O jogo também salva sozinho todo mês.")))
-	actions.add_child(UIKit.button("Menu", func(): get_tree().call_group("main", "show_title")))
+	actions.add_child(UIKit.button("🚪 Menu", func(): get_tree().call_group("main", "show_title")))
 	content.add_child(actions)
 
 

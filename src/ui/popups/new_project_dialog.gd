@@ -26,7 +26,7 @@ func _ready() -> void:
 	offset_bottom = -70
 	var v := UIKit.vbox(8)
 	add_child(v)
-	v.add_child(UIKit.title("Novo projeto"))
+	v.add_child(UIKit.title("📣 Novo projeto"))
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -50,7 +50,7 @@ func _ready() -> void:
 	body.add_child(brief)
 
 	# Contrato
-	body.add_child(UIKit.label("Contrato", 17, UIKit.COLOR_ACCENT))
+	body.add_child(UIKit.label("📄 Contrato", 17, UIKit.COLOR_ACCENT))
 	var qp := Game.projects.quote(client, Project.Kind.PROJECT)
 	var kinds := UIKit.hbox()
 	var project_toggle := UIKit.toggle("Projeto: %s · %d dias" % [UIKit.money(qp.budget), int(qp.deadline)], true, Callable())
@@ -82,7 +82,7 @@ func _ready() -> void:
 	body.add_child(kinds)
 
 	# Estratégia
-	body.add_child(UIKit.label("Estratégia (1 a %d serviços)" % ProjectSystem.MAX_SERVICES, 17, UIKit.COLOR_ACCENT))
+	body.add_child(UIKit.label("🎯 Estratégia (1 a %d serviços)" % ProjectSystem.MAX_SERVICES, 17, UIKit.COLOR_ACCENT))
 	var flow := HFlowContainer.new()
 	flow.add_theme_constant_override("h_separation", 6)
 	flow.add_theme_constant_override("v_separation", 6)
@@ -102,7 +102,7 @@ func _ready() -> void:
 	body.add_child(flow)
 
 	# Equipe
-	body.add_child(UIKit.label("Equipe", 17, UIKit.COLOR_ACCENT))
+	body.add_child(UIKit.label("👥 Equipe", 17, UIKit.COLOR_ACCENT))
 	var available: Array = Game.state.available_employees()
 	if available.is_empty():
 		body.add_child(UIKit.label("Ninguém disponível. Espere um projeto terminar ou contrate.", 15, UIKit.COLOR_RED, true))
@@ -122,15 +122,15 @@ func _ready() -> void:
 		body.add_child(row)
 
 	# Prévia
-	body.add_child(UIKit.label("Prévia", 17, UIKit.COLOR_ACCENT))
+	body.add_child(UIKit.label("🔮 Prévia", 17, UIKit.COLOR_ACCENT))
 	preview_box = UIKit.vbox(6)
 	body.add_child(preview_box)
 
 	error_label = UIKit.label("", 14, UIKit.COLOR_RED, true)
 	v.add_child(error_label)
 	var buttons := UIKit.hbox()
-	buttons.add_child(UIKit.button("Cancelar", popups.close))
-	start_button = UIKit.button("Iniciar projeto", _start, true)
+	buttons.add_child(UIKit.button("✖️ Cancelar", popups.close))
+	start_button = UIKit.button("🚀 Iniciar projeto", _start, true)
 	buttons.add_child(start_button)
 	v.add_child(buttons)
 	_update_preview()

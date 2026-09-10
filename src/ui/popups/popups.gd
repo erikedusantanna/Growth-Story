@@ -140,7 +140,7 @@ func show_result(p: Project, result: Dictionary) -> void:
 		if result.has("press"):
 			b.add_child(UIKit.separator())
 			b.add_child(UIKit.label(String(result.press), 15, UIKit.COLOR_BLUE, true))
-		parts.buttons.add_child(UIKit.button("Continuar", close, true))
+		parts.buttons.add_child(UIKit.button("➡️ Continuar", close, true))
 		return parts.panel)
 
 
@@ -159,10 +159,10 @@ func _breakdown_row(item: Dictionary) -> HBoxContainer:
 
 func show_game_over(reason: String) -> void:
 	_open(func():
-		var parts := _panel("Fim de jogo")
+		var parts := _panel("💀 Fim de jogo")
 		parts.body.add_child(UIKit.label(reason, 17, UIKit.COLOR_TEXT, true))
 		parts.body.add_child(UIKit.muted("Toda agência tem uma história. A próxima pode ser diferente."))
-		parts.buttons.add_child(UIKit.button("Voltar ao menu", func():
+		parts.buttons.add_child(UIKit.button("🚪 Voltar ao menu", func():
 			close()
 			get_tree().call_group("main", "show_title"), true))
 		return parts.panel)
@@ -170,7 +170,7 @@ func show_game_over(reason: String) -> void:
 
 func show_training(e: Employee) -> void:
 	_open(func():
-		var parts := _panel("Treinar %s" % e.name.split(" ")[0])
+		var parts := _panel("📚 Treinar %s" % e.name.split(" ")[0])
 		parts.body.add_child(UIKit.muted("Cursos aumentam atributos. Quem tem mais potencial aproveita melhor."))
 		for course in Game.content.courses:
 			var card := UIKit.card()
@@ -181,7 +181,7 @@ func show_training(e: Employee) -> void:
 				gains.append("+%d %s" % [int(course.gains[key]), Employee.ATTR_NAMES[key]])
 			v.add_child(UIKit.muted("%s · %d dias · %s" % [UIKit.money(float(course.cost)), int(course.days), ", ".join(gains)], 13))
 			var check := Game.employees.can_train(e, course.id)
-			var b := UIKit.button("Matricular", func():
+			var b := UIKit.button("📚 Matricular", func():
 				var r := Game.employees.train(e, course.id)
 				close()
 				if not r.ok:
@@ -189,14 +189,14 @@ func show_training(e: Employee) -> void:
 			b.disabled = not check.ok
 			v.add_child(b)
 			parts.body.add_child(card)
-		parts.buttons.add_child(UIKit.button("Fechar", close))
+		parts.buttons.add_child(UIKit.button("✖️ Fechar", close))
 		return parts.panel)
 
 
 ## Proposta comercial com slider de preço: desconto aumenta a chance, prêmio reduz e eleva a expectativa.
 func show_proposal(c: Client) -> void:
 	_open(func():
-		var parts := _panel("Proposta para %s" % c.name)
+		var parts := _panel("🤝 Proposta para %s" % c.name)
 		var b: VBoxContainer = parts.body
 		b.add_child(UIKit.muted("%s · %s · Expectativa %s" % [Game.clients.segment_name(c), Game.clients.personality_name(c), c.expectation]))
 		b.add_child(UIKit.label("\"%s\"" % c.goal, 16, UIKit.COLOR_TEXT, true))
@@ -228,7 +228,7 @@ func show_proposal(c: Client) -> void:
 		var chance_value: Label = b.get_child(b.get_child_count() - 1).get_child(2)
 		var hint := UIKit.muted("", 13)
 		b.add_child(hint)
-		var send := UIKit.button("Enviar proposta", Callable(), true)
+		var send := UIKit.button("📨 Enviar proposta", Callable(), true)
 		var refresh := func():
 			var factor: float = slider.value / 100.0
 			var pct := int(roundf((factor - 1.0) * 100.0))
@@ -243,7 +243,7 @@ func show_proposal(c: Client) -> void:
 				hint.text = "Prêmio: mais difícil de fechar e o cliente vai esperar entregas melhores."
 			else:
 				hint.text = "Preço de mercado."
-			send.text = "Enviar proposta (%d%%)" % int(chance)
+			send.text = "📨 Enviar proposta (%d%%)" % int(chance)
 		slider.value_changed.connect(func(_v): refresh.call())
 		refresh.call()
 		send.pressed.connect(func():
@@ -257,7 +257,7 @@ func show_proposal(c: Client) -> void:
 			else:
 				show_info("Ainda não...", "%s não fechou desta vez (chance era %d%%). A cada tentativa a chance cai; um preço menor ajuda." % [c.name, int(r.chance)]))
 		parts.buttons.add_child(send)
-		parts.buttons.add_child(UIKit.button("Cancelar", close))
+		parts.buttons.add_child(UIKit.button("✖️ Cancelar", close))
 		return parts.panel)
 
 
@@ -265,11 +265,11 @@ func show_proposal(c: Client) -> void:
 func show_people_picker(ev: Dictionary) -> void:
 	_open(func():
 		var needed := int(ev.get("people", 0))
-		var parts := _panel("%s: quem vai?" % ev["name"])
+		var parts := _panel("🎤 %s: quem vai?" % ev["name"])
 		var b: VBoxContainer = parts.body
 		b.add_child(UIKit.muted("Escolha %d pessoa%s. Elas ficam fora %d dias." % [needed, "" if needed == 1 else "s", int(ev.get("days", 0))]))
 		var chosen: Array = []
-		var confirm := UIKit.button("Promover (%s)" % UIKit.money(float(ev.get("cost", 0))), Callable(), true)
+		var confirm := UIKit.button("📣 Promover (%s)" % UIKit.money(float(ev.get("cost", 0))), Callable(), true)
 		confirm.disabled = true
 		for emp in Game.state.available_employees():
 			var e: Employee = emp
@@ -294,14 +294,14 @@ func show_people_picker(ev: Dictionary) -> void:
 			if not r.ok:
 				show_info("Evento", r.reason))
 		parts.buttons.add_child(confirm)
-		parts.buttons.add_child(UIKit.button("Cancelar", close))
+		parts.buttons.add_child(UIKit.button("✖️ Cancelar", close))
 		return parts.panel)
 
 
 ## Linha do tempo do colaborador: contratação, cursos, promoções, campanhas, eventos.
 func show_journey(e: Employee) -> void:
 	_open(func():
-		var parts := _panel("Jornada de %s" % e.name.split(" ")[0])
+		var parts := _panel("🗺️ Jornada de %s" % e.name.split(" ")[0])
 		var b: VBoxContainer = parts.body
 		var head := UIKit.hbox(12)
 		head.add_child(UIKit.portrait(e, 4))
@@ -325,7 +325,7 @@ func show_journey(e: Employee) -> void:
 			row.add_child(date)
 			row.add_child(UIKit.label(String(entry.get("text", "")), 15, UIKit.COLOR_TEXT, true))
 			b.add_child(row)
-		parts.buttons.add_child(UIKit.button("Fechar", close, true))
+		parts.buttons.add_child(UIKit.button("✖️ Fechar", close, true))
 		return parts.panel)
 
 

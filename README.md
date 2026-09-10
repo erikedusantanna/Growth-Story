@@ -56,17 +56,20 @@ Depois: *Projeto → Exportar → Android → Exportar projeto*, ou
 | Funcionários | `employee_system.gd`, `models/employee.gd` | 6 atributos, motivação, estresse, lealdade, potencial, 8 personalidades, carreira em 8 níveis, burnout, pedidos de demissão |
 | Contratação | idem | Candidatos procedurais (nomes BR), qualidade cresce com reputação, expiram em 45 dias, capacidade do escritório |
 | Treinamento | `data/training.json` | 7 cursos com custo, dias e ganhos de atributo (potencial multiplica) |
-| Clientes | `client_system.gd`, `data/clients.json` | 12 clientes escritos à mão + geração procedural; segmento, tier, personalidade, objetivo declarado e **problema real oculto** |
+| Clientes | `client_system.gd`, `data/clients.json` | 23 clientes escritos à mão (tiers 1–5) + geração procedural; segmento, tier, personalidade, objetivo declarado e **problema real oculto** |
 | Proposta comercial | `client_system.gd`, `popups.gd` | Slider de preço (60% a 140% do orçamento): desconto aumenta a chance de fechar, prêmio reduz e eleva a expectativa do cliente |
 | Diagnóstico | idem | Auditoria paga que revela o problema real; a estratégia certa ganha +15 de Estratégia |
 | Projetos | `project_system.gd` | Escolha de 1–3 serviços + equipe, execução diária com 4 indicadores, prazo, atraso, micro-eventos de humor |
 | Combinações | `service_system.gd`, `match_table` | Segmento × serviços = *Perfect match* (+35%), boa, neutra ou ruim (−25%) |
 | Avaliação | `project_system.gd` | Nota 0–100 → 1 a 5 estrelas, pagamento, ROI, reputação, corações do cliente, manchetes de imprensa |
 | Contratos | idem | Projeto (entrega única) ou **retainer** (6 ciclos mensais, MRR) liberado após boa entrega |
-| Serviços | `data/services.json` | 11 serviços em 3 tiers; desbloqueio por caixa + reputação |
+| Serviços | `data/services.json` | 16 serviços em 4 tiers (início, intermediário, avançado, **endgame**: IA, MarTech, Dados, Tecnologia Proprietária, Consultoria Enterprise); desbloqueio por caixa + reputação |
+| Eras históricas | `era_system.gd`, `data/eras.json` | GDD §23: 6 eras reais (2010 → 2025+) acompanham o calendário do jogo (`GameState.year()`); cada uma marca serviços "🔥 em alta" que rendem +3 na nota do projeto — a melhor estratégia muda com o tempo. Log ao virar de era, aba Agência mostra a era atual |
+| Departamentos | `department_system.gd`, `data/departments.json` | GDD §30-31: a partir do escritório com departamentos, agrupe a equipe por área (Criação, Estratégia, Performance, Atendimento, Tecnologia, Gestão); um Gerente + 2 pessoas no mesmo departamento rende +8% de produtividade para todos ali |
+| Concorrência | `competitor_system.gd`, `data/competitors.json` | GDD §30-31/§35: prospects esquecidos por muito tempo podem ser fechados por uma agência rival antes de você — soma-se aos eventos que já existiam (proposta a funcionário, concorrente em ascensão) |
 | Finanças | `finance_system.gd` | Caixa, salários, aluguel, ferramentas, histórico mensal, falência abaixo de −R$ 30.000 |
 | Reputação | `reputation_system.gd` | 0–100 com retornos decrescentes; faixas do GDD §27 e fases do §29 |
-| Eventos | `event_system.gd`, `data/events.json` | 20 eventos com escolhas, condições (reputação, equipe, estresse, projetos…) e cooldown por evento |
+| Eventos | `event_system.gd`, `data/events.json` | 27 eventos com escolhas, condições (reputação, equipe, estresse, projetos…) e cooldown por evento; alguns só aparecem em reputação alta e prenunciam o roadmap (cliente internacional, IA generativa, concorrente, investidor) |
 | Jornada | `employee_system.gd`, `popups.gd` | Linha do tempo por colaborador: contratação, cursos, promoções, campanhas, eventos (Equipe → Jornada) |
 | Objetivos | `objective_system.gd`, `data/objectives.json` | 13 objetivos sequenciais que guiam o primeiro ano, com bônus em caixa (GDD §37) |
 | Escritório | `office_system.gd`, `src/office/` | 4 níveis (4 / 7 / 12 / 18 lugares) com layout em tiles; ampliação pela aba Equipe ou Empresa; funcionários andam entre mesa, café e sofá, com barra de moral sobre a cabeça; arrastar com um dedo e zoom com pinça (ou roda do mouse); toque no avatar abre a jornada |
@@ -76,6 +79,8 @@ Depois: *Projeto → Exportar → Android → Exportar projeto*, ou
 | Eventos da agência | `agency_event_system.gd`, `data/agency_events.json` | Abrem com reputação 40: custam dinheiro e/ou pessoas por alguns dias e rendem reputação, prospects, candidatos, moral ou patrocínio |
 | Save/Load | `save_system.gd` | JSON em `user://savegame.json`, autosave mensal, botão na aba Empresa |
 | UI | `src/ui/` | HUD, escritório, feed de humor, 6 abas (Equipe, Clientes, Projetos, Empresa, RH, Agência), modais |
+| Fonte pixel art | `tools/gen_font.py`, `assets/fonts/pixel.fnt` | Bitmap font 5×7 com acentuação (á é í ó ú ã õ â ê ô ç), gerada por código; usada em títulos e números do HUD (`UIKit.pixel_font()`) |
+| Som | `src/core/audio_manager.gd`, `tools/gen_audio.py` | Música e 9 efeitos sonoros 8-bit sintetizados por código (sem samples externos); autoload `Audio` reage aos sinais do `EventBus` (contratação, pagamento, projeto concluído, evento, cliente feliz, crise, promoção); liga/desliga na aba Empresa |
 
 Detalhes de fórmulas e fluxo em `docs/ARQUITETURA.md`.
 
@@ -83,6 +88,7 @@ Detalhes de fórmulas e fluxo em `docs/ARQUITETURA.md`.
 
 1. **Balanceamento** com testes de jogadores reais. A simulação em `tests/sim_test.gd` imprime a curva ano a ano e falha se fugir da régua do GDD §53 (ver `docs/ARQUITETURA.md`).
 2. Arte definitiva: substituir `assets/sprites/*.png` mantendo os tamanhos (16×16 personagens, 32×16 mesa/sofá).
-3. Fonte pixel art e sons (`GDD §40–41`).
-4. Conteúdo: mais clientes, eventos, eras históricas (GDD §23) e serviços de endgame.
-5. Departamentos, gerentes, concorrentes e aquisições (Fase 4 do roadmap).
+3. ~~Fonte pixel art e sons (`GDD §40–41`)~~ — feito: `assets/fonts/pixel.fnt` e `src/core/audio_manager.gd`.
+4. ~~Conteúdo: mais clientes, eventos, eras históricas e serviços de endgame~~ — feito: `era_system.gd`, `data/eras.json`.
+5. ~~Departamentos, gerentes e concorrentes~~ — feito: `department_system.gd`, `competitor_system.gd`. Falta: imprensa/aquisições e expansão internacional (resto da Fase 4 do roadmap).
+6. ~~Mais ícones e imagens na interface~~ — feito: emojis em títulos, botões, cartões e na navegação inferior (ícone em cima, rótulo curto embaixo) para reduzir o peso visual de texto puro, principalmente para quem está começando.

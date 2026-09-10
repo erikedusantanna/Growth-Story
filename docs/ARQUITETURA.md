@@ -112,6 +112,60 @@ Campos de condição: `min_day`, `min_reputation`, `min_employees`, `min_active_
 `requires_personality`, `once`, `cooldown_days` (padrão 120: o mesmo evento não repete antes disso). Placeholders no texto: `{best_employee}`, `{random_client}`,
 `{personality_employee}`. Efeitos suportados estão em `EventSystem._apply_effect`.
 
+## Eras históricas (`era_system.gd`, `data/eras.json`)
+
+GDD §23: o calendário do jogo já avança por anos reais (`GameState.year()`, começando em
+2010); cada era do `data/eras.json` cobre uma faixa desses anos (`year_start`/`year_end`,
+`year_end` nulo = sem fim) e lista `trends`: os serviços "em alta" naquele momento do mercado.
+`EraSystem.current()`/`at_year(y)` resolvem a era pura função do ano; `is_trending(id)` e
+`trending_services()` consultam a era atual. `ProjectSystem.BONUS_TRENDING` (+3) entra no
+`_score()` quando o projeto usa algum serviço em alta, com uma linha própria no detalhamento —
+mesma mecânica de bônus que diagnóstico/especialista. `GameManager.on_year()` compara a era do
+ano que terminou com a do ano que começa e loga a virada ("O mercado mudou: ..."). A aba
+Agência mostra um cartão com a era atual e marca os serviços em alta com 🔥; a aba Empresa
+mostra a era na lista de números.
+
+## Departamentos e concorrência (GDD §30-31, §35)
+
+- **Departamentos** (`department_system.gd`, `data/departments.json`): abrem em
+  `state.office_level >= unlock_office` (4, "Escritório com departamentos"). Cada funcionário
+  tem `department: String` (vazio = nenhum). Um departamento com gerente (`career_level >=
+  MANAGER_CAREER_LEVEL`, o índice de "Gerente" em `data/names.json → career`) e
+  `min_members_for_bonus` pessoas (padrão 2) dá `productivity_bonus` (padrão +8%) a todos ali —
+  `EmployeeSystem.productivity()` multiplica por `DepartmentSystem.productivity_multiplier(e)`.
+  Aba Equipe mostra a visão geral dos departamentos e um seletor por funcionário.
+- **Concorrência** (`competitor_system.gd`, `data/competitors.json`): a partir de `min_day`,
+  todo dia cada prospect parado há mais de `steal_after_idle_days` tem `steal_chance_per_day`
+  de ser fechado por uma agência rival (nome sorteado de `agencies`), via
+  `ClientSystem.lose_client()` — reaproveita o mesmo caminho de perda de cliente (log, som de
+  crise). Complementa os eventos que já existiam (`proposta_concorrente`, `concorrente_cresce`).
+
+## Fonte pixel art (`tools/gen_font.py`, `assets/fonts/pixel.fnt`)
+
+Bitmap font 5×7 (matriz de pontos), com 2 linhas extras acima para acento — cobre A-Z, a-z,
+0-9, pontuação básica e as vogais acentuadas do português (agudo, grave, circunflexo, til) mais
+ç/Ç. Gerada por código: `tools/gen_font.py` escreve o atlas (`pixel_atlas.png`) e a descrição
+no formato BMFont (`pixel.fnt`), que o Godot importa nativamente como `FontFile`
+(`importer="font_data_bmfont"`). `UIKit.pixel_font()` carrega o resource; `UIKit.title()` e
+`UIKit.number()` já usam essa fonte — o corpo de texto (labels, parágrafos) segue na fonte do
+sistema para não cansar a leitura (GDD §40: "não precisa parecer retrô demais").
+
+## Som (`src/core/audio_manager.gd`, `tools/gen_audio.py`)
+
+Música e efeitos sintetizados por código em ondas quadradas/triangulares (`tools/gen_audio.py`,
+sem samples externos): 9 efeitos em `assets/audio/sfx/` (hire, payment, project_complete,
+level_up, event, client_happy, crisis, promotion, click) e uma trilha em loop em
+`assets/audio/music/theme_loop.wav`. O autoload `Audio` (`src/core/audio_manager.gd`) escuta os
+sinais do `EventBus` — nenhum outro sistema precisa saber que o áudio existe:
+`employee_hired`→hire, `employee_promoted`→promotion, `client_lost`→crisis,
+`event_triggered`→event, `money_changed` (delta>0)→payment, `project_completed`
+(`result.stars>=4`)→client_happy, senão→project_complete, e cruzar uma faixa de reputação
+(20/40/60/80)→level_up. `UIKit.button()` toca "click" em toda pressão. Preferências
+(`music_enabled`/`sfx_enabled`) persistem em `user://audio_settings.cfg` e têm toggle na aba
+Empresa. Em ambiente headless (`DisplayServer.get_name() == "headless"`, usado pelos testes) o
+áudio fica silencioso propositalmente: o driver "Dummy" não libera `AudioStreamPlayback` entre
+chamadas rápidas e os recursos vazariam até o fim do processo.
+
 ## Save
 
 `GameState.to_dict()` → JSON em `user://savegame.json`. O estado do RNG é salvo como string
@@ -125,4 +179,7 @@ para não perder precisão. Versão do save em `version` (1).
 - **Evento**: `data/events.json`; novos tipos de efeito em `EventSystem._apply_effect`.
 - **Escritório**: `data/offices.json` (posições em tiles de 16 px; linha 0 é a parede).
 - **Objetivo**: `data/objectives.json` (`type` é uma chave de `stats` ou um dos especiais em `ObjectiveSystem.progress_value`).
+- **Era**: `data/eras.json` (`year_start`/`year_end`, `trends` com ids de serviço existentes).
+- **Departamento**: `data/departments.json → departments` (`id`, `name`, `attr`).
+- **Agência concorrente**: `data/competitors.json → agencies` (só o nome, entra no sorteio).
 - **Jornada**: chame `Game.employees.add_journey(e, texto)` em qualquer marco novo.

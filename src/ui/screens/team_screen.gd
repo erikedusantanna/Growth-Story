@@ -5,12 +5,14 @@ extends BaseScreen
 
 func build() -> void:
 	var st: GameState = Game.state
-	content.add_child(header("Equipe", "%d/%d lugares · moral média %d" % [st.employees.size(), Game.office.capacity(), int(Game.employees.morale_average())]))
+	content.add_child(header("👥 Equipe", "%d/%d lugares · moral média %d" % [st.employees.size(), Game.office.capacity(), int(Game.employees.morale_average())]))
 	content.add_child(_office_banner())
+	if Game.departments.is_unlocked():
+		content.add_child(_departments_overview())
 	for e in st.employees:
 		content.add_child(_employee_card(e))
 	content.add_child(UIKit.spacer(4))
-	content.add_child(header("Candidatos", "%d disponíveis" % st.candidates.size()))
+	content.add_child(header("📋 Candidatos", "%d disponíveis" % st.candidates.size()))
 	if st.candidates.is_empty():
 		content.add_child(UIKit.muted("Nenhum candidato no momento. Novos currículos chegam todo mês."))
 	for c in st.candidates:
@@ -37,7 +39,7 @@ func _office_banner() -> PanelContainer:
 		v.add_child(UIKit.label("Escritório lotado. Amplie para contratar mais gente.", 14, UIKit.COLOR_RED, true))
 	var check := Game.office.can_upgrade()
 	v.add_child(UIKit.muted("Próximo: %s · %d lugares · rep %d" % [nxt.name, int(nxt.capacity), int(nxt.rep_required)], 13))
-	var b := UIKit.button("Ampliar por %s" % UIKit.money(float(nxt.upgrade_cost)), func():
+	var b := UIKit.button("🏗️ Ampliar por %s" % UIKit.money(float(nxt.upgrade_cost)), func():
 		if Game.office.upgrade():
 			popups().show_info("Mudança feita!", "A agência agora está em %s. Cabem %d pessoas. O aluguel passa a %s/mês." % [nxt.name, int(nxt.capacity), UIKit.money(float(nxt.rent) * Game.state.rent_modifier)]), full)
 	b.disabled = not check.ok
@@ -47,6 +49,52 @@ func _office_banner() -> PanelContainer:
 	else:
 		v.add_child(UIKit.muted("Aluguel passa a %s/mês." % UIKit.money(float(nxt.rent) * st.rent_modifier), 13))
 	return card
+
+
+## Visão geral dos departamentos: quem está em cada um e se o bônus de produtividade está ativo.
+func _departments_overview() -> PanelContainer:
+	var card := UIKit.card()
+	var v := UIKit.card_content(card)
+	v.add_child(UIKit.label("🏢 Departamentos", 17, UIKit.COLOR_ACCENT))
+	v.add_child(UIKit.muted("Gerente + %d pessoas no mesmo departamento rendem +%d%% de produtividade para todos ali." %
+		[int(Game.content.departments.get("min_members_for_bonus", 2)), int(float(Game.content.departments.get("productivity_bonus", 0.08)) * 100)], 13))
+	for d in Game.departments.all():
+		var members: Array = Game.departments.members(d.id)
+		if members.is_empty():
+			continue
+		var row := UIKit.hbox(8)
+		var active := Game.departments.has_bonus(d.id)
+		row.add_child(UIKit.label(String(d.name), 14, UIKit.COLOR_GREEN if active else UIKit.COLOR_TEXT, false))
+		var names: Array = members.map(func(m): return m.name.split(" ")[0])
+		row.add_child(UIKit.muted("%s%s" % [", ".join(names), " · bônus ativo" if active else ""], 13))
+		v.add_child(row)
+	return card
+
+
+## Linha com o departamento atual e um botão para trocar (popup de escolha).
+func _department_row(e: Employee) -> HBoxContainer:
+	var row := UIKit.hbox(8)
+	var dept: Dictionary = Game.departments.by_id(e.department)
+	var label_text: String = "🏢 %s" % String(dept.get("name", "Sem departamento"))
+	row.add_child(UIKit.label(label_text, 14, UIKit.COLOR_ACCENT if not dept.is_empty() else UIKit.COLOR_MUTED))
+	if not dept.is_empty() and e.career_level >= DepartmentSystem.MANAGER_CAREER_LEVEL:
+		row.add_child(UIKit.label("(gerente)", 13, UIKit.COLOR_GOLD))
+	var b := UIKit.button("Trocar", func(): _pick_department(e), false, 32)
+	b.size_flags_horizontal = 0
+	b.custom_minimum_size.x = 80
+	row.add_child(b)
+	return row
+
+
+func _pick_department(e: Employee) -> void:
+	var depts: Array = Game.departments.all()
+	var labels: Array = ["Sem departamento"]
+	var ids: Array = [""]
+	for d in depts:
+		labels.append(String(d.name))
+		ids.append(String(d.id))
+	popups().show_choice("Departamento de %s" % e.name.split(" ")[0], "Cada departamento reforça um atributo do time. Um gerente (carreira Gerente ou acima) mais gente no mesmo departamento rende bônus de produtividade.",
+		labels, func(idx): Game.departments.assign(e, ids[idx]))
 
 
 func _employee_card(e: Employee) -> PanelContainer:
@@ -71,13 +119,15 @@ func _employee_card(e: Employee) -> PanelContainer:
 	meta2.add_child(UIKit.label("Salário %s/mês" % UIKit.money(e.salary), 14, UIKit.COLOR_MUTED))
 	meta2.add_child(UIKit.label("XP %d" % int(e.experience), 14, UIKit.COLOR_MUTED))
 	v.add_child(meta2)
+	if Game.departments.is_unlocked():
+		v.add_child(_department_row(e))
 	var actions := UIKit.hbox()
-	var train := UIKit.button("Treinar", func(): popups().show_training(e))
+	var train := UIKit.button("📚 Treinar", func(): popups().show_training(e))
 	train.disabled = not e.is_available(st.day)
 	actions.add_child(train)
-	actions.add_child(UIKit.button("Jornada", func(): popups().show_journey(e)))
+	actions.add_child(UIKit.button("🗺️ Jornada", func(): popups().show_journey(e)))
 	if not e.is_founder:
-		actions.add_child(UIKit.button("Demitir", func(): _confirm_fire(e)))
+		actions.add_child(UIKit.button("👋 Demitir", func(): _confirm_fire(e)))
 	v.add_child(actions)
 	return card
 
@@ -102,9 +152,9 @@ func _person_header(e: Employee, right_text: String, right_color: Color) -> HBox
 
 
 func _confirm_fire(e: Employee) -> void:
-	popups().show_choice("Demitir %s?" % e.name,
+	popups().show_choice("👋 Demitir %s?" % e.name,
 		"A rescisão custa um salário (%s). A equipe pode perder motivação." % UIKit.money(e.salary),
-		["Demitir", "Cancelar"],
+		["👋 Demitir", "✖️ Cancelar"],
 		func(i: int):
 			if i == 0:
 				Game.employees.fire(e)
@@ -125,14 +175,14 @@ func _candidate_card(c: Employee) -> PanelContainer:
 	v.add_child(UIKit.muted("Sai da lista em %d dias" % maxi(0, c.candidate_expires - Game.state.day), 13))
 	var actions := UIKit.hbox()
 	var check := Game.employees.can_hire(c)
-	var hire := UIKit.button("Contratar", func():
+	var hire := UIKit.button("✅ Contratar", func():
 		var r := Game.employees.hire(c)
 		if not r.ok:
 			popups().show_info("Não foi possível contratar", r.reason), true)
 	hire.disabled = not check.ok
 	hire.tooltip_text = check.reason
 	actions.add_child(hire)
-	actions.add_child(UIKit.button("Recusar", func(): Game.employees.decline(c)))
+	actions.add_child(UIKit.button("✖️ Recusar", func(): Game.employees.decline(c)))
 	v.add_child(actions)
 	if not check.ok:
 		v.add_child(UIKit.label(check.reason, 13, UIKit.COLOR_RED))

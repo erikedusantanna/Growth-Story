@@ -40,21 +40,21 @@ func _ready() -> void:
 	v.add_child(sub)
 	v.add_child(UIKit.spacer(6))
 
-	continue_button = UIKit.button("Continuar", _on_continue, true)
+	continue_button = UIKit.button("▶️ Continuar", _on_continue, true)
 	v.add_child(continue_button)
 	v.add_child(UIKit.separator())
 
-	v.add_child(UIKit.muted("Nome da agência"))
+	v.add_child(UIKit.muted("🏢 Nome da agência"))
 	agency_input = LineEdit.new()
 	agency_input.placeholder_text = "Minha Agência"
 	agency_input.custom_minimum_size.y = 44
 	v.add_child(agency_input)
-	v.add_child(UIKit.muted("Seu nome"))
+	v.add_child(UIKit.muted("🙋 Seu nome"))
 	founder_input = LineEdit.new()
 	founder_input.placeholder_text = "Você"
 	founder_input.custom_minimum_size.y = 44
 	v.add_child(founder_input)
-	v.add_child(UIKit.button("Novo jogo", _on_new_game))
+	v.add_child(UIKit.button("🚀 Novo jogo", _on_new_game))
 	message = UIKit.muted("")
 	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(message)

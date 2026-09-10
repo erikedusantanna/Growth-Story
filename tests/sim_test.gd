@@ -16,6 +16,10 @@ func _ready() -> void:
 	_test_save_roundtrip(game)
 	_test_scoring(game)
 	_test_hr_furniture_events(game)
+	_test_audio(game)
+	_test_era(game)
+	_test_departments(game)
+	_test_competitors(game)
 	if failures == 0:
 		print("\n[OK] Todos os testes passaram.")
 		get_tree().quit(0)
@@ -288,6 +292,99 @@ func _test_hr_furniture_events(game) -> void:
 	var loaded = GameState.from_dict(saved)
 	check(loaded.furniture.size() == 2 and loaded.hr_last_used.has("pizza"), "mobília e RH sobrevivem ao save")
 	check(loaded.hr_hired and loaded.pets.size() == 2, "contratação do RH e pets sobrevivem ao save")
+
+
+func _test_audio(game) -> void:
+	print("== Áudio ==")
+	check(Audio != null, "singleton Audio existe")
+	check(Audio.sfx_enabled, "efeitos começam ligados")
+	check(Audio.music_enabled, "música começa ligada")
+	Audio.set_sfx_enabled(false)
+	check(not Audio.sfx_enabled, "desligar efeitos")
+	Audio.set_music_enabled(false)
+	check(not Audio.music_enabled, "desligar música")
+	var reloaded = load("res://src/core/audio_manager.gd").new()
+	reloaded._load_settings()
+	check(not reloaded.music_enabled and not reloaded.sfx_enabled, "preferência de áudio persiste em disco")
+	reloaded.free()
+	Audio.set_sfx_enabled(true)
+	Audio.set_music_enabled(true)
+	# não deve travar mesmo sem placa de som real (driver headless)
+	Audio.play_sfx("payment")
+	Audio.play_music()
+	check(true, "play_sfx/play_music não travam em ambiente headless")
+
+
+func _test_era(game) -> void:
+	print("== Eras históricas ==")
+	game.new_game("Era Test", "Chefe", 21)
+	var st = game.state
+	check(String(game.era.current().get("id", "")) == "2010", "2010 cai na era certa (%s)" % game.era.current().get("id", ""))
+	check(game.era.is_trending("social_media") and game.era.is_trending("design"), "social_media e design em alta em 2010")
+	check(not game.era.is_trending("seo"), "SEO ainda não está em alta em 2010")
+	check(String(game.era.at_year(2018).get("id", "")) == "2016_2019", "2018 cai em Stories e performance")
+	check(String(game.era.at_year(2030).get("id", "")) == "2025", "anos após 2025 ficam na era da IA (sem fim definido)")
+	var c: Client = st.prospects()[0]
+	c.status = Client.Status.ACTIVE
+	var founder = st.employees[0]
+	var with_trend: Dictionary = game.projects.predict(c, ["design"], [founder.id], 0)
+	var without_trend: Dictionary = game.projects.predict(c, ["copywriting"], [founder.id], 0)
+	var has_trend_label: bool = with_trend.breakdown.any(func(b): return String(b.label).begins_with("Em alta"))
+	var no_trend_label: bool = without_trend.breakdown.any(func(b): return String(b.label).begins_with("Em alta"))
+	check(has_trend_label, "bônus de tendência aparece no detalhamento ao usar serviço em alta")
+	check(not no_trend_label, "bônus de tendência não aparece com serviço fora de moda")
+	# avança até a virada 2011->2012 (a única troca de era nesse intervalo) e confere o log na hora
+	st.money = 500000.0   # não deixa a simulação falir no caminho, sem bot administrando
+	var guard := 0
+	while st.year() < 2012 and not st.game_over and guard < 900:
+		game.on_day()
+		if not st.pending_event.is_empty():
+			game.resolve_event(0)
+		guard += 1
+	var changed_era: bool = st.log.any(func(l): return String(l.get("text", "")).begins_with("O mercado mudou"))
+	check(changed_era, "log de mudança de era aparece na virada 2011→2012")
+
+
+func _test_departments(game) -> void:
+	print("== Departamentos ==")
+	game.new_game("Depto Test", "Chefe", 5)
+	var st = game.state
+	check(not game.departments.is_unlocked(), "departamentos começam fechados")
+	st.office_level = 4
+	check(game.departments.is_unlocked(), "departamentos abrem no escritório com departamentos")
+	st.money = 500000.0
+	var a = game.employees.generate_candidate("normal")
+	st.candidates.append(a)
+	game.employees.hire(a)
+	var b = game.employees.generate_candidate("normal")
+	st.candidates.append(b)
+	game.employees.hire(b)
+	a.career_level = DepartmentSystem.MANAGER_CAREER_LEVEL
+	var prod_before: float = game.employees.productivity(b)
+	check(game.departments.assign(a, "criacao").ok, "atribuiu gerente ao departamento de Criação")
+	check(not game.departments.has_bonus("criacao"), "só 1 pessoa ainda não rende bônus")
+	check(game.departments.assign(b, "criacao").ok, "segunda pessoa entra no mesmo departamento")
+	check(game.departments.has_bonus("criacao"), "gerente + 2 pessoas rende bônus")
+	check(game.employees.productivity(b) > prod_before, "produtividade sobe com o bônus de departamento (%.3f > %.3f)" % [game.employees.productivity(b), prod_before])
+	var saved: Dictionary = st.to_dict()
+	var loaded = GameState.from_dict(saved)
+	check(loaded.employee_by_id(b.id).department == "criacao", "departamento sobrevive ao save")
+
+
+func _test_competitors(game) -> void:
+	print("== Concorrência ==")
+	game.new_game("Competitor Test", "Chefe", 9)
+	var st = game.state
+	st.day = 100
+	st.money = 500000.0
+	var c: Client = game.clients.spawn_prospect()
+	c.known_on = st.day - 30   # já passou do tempo de espera
+	var guard := 0
+	while c.status == Client.Status.PROSPECT and guard < 400:
+		game.competitors.on_day()
+		st.day += 1
+		guard += 1
+	check(c.status == Client.Status.LOST, "concorrente fecha com o prospect esquecido (%d dias)" % guard)
 
 
 func _test_scoring(game) -> void:

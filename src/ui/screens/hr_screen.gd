@@ -5,7 +5,7 @@ extends BaseScreen
 
 func build() -> void:
 	var st: GameState = Game.state
-	content.add_child(header("RH", "moral média %d" % int(Game.employees.morale_average())))
+	content.add_child(header("❤️ RH", "moral média %d" % int(Game.employees.morale_average())))
 	if not Game.hr.is_unlocked():
 		_build_hire()
 		return
@@ -13,7 +13,7 @@ func build() -> void:
 	if not st.buffs.is_empty():
 		var names: Array = st.buffs.map(func(b): return "%s (%d dias)" % [String(b.get("name", b.get("id", ""))), int(b.get("until_day", 0)) - st.day + 1])
 		content.add_child(UIKit.label("Efeitos ativos: %s" % ", ".join(names), 14, UIKit.COLOR_BLUE, true))
-	content.add_child(UIKit.label("Ações", 17, UIKit.COLOR_ACCENT))
+	content.add_child(UIKit.label("🎉 Ações", 17, UIKit.COLOR_ACCENT))
 	for a in Game.hr.actions():
 		content.add_child(_hr_card(a))
 	content.add_child(UIKit.spacer(4))
@@ -31,7 +31,7 @@ func _build_hire() -> void:
 	var office_name: String = Game.office.level_data(int(h.get("requires_office", 3))).get("name", "")
 	v.add_child(UIKit.muted("Exige: %s · reputação %d" % [office_name, int(h.get("requires_rep", 0))], 13))
 	var check := Game.hr.can_hire()
-	var b := UIKit.button("Contratar RH", func():
+	var b := UIKit.button("❤️ Contratar RH", func():
 		var r := Game.hr.hire()
 		if r.ok:
 			popups().show_info("RH contratado", "A sala de RH foi montada ao lado do escritório. Arraste o escritório para ver a divisória e a nova analista. As ações de RH estão liberadas.")
@@ -51,7 +51,7 @@ func _build_morale() -> void:
 	var card := UIKit.card()
 	var v := UIKit.card_content(card)
 	var cap := Game.office.morale_max()
-	v.add_child(UIKit.label("Moral da equipe (teto %d)" % int(cap), 17, UIKit.COLOR_ACCENT))
+	v.add_child(UIKit.label("💪 Moral da equipe (teto %d)" % int(cap), 17, UIKit.COLOR_ACCENT))
 	for e in st.employees:
 		var color := UIKit.COLOR_GREEN
 		if e.motivation < 35.0:
