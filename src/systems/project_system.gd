@@ -23,11 +23,65 @@ func quote(c: Client, kind: int) -> Dictionary:
 	if kind == Project.Kind.RETAINER:
 		budget = c.budget
 	else:
-		budget = c.budget * (1.2 + 0.3 * c.maturity)
+		budget = c.budget * (1.2 + 0.3 * c.maturity) * float(briefing_for(c).get("budget_mult", 1.0))
 	budget = roundf(budget / 100.0) * 100.0
 	var deadline := RETAINER_CYCLE_DAYS if kind == Project.Kind.RETAINER else clampi(18 + int(budget / 800.0), 24, 60)
+	if kind != Project.Kind.RETAINER:
+		deadline = maxi(12, int(roundf(float(deadline) * float(briefing_for(c).get("deadline_mult", 1.0)))))
 	var effort := 12.0 + budget / 350.0
 	return {"budget": budget, "deadline": deadline, "effort": effort}
+
+
+# --- Briefings -----------------------------------------------------------------------
+
+func briefing_by_id(id: String) -> Dictionary:
+	for b in game.content.briefings:
+		if String(b.get("id", "")) == id:
+			return b
+	return {}
+
+
+## Briefing do próximo projeto do cliente; sorteia (e guarda no cliente) se ainda não tem.
+func briefing_for(c: Client) -> Dictionary:
+	if c.briefing == "":
+		c.briefing = String(_pick_briefing(c).get("id", ""))
+	return briefing_by_id(c.briefing)
+
+
+func _pick_briefing(c: Client) -> Dictionary:
+	var st: GameState = game.state
+	var all: Array = game.content.briefings
+	if all.is_empty():
+		return {}
+	var month := st.month()
+	var eligible: Array = all.filter(func(b):
+		if b.has("segments") and not (b["segments"] as Array).has(c.segment):
+			return false
+		if b.has("months") and not (b["months"] as Array).has(month):
+			return false
+		if b.has("problems") and not (b["problems"] as Array).has(c.problem):
+			return false
+		return true)
+	if eligible.is_empty():
+		eligible = all.filter(func(b): return not b.has("months"))
+	if eligible.is_empty():
+		eligible = all
+	return eligible[st.rng.randi_range(0, eligible.size() - 1)]
+
+
+func briefing_of(p: Project) -> Dictionary:
+	return briefing_by_id(p.briefing)
+
+
+func briefing_desc(b: Dictionary, c: Client) -> String:
+	return String(b.get("desc", "")).replace("{client}", c.name)
+
+
+## Serviços-chave do briefing presentes no projeto (nomes).
+func key_services_in(p: Project) -> Array:
+	var b := briefing_of(p)
+	var keys: Array = b.get("key_services", [])
+	return p.services.filter(func(sid): return keys.has(sid))
 
 
 func can_create(c: Client, services: Array, team_ids: Array) -> Dictionary:
@@ -71,6 +125,9 @@ func create_project(c: Client, services: Array, team_ids: Array, kind: int = Pro
 	p.months_left = RETAINER_MONTHS if kind == Project.Kind.RETAINER else 0
 	p.match_quality = game.services.match_quality(c.segment, services)
 	p.addresses_problem = game.services.addresses_problem(c.problem, services)
+	if kind == Project.Kind.PROJECT:
+		p.briefing = String(briefing_for(c).get("id", ""))
+		p.title = _title_for(c, services, kind, briefing_of(p))
 	for id in team_ids:
 		st.employee_by_id(id).project_id = p.id
 	compute_targets(p)
@@ -87,10 +144,12 @@ func create_project(c: Client, services: Array, team_ids: Array, kind: int = Pro
 	return {"ok": true, "reason": "", "project": p}
 
 
-func _title_for(c: Client, services: Array, kind: int) -> String:
+func _title_for(c: Client, services: Array, kind: int, briefing: Dictionary = {}) -> String:
 	if kind == Project.Kind.RETAINER:
 		return "Retainer mensal"
 	var names: Array = services.map(func(s): return game.content.service_name(s))
+	if not briefing.is_empty():
+		return "%s: %s" % [String(briefing.get("name", "Campanha")), " + ".join(names)]
 	if names.size() == 1:
 		return "Campanha de %s" % names[0]
 	return "Campanha 360: %s" % " + ".join(names)
@@ -152,9 +211,11 @@ func compute_targets(p: Project) -> void:
 
 func daily_output(p: Project) -> float:
 	var total := 0.0
-	for e in team_members(p):
+	var members := team_members(p)
+	for e in members:
 		total += (0.5 + team_skill(p, e) / 100.0 * 1.5) * game.employees.productivity(e)
-	return total
+	var chem: int = game.chemistry.team_chemistry(members)["score"]
+	return total * (1.0 + ChemistrySystem.OUTPUT_PER_POINT * float(chem))
 
 
 func estimated_days(p: Project) -> int:
@@ -174,6 +235,8 @@ func preview(c: Client, services: Array, team_ids: Array, kind: int) -> Dictiona
 	tmp.effort_total = float(q.effort)
 	tmp.match_quality = game.services.match_quality(c.segment, services)
 	tmp.addresses_problem = game.services.addresses_problem(c.problem, services)
+	if kind == Project.Kind.PROJECT:
+		tmp.briefing = String(briefing_for(c).get("id", ""))
 	compute_targets(tmp)
 	var days := estimated_days(tmp) if not team_ids.is_empty() else 0
 	return {"budget": q.budget, "deadline": q.deadline, "days": days, "match": tmp.match_quality,
@@ -188,6 +251,7 @@ func on_day() -> void:
 		p.days_elapsed += 1
 		compute_targets(p)
 		p.effort_done += daily_output(p)
+		game.chemistry.apply_daily(team_members(p))
 		for key in Project.INDICATORS:
 			var goal: float = clampf(p.targets[key] + p.boosts[key], 0.0, 100.0)
 			p.indicators[key] = lerpf(p.indicators[key], goal, 0.12) + st.rng.randf_range(-1.5, 1.5)
@@ -263,6 +327,8 @@ const BONUS_DIAGNOSIS_LUCKY := 3.0
 const BONUS_SPECIALIST := 4.0
 const BONUS_SPECIALIST_MAX := 8.0
 const BONUS_TRENDING := 3.0
+const BONUS_KEY_SERVICE := 4.0
+const BONUS_KEY_SERVICE_MAX := 8.0
 
 
 ## Nota, estrelas e detalhamento. Com with_noise=false serve de previsão (sem sorteio).
@@ -272,6 +338,8 @@ func _score(p: Project, c: Client, with_noise: bool, predicted_days: int = -1) -
 	if c != null:
 		pers = game.content.client_personalities.get(c.personality, {})
 	var pweights: Dictionary = pers.get("weights", {})
+	var briefing := briefing_of(p)
+	var bweights: Dictionary = briefing.get("weights", {})
 	var base_weights := {"strategy": 0.3, "creativity": 0.25, "execution": 0.25, "performance": 0.2}
 	var breakdown: Array = []
 	var score := 0.0
@@ -281,7 +349,7 @@ func _score(p: Project, c: Client, with_noise: bool, predicted_days: int = -1) -
 		var noise: float = st.rng.randf_range(-4.0, 4.0) if with_noise else 0.0
 		var final_value := clampf(p.targets[key] + p.boosts[key] + noise, 0.0, 100.0)
 		finals[key] = final_value
-		var w: float = base_weights[key] * float(pweights.get(key, 1.0))
+		var w: float = base_weights[key] * float(pweights.get(key, 1.0)) * float(bweights.get(key, 1.0))
 		score += final_value * w
 		weight_sum += w
 	score /= maxf(weight_sum, 0.001)
@@ -314,6 +382,22 @@ func _score(p: Project, c: Client, with_noise: bool, predicted_days: int = -1) -
 	if specialist_bonus > 0.0:
 		score += specialist_bonus
 		breakdown.append({"label": "Especialista em %s" % ", ".join(specialist_names), "text": "+%d" % int(specialist_bonus), "good": true})
+
+	if not briefing.is_empty():
+		var keys := key_services_in(p)
+		if not keys.is_empty():
+			var kb := minf(BONUS_KEY_SERVICE * float(keys.size()), BONUS_KEY_SERVICE_MAX)
+			score += kb
+			breakdown.append({"label": "%s %s: %s" % [String(briefing.get("icon", "")), String(briefing.get("name", "Briefing")), ", ".join(keys.map(func(sid): return game.content.service_name(sid)))],
+				"text": "+%d" % int(kb), "good": true})
+
+	var chem: Dictionary = game.chemistry.team_chemistry(team_members(p))
+	var chem_score: int = chem["score"]
+	if chem_score != 0:
+		var cb := ChemistrySystem.SCORE_BONUS * float(chem_score)
+		score += cb
+		breakdown.append({"label": "Química da equipe (%s)" % ("sinergia" if chem_score > 0 else "atrito"),
+			"text": "%s%d" % ["+" if cb > 0 else "", int(cb)], "good": cb > 0})
 
 	var trending: Array = p.services.filter(func(sid): return game.era.is_trending(sid))
 	if not trending.is_empty():
@@ -378,6 +462,7 @@ func evaluate(p: Project) -> Dictionary:
 	var rep_delta := (stars - 2) * (0.4 + tier * 0.3)
 	if stars == 5 and p.match_quality == "perfect":
 		rep_delta += 2.0
+	rep_delta *= float(briefing_of(p).get("rep_mult", 1.0))   # crise: reputação em jogo dobrada
 	var roi := snappedf((0.5 + r.score / 100.0 * 4.5) * game.services.match_multiplier(p.match_quality), 0.1)
 	return {"score": r.score, "stars": stars, "payment": payment, "rep_delta": rep_delta, "roi": roi,
 		"late_days": r.late_days, "indicators": r.finals, "match": p.match_quality,
@@ -397,10 +482,16 @@ func predict(c: Client, services: Array, team_ids: Array, kind: int) -> Dictiona
 	tmp.deadline_days = int(q.deadline)
 	tmp.match_quality = game.services.match_quality(c.segment, services)
 	tmp.addresses_problem = game.services.addresses_problem(c.problem, services)
+	var briefing: Dictionary = briefing_for(c) if kind == Project.Kind.PROJECT else {}
+	tmp.briefing = String(briefing.get("id", ""))
 	compute_targets(tmp)
 	var days := estimated_days(tmp) if not team_ids.is_empty() else 0
 	var r := _score(tmp, c, false, days)
 	var hints: Array = []
+	if not briefing.is_empty() and key_services_in(tmp).size() < 2:
+		var key_names: Array = (briefing.get("key_services", []) as Array).filter(func(sid): return game.services.is_unlocked(sid)).map(func(sid): return game.content.service_name(sid))
+		if not key_names.is_empty():
+			hints.append("O briefing pede %s: +%d por serviço-chave (até +%d)." % [", ".join(key_names), int(BONUS_KEY_SERVICE), int(BONUS_KEY_SERVICE_MAX)])
 	if not c.diagnosed:
 		hints.append("Diagnóstico do cliente: +%d na nota e +15 de Estratégia se a solução for certa." % int(BONUS_DIAGNOSIS))
 	if tmp.match_quality != "perfect":
@@ -422,9 +513,15 @@ func predict(c: Client, services: Array, team_ids: Array, kind: int) -> Dictiona
 		hints.append("Em alta agora: %s (+%d na nota)." % [", ".join(game.era.trending_names()), int(BONUS_TRENDING)])
 	if days > int(q.deadline):
 		hints.append("Previsão de atraso (%d dias para %d de prazo): mais gente na equipe evita a penalidade." % [days, int(q.deadline)])
+	var chem_members: Array = []
+	for id in team_ids:
+		var e: Employee = game.state.employee_by_id(id)
+		if e != null:
+			chem_members.append(e)
 	return {"score": r.score, "stars": r.stars, "breakdown": r.breakdown, "hints": hints, "days": days,
 		"deadline": int(q.deadline), "budget": q.budget, "match": tmp.match_quality,
-		"addresses_problem": tmp.addresses_problem, "targets": tmp.targets.duplicate(), "next_gap": r.next_gap}
+		"addresses_problem": tmp.addresses_problem, "targets": tmp.targets.duplicate(), "next_gap": r.next_gap,
+		"briefing": briefing, "chemistry": game.chemistry.team_chemistry(chem_members)}
 
 
 func complete(p: Project) -> void:

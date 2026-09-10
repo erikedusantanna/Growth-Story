@@ -213,6 +213,7 @@ func on_project_result(c: Client, result: Dictionary) -> void:
 	c.satisfaction = stars
 	c.projects_done += 1
 	c.last_project_day = st.day
+	c.briefing = ""   # próximo projeto vem com um briefing novo
 	if stars <= 2 and c.patience < 50.0 and st.rng.randf() < 0.5:
 		lose_client(c, "cancelou após resultado ruim")
 	elif stars <= 1:

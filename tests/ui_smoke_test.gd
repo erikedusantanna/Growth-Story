@@ -127,6 +127,12 @@ func _ready() -> void:
 	print("  resultado de evento da agência com cena: %s" % agency_scene)
 	main.popups.close()
 	await _drain_popups(main)
+	main.popups.show_awards(Game.awards.evaluate_year(GameState.START_YEAR))
+	await get_tree().process_frame
+	var awards_scene: bool = main.popups.is_open() and main.event_stage.visible
+	print("  cerimônia de prêmios com cena: %s (%s)" % [awards_scene, main.event_stage.current_kind])
+	main.popups.close()
+	await _drain_popups(main)
 	# dezembro: o escritório ganha decoração de Natal; janeiro a tira de novo
 	Game.state.day = GameState.DAYS_PER_MONTH * 11
 	EventBus.state_changed.emit()
@@ -157,7 +163,7 @@ func _ready() -> void:
 	main.show_title()
 	await get_tree().process_frame
 	print("  workers no escritório: %d" % main.office_view.workers.size())
-	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok
+	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene
 	print("[%s] UI smoke" % ("OK" if ok else "FALHA"))
 	get_tree().quit(0 if ok else 1)
 

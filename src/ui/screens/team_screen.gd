@@ -147,6 +147,14 @@ func _person_header(e: Employee, right_text: String, right_color: Color) -> HBox
 	v.add_child(top)
 	v.add_child(UIKit.label(Game.employees.title(e), 15, UIKit.COLOR_MUTED))
 	v.add_child(UIKit.label("%s · %s" % [Game.employees.personality_name(e), Game.content.personalities.get(e.personality, {}).get("desc", "")], 13, UIKit.COLOR_BLUE, true))
+	var partners: Dictionary = Game.chemistry.partners_for(e.personality)
+	var parts: Array = []
+	if not partners.synergy.is_empty():
+		parts.append("🤝 combina com %s" % ", ".join(partners.synergy))
+	if not partners.friction.is_empty():
+		parts.append("⚡ atrito com %s" % ", ".join(partners.friction))
+	if not parts.is_empty():
+		v.add_child(UIKit.label(" · ".join(parts), 12, UIKit.COLOR_MUTED, true))
 	h.add_child(v)
 	return h
 

@@ -72,6 +72,10 @@ func _active_card(c: Client) -> PanelContainer:
 	else:
 		v.add_child(UIKit.muted("Problema real: ??? (faça um diagnóstico para descobrir)"))
 	var running := st.project_for_client(c.id)
+	if running == null:
+		var briefing: Dictionary = Game.projects.briefing_for(c)
+		if not briefing.is_empty():
+			v.add_child(UIKit.label("%s Briefing: %s" % [String(briefing.get("icon", "📋")), String(briefing.get("name", ""))], 15, UIKit.COLOR_PURPLE, true))
 	var actions := UIKit.hbox()
 	if not c.diagnosed and c.diagnosis_days_left == 0:
 		var diag := UIKit.button("🔍 Diagnóstico (%s, %d dias)" % [UIKit.money(Game.clients.diagnosis_cost(c)), Game.clients.diagnosis_days(c)], func():

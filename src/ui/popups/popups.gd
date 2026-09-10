@@ -23,6 +23,7 @@ func _ready() -> void:
 	add_child(holder)
 	EventBus.event_triggered.connect(show_event)
 	EventBus.agency_event_finished.connect(show_agency_result)
+	EventBus.awards_ceremony.connect(show_awards)
 	EventBus.project_completed.connect(show_result)
 	EventBus.game_over.connect(show_game_over)
 
@@ -142,6 +143,42 @@ func show_agency_result(ev: Dictionary, people: Array, summary: String) -> void:
 		parts.body.add_child(UIKit.label(String(ev.get("desc", "")), 16, UIKit.COLOR_TEXT, true))
 		if summary != "":
 			parts.body.add_child(UIKit.label("Rendeu: %s." % summary, 16, UIKit.COLOR_GREEN, true))
+		parts.buttons.add_child(UIKit.button("➡️ Continuar", close, true))
+		return parts.panel)
+
+
+## Prêmios do Marketing: o time no palco (vencedores na frente) e o resultado por categoria.
+func show_awards(ceremony: Dictionary) -> void:
+	_open(func():
+		var st: GameState = Game.state
+		var team: Array = []
+		var seen := {}
+		for r in ceremony.get("results", []):
+			for id in r.get("people", []):
+				var e: Employee = st.employee_by_id(int(id))
+				if e != null and not seen.has(e.id):
+					team.append(e)
+					seen[e.id] = true
+		for e in st.employees:
+			if not seen.has(e.id) and team.size() < 7:
+				team.append(e)
+				seen[e.id] = true
+		var won_any: bool = ceremony.get("results", []).any(func(r): return String(r.get("status", "")) == "won")
+		var parts := _panel("🏆 Prêmios do Marketing %d" % int(ceremony.get("year", 0)), _scene_top({"scene": "stage" if won_any else "auditorium"}, team))
+		var b: VBoxContainer = parts.body
+		b.add_child(UIKit.label("A cerimônia do ano reúne as agências do mercado. Veja como a %s se saiu:" % st.agency_name, 15, UIKit.COLOR_TEXT, true))
+		for r in ceremony.get("results", []):
+			var status := String(r.get("status", "lost"))
+			var color := UIKit.COLOR_GOLD if status == "won" else (UIKit.COLOR_BLUE if status == "nominated" else UIKit.COLOR_MUTED)
+			var head := UIKit.hbox()
+			var name := UIKit.label("%s %s" % [String(r.get("icon", "")), String(r.get("name", ""))], 17, color)
+			name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			head.add_child(name)
+			head.add_child(UIKit.label({"won": "VENCEU!", "nominated": "indicada", "lost": "não levou"}[status], 14, color))
+			b.add_child(head)
+			b.add_child(UIKit.label(String(r.get("detail", "")), 14, UIKit.COLOR_TEXT, true))
+		b.add_child(UIKit.separator())
+		b.add_child(UIKit.muted("Vencer: Agência do Ano +6 reputação e +8 de moral para todos; Campanha +4 reputação e +10 de moral para a equipe; Profissional +15 de moral e lealdade. Indicação: +1 reputação.", 12))
 		parts.buttons.add_child(UIKit.button("➡️ Continuar", close, true))
 		return parts.panel)
 

@@ -74,7 +74,28 @@ func build() -> void:
 	sv.add_child(_row("Clientes fechados", str(int(st.stats.clients_signed))))
 	sv.add_child(_row("Contratações", str(int(st.stats.hires))))
 	sv.add_child(_row("Receita acumulada", UIKit.money(float(st.stats.total_revenue))))
+	sv.add_child(_row("Prêmios do Marketing", str(Game.awards.won_count())))
 	content.add_child(stats)
+
+	var aw := UIKit.card()
+	var av := UIKit.card_content(aw)
+	av.add_child(UIKit.label("🏆 Prêmios do Marketing", 19, UIKit.COLOR_ACCENT))
+	av.add_child(UIKit.muted("Cerimônia todo fim de ano: Campanha, Agência e Profissional do Ano. Agência do Ano exige %d pontos este ano (entregas ×3, cases de 5 estrelas ×10, clientes ativos ×2, reputação ×0,5); você tem %d." % [int(Game.awards.agency_threshold(st.year())), int(Game.awards.agency_score(st.year()))], 13))
+	if st.awards.is_empty():
+		av.add_child(UIKit.muted("Nenhuma cerimônia ainda. A primeira é na virada do ano.", 13))
+	var shown := 0
+	for i in range(st.awards.size() - 1, -1, -1):
+		var a: Dictionary = st.awards[i]
+		if String(a.get("status", "")) == "lost":
+			continue
+		var cat: Dictionary = AwardSystem.CATEGORIES.get(String(a.get("category", "")), {})
+		var won: bool = String(a.get("status", "")) == "won"
+		av.add_child(_row("%s %s %d" % [String(cat.get("icon", "")), String(cat.get("name", "")), int(a.get("year", 0))],
+			"Vencedora" if won else "Indicada", UIKit.COLOR_GOLD if won else UIKit.COLOR_MUTED))
+		shown += 1
+		if shown >= 9:
+			break
+	content.add_child(aw)
 
 	var sound := UIKit.card()
 	var soundv := UIKit.card_content(sound)

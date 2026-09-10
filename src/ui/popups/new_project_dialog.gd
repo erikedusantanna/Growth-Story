@@ -41,6 +41,12 @@ func _ready() -> void:
 	bv.add_child(UIKit.label(client.name, 20))
 	bv.add_child(UIKit.muted("%s · %s · Expectativa %s · Paciência %d" % [Game.clients.segment_name(client), Game.clients.personality_name(client), client.expectation, int(client.patience)]))
 	bv.add_child(UIKit.label("\"%s\"" % client.goal, 16, UIKit.COLOR_TEXT, true))
+	var briefing: Dictionary = Game.projects.briefing_for(client)
+	if not briefing.is_empty():
+		bv.add_child(UIKit.label("%s Briefing: %s" % [String(briefing.get("icon", "📋")), String(briefing.get("name", ""))], 16, UIKit.COLOR_PURPLE))
+		bv.add_child(UIKit.label(Game.projects.briefing_desc(briefing, client), 14, UIKit.COLOR_TEXT, true))
+		var keys: Array = (briefing.get("key_services", []) as Array).map(func(s): return Game.content.service_name(s))
+		bv.add_child(UIKit.label("Serviços-chave: %s (+%d cada, até +%d)" % [", ".join(keys), int(ProjectSystem.BONUS_KEY_SERVICE), int(ProjectSystem.BONUS_KEY_SERVICE_MAX)], 13, UIKit.COLOR_PURPLE, true))
 	if client.diagnosed:
 		bv.add_child(UIKit.label("Problema real: %s" % Game.clients.problem_name(client), 15, UIKit.COLOR_ACCENT, true))
 		var sol: Array = Game.content.problem_solutions.get(client.problem, []).map(func(s): return Game.content.service_name(s))
@@ -165,6 +171,10 @@ func _update_preview() -> void:
 		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		h.add_child(val)
 		v.add_child(h)
+	var chem: Dictionary = pv.get("chemistry", {"score": 0, "items": []})
+	for item in chem.get("items", []):
+		var synergy: bool = String(item.get("kind", "")) == "synergy"
+		v.add_child(UIKit.label("%s %s: %s" % ["🤝" if synergy else "⚡", String(item.get("names", "")), String(item.get("text", ""))], 13, UIKit.COLOR_GREEN if synergy else UIKit.COLOR_RED, true))
 	if not pv.hints.is_empty():
 		v.add_child(UIKit.label("Para subir a nota:", 14, UIKit.COLOR_BLUE))
 		for hint in pv.hints:

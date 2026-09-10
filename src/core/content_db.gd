@@ -29,6 +29,8 @@ var competitors: Dictionary = {}
 var scenes: Dictionary = {}          # cenários de evento (data/scenes.json)
 var seasons: Array = []              # datas comemorativas (data/seasons.json)
 var tutorial: Array = []             # passos do guia inicial (data/tutorial.json)
+var briefings: Array = []            # temas de projeto (data/briefings.json)
+var chemistry: Array = []            # pares de personalidade (data/chemistry.json)
 
 
 func load_all() -> void:
@@ -65,6 +67,8 @@ func load_all() -> void:
 	scenes = _load_json("res://data/scenes.json").get("scenes", {})
 	seasons = _load_json("res://data/seasons.json").get("seasons", [])
 	tutorial = _load_json("res://data/tutorial.json").get("steps", [])
+	briefings = _load_json("res://data/briefings.json").get("briefings", [])
+	chemistry = _load_json("res://data/chemistry.json").get("pairs", [])
 	departments = _load_json("res://data/departments.json")
 	competitors = _load_json("res://data/competitors.json")
 
