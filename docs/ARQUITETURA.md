@@ -112,6 +112,19 @@ Campos de condição: `min_day`, `min_reputation`, `min_employees`, `min_active_
 `requires_personality`, `once`, `cooldown_days` (padrão 120: o mesmo evento não repete antes disso). Placeholders no texto: `{best_employee}`, `{random_client}`,
 `{personality_employee}`. Efeitos suportados estão em `EventSystem._apply_effect`.
 
+## Eras históricas (`era_system.gd`, `data/eras.json`)
+
+GDD §23: o calendário do jogo já avança por anos reais (`GameState.year()`, começando em
+2010); cada era do `data/eras.json` cobre uma faixa desses anos (`year_start`/`year_end`,
+`year_end` nulo = sem fim) e lista `trends`: os serviços "em alta" naquele momento do mercado.
+`EraSystem.current()`/`at_year(y)` resolvem a era pura função do ano; `is_trending(id)` e
+`trending_services()` consultam a era atual. `ProjectSystem.BONUS_TRENDING` (+3) entra no
+`_score()` quando o projeto usa algum serviço em alta, com uma linha própria no detalhamento —
+mesma mecânica de bônus que diagnóstico/especialista. `GameManager.on_year()` compara a era do
+ano que terminou com a do ano que começa e loga a virada ("O mercado mudou: ..."). A aba
+Agência mostra um cartão com a era atual e marca os serviços em alta com 🔥; a aba Empresa
+mostra a era na lista de números.
+
 ## Fonte pixel art (`tools/gen_font.py`, `assets/fonts/pixel.fnt`)
 
 Bitmap font 5×7 (matriz de pontos), com 2 linhas extras acima para acento — cobre A-Z, a-z,
@@ -151,4 +164,5 @@ para não perder precisão. Versão do save em `version` (1).
 - **Evento**: `data/events.json`; novos tipos de efeito em `EventSystem._apply_effect`.
 - **Escritório**: `data/offices.json` (posições em tiles de 16 px; linha 0 é a parede).
 - **Objetivo**: `data/objectives.json` (`type` é uma chave de `stats` ou um dos especiais em `ObjectiveSystem.progress_value`).
+- **Era**: `data/eras.json` (`year_start`/`year_end`, `trends` com ids de serviço existentes).
 - **Jornada**: chame `Game.employees.add_journey(e, texto)` em qualquer marco novo.

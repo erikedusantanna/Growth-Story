@@ -14,6 +14,7 @@ var office := OfficeSystem.new()
 var objectives := ObjectiveSystem.new()
 var hr := HRSystem.new()
 var agency_events := AgencyEventSystem.new()
+var era := EraSystem.new()
 var save := SaveSystem.new()
 var time := TimeSystem.new()
 
@@ -26,7 +27,7 @@ var ui_blocking := false
 func _ready() -> void:
 	content = ContentDB.new()
 	content.load_all()
-	for system in [services, employees, clients, projects, finance, reputation, events, office, objectives, hr, agency_events, time]:
+	for system in [services, employees, clients, projects, finance, reputation, events, office, objectives, hr, agency_events, era, time]:
 		system.setup(self)
 	EventBus.state_changed.connect(func(): if state != null: objectives.check())
 
@@ -125,6 +126,11 @@ func on_year() -> void:
 	add_log("Fim de %d: %d pessoas, %d clientes ativos, %s de receita. %s." % [
 		year, state.employees.size(), state.active_clients().size(),
 		FinanceSystem.format_money(revenue), reputation.phase_name()], "year")
+	var old_era := era.at_year(year)
+	var new_era := era.at_year(state.year())
+	if String(old_era.get("id", "")) != String(new_era.get("id", "")):
+		add_log("O mercado mudou: %d é a era de %s. %s" % [
+			state.year(), String(new_era.get("name", "")), String(new_era.get("flavor", ""))], "year")
 	EventBus.year_passed.emit(year)
 
 

@@ -17,6 +17,7 @@ func _ready() -> void:
 	_test_scoring(game)
 	_test_hr_furniture_events(game)
 	_test_audio(game)
+	_test_era(game)
 	if failures == 0:
 		print("\n[OK] Todos os testes passaram.")
 		get_tree().quit(0)
@@ -310,6 +311,36 @@ func _test_audio(game) -> void:
 	Audio.play_sfx("payment")
 	Audio.play_music()
 	check(true, "play_sfx/play_music não travam em ambiente headless")
+
+
+func _test_era(game) -> void:
+	print("== Eras históricas ==")
+	game.new_game("Era Test", "Chefe", 21)
+	var st = game.state
+	check(String(game.era.current().get("id", "")) == "2010", "2010 cai na era certa (%s)" % game.era.current().get("id", ""))
+	check(game.era.is_trending("social_media") and game.era.is_trending("design"), "social_media e design em alta em 2010")
+	check(not game.era.is_trending("seo"), "SEO ainda não está em alta em 2010")
+	check(String(game.era.at_year(2018).get("id", "")) == "2016_2019", "2018 cai em Stories e performance")
+	check(String(game.era.at_year(2030).get("id", "")) == "2025", "anos após 2025 ficam na era da IA (sem fim definido)")
+	var c: Client = st.prospects()[0]
+	c.status = Client.Status.ACTIVE
+	var founder = st.employees[0]
+	var with_trend: Dictionary = game.projects.predict(c, ["design"], [founder.id], 0)
+	var without_trend: Dictionary = game.projects.predict(c, ["copywriting"], [founder.id], 0)
+	var has_trend_label: bool = with_trend.breakdown.any(func(b): return String(b.label).begins_with("Em alta"))
+	var no_trend_label: bool = without_trend.breakdown.any(func(b): return String(b.label).begins_with("Em alta"))
+	check(has_trend_label, "bônus de tendência aparece no detalhamento ao usar serviço em alta")
+	check(not no_trend_label, "bônus de tendência não aparece com serviço fora de moda")
+	# avança até a virada 2011->2012 (a única troca de era nesse intervalo) e confere o log na hora
+	st.money = 500000.0   # não deixa a simulação falir no caminho, sem bot administrando
+	var guard := 0
+	while st.year() < 2012 and not st.game_over and guard < 900:
+		game.on_day()
+		if not st.pending_event.is_empty():
+			game.resolve_event(0)
+		guard += 1
+	var changed_era: bool = st.log.any(func(l): return String(l.get("text", "")).begins_with("O mercado mudou"))
+	check(changed_era, "log de mudança de era aparece na virada 2011→2012")
 
 
 func _test_scoring(game) -> void:

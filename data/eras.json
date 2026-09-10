@@ -1,0 +1,22 @@
+{
+  "eras": [
+    {"id": "2010", "name": "Redes sociais em ascensão", "year_start": 2010, "year_end": 2011,
+     "trends": ["social_media", "design"],
+     "flavor": "Facebook, blogs, e-mail marketing e mídia tradicional dominam o digital."},
+    {"id": "2012_2015", "name": "Mobile e inbound", "year_start": 2012, "year_end": 2015,
+     "trends": ["social_media", "content", "seo"],
+     "flavor": "As redes sociais crescem, o consumo migra para o mobile e o inbound marketing ganha força."},
+    {"id": "2016_2019", "name": "Stories e performance", "year_start": 2016, "year_end": 2019,
+     "trends": ["influencer", "paid_traffic", "crm"],
+     "flavor": "Stories, influenciadores, performance e automação tomam conta das agências."},
+    {"id": "2020", "name": "Aceleração digital", "year_start": 2020, "year_end": 2020,
+     "trends": ["paid_traffic", "cro", "seo"],
+     "flavor": "A pandemia acelera a digitalização e o e-commerce explode."},
+    {"id": "2021_2024", "name": "Creator economy", "year_start": 2021, "year_end": 2024,
+     "trends": ["influencer", "social_media", "content"],
+     "flavor": "TikTok, creators e comunidades redesenham o marketing de marca."},
+    {"id": "2025", "name": "Era da IA", "year_start": 2025, "year_end": null,
+     "trends": ["ia", "martech", "data_science"],
+     "flavor": "IA generativa, agentes e automação avançada mudam o jogo — de novo."}
+  ]
+}

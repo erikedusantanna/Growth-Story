@@ -7,8 +7,15 @@ const TIER_NAMES := {"inicio": "Início", "intermediario": "Intermediário", "av
 
 func build() -> void:
 	_build_agency_events()
+	var era: Dictionary = Game.era.current()
 	content.add_child(header("Serviços", "%d/%d" % [Game.state.unlocked_services.size(), Game.content.service_order.size()]))
 	content.add_child(UIKit.muted("Cada segmento de cliente combina melhor com certos serviços. Descubra as combinações perfeitas."))
+	if not era.is_empty():
+		content.add_child(UIKit.card([
+			UIKit.label("🔥 Em alta em %d: %s" % [Game.state.year(), String(era.get("name", ""))], 15, UIKit.COLOR_ACCENT, true),
+			UIKit.muted(String(era.get("flavor", "")), 13),
+			UIKit.label("Projetos com %s rendem +%d na nota." % [", ".join(Game.era.trending_names()), int(ProjectSystem.BONUS_TRENDING)], 13, UIKit.COLOR_GREEN, true),
+		]))
 	var last_tier := ""
 	for id in Game.content.service_order:
 		var svc: Dictionary = Game.content.services[id]
@@ -104,7 +111,7 @@ func _service_card(svc: Dictionary) -> PanelContainer:
 	var card := UIKit.card()
 	var v := UIKit.card_content(card)
 	var top := UIKit.hbox()
-	var name := UIKit.label(svc["name"], 19, UIKit.COLOR_TEXT if unlocked else UIKit.COLOR_MUTED)
+	var name := UIKit.label(("🔥 " if Game.era.is_trending(id) else "") + String(svc["name"]), 19, UIKit.COLOR_TEXT if unlocked else UIKit.COLOR_MUTED)
 	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(name)
 	top.add_child(UIKit.label("ativo" if unlocked else "bloqueado", 13, UIKit.COLOR_GREEN if unlocked else UIKit.COLOR_MUTED))

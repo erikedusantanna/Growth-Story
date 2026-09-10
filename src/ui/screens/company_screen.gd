@@ -68,6 +68,7 @@ func build() -> void:
 	var sv := UIKit.card_content(stats)
 	sv.add_child(UIKit.label("Números", 19, UIKit.COLOR_ACCENT))
 	sv.add_child(_row("Ano de jogo", "%d (%d)" % [st.game_year(), st.year()]))
+	sv.add_child(_row("Era do mercado", String(Game.era.current().get("name", "")), UIKit.COLOR_ACCENT))
 	sv.add_child(_row("Campanhas entregues", str(int(st.stats.projects_done))))
 	sv.add_child(_row("Cases de sucesso (5 estrelas)", str(st.cases)))
 	sv.add_child(_row("Clientes fechados", str(int(st.stats.clients_signed))))

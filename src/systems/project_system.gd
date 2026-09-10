@@ -262,6 +262,7 @@ const BONUS_DIAGNOSIS := 8.0
 const BONUS_DIAGNOSIS_LUCKY := 3.0
 const BONUS_SPECIALIST := 4.0
 const BONUS_SPECIALIST_MAX := 8.0
+const BONUS_TRENDING := 3.0
 
 
 ## Nota, estrelas e detalhamento. Com with_noise=false serve de previsão (sem sorteio).
@@ -313,6 +314,13 @@ func _score(p: Project, c: Client, with_noise: bool, predicted_days: int = -1) -
 	if specialist_bonus > 0.0:
 		score += specialist_bonus
 		breakdown.append({"label": "Especialista em %s" % ", ".join(specialist_names), "text": "+%d" % int(specialist_bonus), "good": true})
+
+	var trending: Array = p.services.filter(func(sid): return game.era.is_trending(sid))
+	if not trending.is_empty():
+		score += BONUS_TRENDING
+		var trending_names: Array = trending.map(func(sid): return game.content.service_name(sid))
+		breakdown.append({"label": "Em alta em %s: %s" % [String(game.era.current().get("id", "")), ", ".join(trending_names)],
+			"text": "+%d" % int(BONUS_TRENDING), "good": true})
 
 	var difficulty := c.difficulty if c != null else 1
 	if difficulty > 1:
@@ -409,6 +417,9 @@ func predict(c: Client, services: Array, team_ids: Array, kind: int) -> Dictiona
 			missing.append(game.content.service_name(sid))
 	if not missing.is_empty():
 		hints.append("Especialista em %s na equipe: +%d por serviço." % [", ".join(missing), int(BONUS_SPECIALIST)])
+	var already_trending: bool = services.any(func(sid): return game.era.is_trending(sid))
+	if not already_trending and not game.era.trending_names().is_empty():
+		hints.append("Em alta agora: %s (+%d na nota)." % [", ".join(game.era.trending_names()), int(BONUS_TRENDING)])
 	if days > int(q.deadline):
 		hints.append("Previsão de atraso (%d dias para %d de prazo): mais gente na equipe evita a penalidade." % [days, int(q.deadline)])
 	return {"score": r.score, "stars": r.stars, "breakdown": r.breakdown, "hints": hints, "days": days,

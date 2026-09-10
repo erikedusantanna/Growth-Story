@@ -64,6 +64,7 @@ Depois: *Projeto → Exportar → Android → Exportar projeto*, ou
 | Avaliação | `project_system.gd` | Nota 0–100 → 1 a 5 estrelas, pagamento, ROI, reputação, corações do cliente, manchetes de imprensa |
 | Contratos | idem | Projeto (entrega única) ou **retainer** (6 ciclos mensais, MRR) liberado após boa entrega |
 | Serviços | `data/services.json` | 16 serviços em 4 tiers (início, intermediário, avançado, **endgame**: IA, MarTech, Dados, Tecnologia Proprietária, Consultoria Enterprise); desbloqueio por caixa + reputação |
+| Eras históricas | `era_system.gd`, `data/eras.json` | GDD §23: 6 eras reais (2010 → 2025+) acompanham o calendário do jogo (`GameState.year()`); cada uma marca serviços "🔥 em alta" que rendem +3 na nota do projeto — a melhor estratégia muda com o tempo. Log ao virar de era, aba Agência mostra a era atual |
 | Finanças | `finance_system.gd` | Caixa, salários, aluguel, ferramentas, histórico mensal, falência abaixo de −R$ 30.000 |
 | Reputação | `reputation_system.gd` | 0–100 com retornos decrescentes; faixas do GDD §27 e fases do §29 |
 | Eventos | `event_system.gd`, `data/events.json` | 27 eventos com escolhas, condições (reputação, equipe, estresse, projetos…) e cooldown por evento; alguns só aparecem em reputação alta e prenunciam o roadmap (cliente internacional, IA generativa, concorrente, investidor) |
@@ -86,5 +87,5 @@ Detalhes de fórmulas e fluxo em `docs/ARQUITETURA.md`.
 1. **Balanceamento** com testes de jogadores reais. A simulação em `tests/sim_test.gd` imprime a curva ano a ano e falha se fugir da régua do GDD §53 (ver `docs/ARQUITETURA.md`).
 2. Arte definitiva: substituir `assets/sprites/*.png` mantendo os tamanhos (16×16 personagens, 32×16 mesa/sofá).
 3. ~~Fonte pixel art e sons (`GDD §40–41`)~~ — feito: `assets/fonts/pixel.fnt` e `src/core/audio_manager.gd`.
-4. ~~Conteúdo: mais clientes, eventos e serviços de endgame~~ — feito. Falta: eras históricas (GDD §23).
+4. ~~Conteúdo: mais clientes, eventos, eras históricas e serviços de endgame~~ — feito: `era_system.gd`, `data/eras.json`.
 5. Departamentos, gerentes, concorrentes e aquisições (Fase 4 do roadmap).
