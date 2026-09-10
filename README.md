@@ -10,7 +10,7 @@ Estética pixel art simples. Este repositório contém **as bases e as mecânica
 - **Godot 4.3** (GDScript), renderer *Mobile*, viewport 540×960 em retrato.
 - Conteúdo em JSON (`data/`), lógica em sistemas independentes (`src/systems/`).
 - Arte pixel art gerada por script, sem dependências: `tools/gen_art.py` (tile de 32 px, estilo chibi com contorno escuro e 3 tons; personagens em camadas recoloríveis, 7 cabelos, óculos e 4 direções) e `tools/gen_icons.py` (ícones do HUD).
-- Testes headless (`tests/`) executados também no CI (`.github/workflows/tests.yml`).
+- Testes headless (`tests/`) executados também no CI (`.github/workflows/tests.yml`); o CI também gera o APK Android e o executável Windows a cada mudança.
 
 ## Como rodar
 
@@ -39,6 +39,22 @@ A cada mudança no `main` (e em cada pull request) o GitHub gera o APK sozinho, 
    "instalar apps de fontes desconhecidas"; aceite só para esse arquivo.
 
 É um build de debug assinado com uma chave temporária: serve para testar, não para publicar na Play Store.
+
+### Jogar no Windows (executável portátil)
+
+O workflow **Executável Windows** (`.github/workflows/windows.yml`) gera um único `growth-story.exe`
+com os dados do jogo embutidos — não precisa instalar nada, basta copiar e abrir.
+
+1. No repositório, abra **Actions** → workflow **Executável Windows** → execução mais recente.
+2. Em **Artifacts**, baixe `growth-story-windows` (zip com o `growth-story.exe`).
+3. Extraia e dê dois cliques. O Windows pode mostrar o aviso "Windows protegeu o seu PC" por o
+   arquivo não ser assinado: clique em **Mais informações → Executar assim mesmo**.
+
+O mouse faz o papel do dedo (arrastar o escritório, tocar no avatar; roda do mouse dá zoom).
+O save fica em `%APPDATA%\Godot\app_userdata\A Growth Story\`.
+
+Para gerar no seu computador: `godot --headless --path . --export-release "Windows Desktop" build/growth-story.exe`
+(o preset `Windows Desktop` está em `export_presets.cfg`).
 
 ### Exportar para Android no seu computador
 

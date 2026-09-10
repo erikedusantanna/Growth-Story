@@ -1,0 +1,56 @@
+name: Executável Windows
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: 4.3-stable
+      GODOT_TEMPLATES_DIR: /home/runner/.local/share/godot/export_templates/4.3.stable
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Baixar Godot
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv Godot_v${GODOT_VERSION}_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Cache dos templates de exportação
+        id: templates-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.GODOT_TEMPLATES_DIR }}
+          key: godot-templates-${{ env.GODOT_VERSION }}
+
+      - name: Baixar templates de exportação
+        if: steps.templates-cache.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          mkdir -p "$(dirname "$GODOT_TEMPLATES_DIR")"
+          unzip -q templates.tpz -d /tmp/templates
+          mv /tmp/templates/templates "$GODOT_TEMPLATES_DIR"
+
+      - name: Importar projeto
+        run: ./godot --headless --path . --import
+
+      # Um único .exe com os dados embutidos (embed_pck): basta copiar e abrir, sem instalar.
+      - name: Exportar executável (release)
+        run: |
+          mkdir -p build
+          ./godot --headless --path . --export-release "Windows Desktop" build/growth-story.exe 2>&1 | tail -20
+          test -s build/growth-story.exe
+          ls -la build
+
+      - name: Publicar executável
+        uses: actions/upload-artifact@v4
+        with:
+          name: growth-story-windows
+          path: build/growth-story.exe
+          retention-days: 30
