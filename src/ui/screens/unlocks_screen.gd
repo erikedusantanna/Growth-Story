@@ -6,6 +6,7 @@ const TIER_NAMES := {"inicio": "Início", "intermediario": "Intermediário", "av
 
 
 func build() -> void:
+	_build_competitors()
 	_build_agency_events()
 	var era: Dictionary = Game.era.current()
 	content.add_child(header("Serviços", "%d/%d" % [Game.state.unlocked_services.size(), Game.content.service_order.size()]))
@@ -34,6 +35,19 @@ func build() -> void:
 		v.add_child(UIKit.label("Funciona: %s" % ", ".join(best.map(func(s): return Game.content.service_name(s))), 14, UIKit.COLOR_GREEN, true))
 		v.add_child(UIKit.label("Evite: %s" % ", ".join(poor.map(func(s): return Game.content.service_name(s))), 14, UIKit.COLOR_RED, true))
 		content.add_child(card)
+
+
+# --- Concorrência ------------------------------------------------------------------
+
+func _build_competitors() -> void:
+	var names: Array = Game.competitors.agency_names()
+	content.add_child(header("Concorrência"))
+	content.add_child(UIKit.card([
+		UIKit.label("⚔️ O mercado não espera", 15, UIKit.COLOR_RED, true),
+		UIKit.muted("Prospects deixados sem proposta por muito tempo podem ser fechados por uma agência rival antes de você. Faça a proposta ou dispense — não deixe esfriar.", 13),
+		UIKit.muted("Concorrentes: %s." % ", ".join(names), 12),
+	]))
+	content.add_child(UIKit.spacer(4))
 
 
 # --- Eventos da agência ----------------------------------------------------------

@@ -7,6 +7,8 @@ func build() -> void:
 	var st: GameState = Game.state
 	content.add_child(header("Equipe", "%d/%d lugares · moral média %d" % [st.employees.size(), Game.office.capacity(), int(Game.employees.morale_average())]))
 	content.add_child(_office_banner())
+	if Game.departments.is_unlocked():
+		content.add_child(_departments_overview())
 	for e in st.employees:
 		content.add_child(_employee_card(e))
 	content.add_child(UIKit.spacer(4))
@@ -49,6 +51,52 @@ func _office_banner() -> PanelContainer:
 	return card
 
 
+## Visão geral dos departamentos: quem está em cada um e se o bônus de produtividade está ativo.
+func _departments_overview() -> PanelContainer:
+	var card := UIKit.card()
+	var v := UIKit.card_content(card)
+	v.add_child(UIKit.label("🏢 Departamentos", 17, UIKit.COLOR_ACCENT))
+	v.add_child(UIKit.muted("Gerente + %d pessoas no mesmo departamento rendem +%d%% de produtividade para todos ali." %
+		[int(Game.content.departments.get("min_members_for_bonus", 2)), int(float(Game.content.departments.get("productivity_bonus", 0.08)) * 100)], 13))
+	for d in Game.departments.all():
+		var members: Array = Game.departments.members(d.id)
+		if members.is_empty():
+			continue
+		var row := UIKit.hbox(8)
+		var active := Game.departments.has_bonus(d.id)
+		row.add_child(UIKit.label(String(d.name), 14, UIKit.COLOR_GREEN if active else UIKit.COLOR_TEXT, false))
+		var names: Array = members.map(func(m): return m.name.split(" ")[0])
+		row.add_child(UIKit.muted("%s%s" % [", ".join(names), " · bônus ativo" if active else ""], 13))
+		v.add_child(row)
+	return card
+
+
+## Linha com o departamento atual e um botão para trocar (popup de escolha).
+func _department_row(e: Employee) -> HBoxContainer:
+	var row := UIKit.hbox(8)
+	var dept: Dictionary = Game.departments.by_id(e.department)
+	var label_text: String = "🏢 %s" % String(dept.get("name", "Sem departamento"))
+	row.add_child(UIKit.label(label_text, 14, UIKit.COLOR_ACCENT if not dept.is_empty() else UIKit.COLOR_MUTED))
+	if not dept.is_empty() and e.career_level >= DepartmentSystem.MANAGER_CAREER_LEVEL:
+		row.add_child(UIKit.label("(gerente)", 13, UIKit.COLOR_GOLD))
+	var b := UIKit.button("Trocar", func(): _pick_department(e), false, 32)
+	b.size_flags_horizontal = 0
+	b.custom_minimum_size.x = 80
+	row.add_child(b)
+	return row
+
+
+func _pick_department(e: Employee) -> void:
+	var depts: Array = Game.departments.all()
+	var labels: Array = ["Sem departamento"]
+	var ids: Array = [""]
+	for d in depts:
+		labels.append(String(d.name))
+		ids.append(String(d.id))
+	popups().show_choice("Departamento de %s" % e.name.split(" ")[0], "Cada departamento reforça um atributo do time. Um gerente (carreira Gerente ou acima) mais gente no mesmo departamento rende bônus de produtividade.",
+		labels, func(idx): Game.departments.assign(e, ids[idx]))
+
+
 func _employee_card(e: Employee) -> PanelContainer:
 	var st: GameState = Game.state
 	var card := UIKit.card()
@@ -71,6 +119,8 @@ func _employee_card(e: Employee) -> PanelContainer:
 	meta2.add_child(UIKit.label("Salário %s/mês" % UIKit.money(e.salary), 14, UIKit.COLOR_MUTED))
 	meta2.add_child(UIKit.label("XP %d" % int(e.experience), 14, UIKit.COLOR_MUTED))
 	v.add_child(meta2)
+	if Game.departments.is_unlocked():
+		v.add_child(_department_row(e))
 	var actions := UIKit.hbox()
 	var train := UIKit.button("Treinar", func(): popups().show_training(e))
 	train.disabled = not e.is_available(st.day)

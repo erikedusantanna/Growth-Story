@@ -125,6 +125,21 @@ ano que terminou com a do ano que começa e loga a virada ("O mercado mudou: ...
 Agência mostra um cartão com a era atual e marca os serviços em alta com 🔥; a aba Empresa
 mostra a era na lista de números.
 
+## Departamentos e concorrência (GDD §30-31, §35)
+
+- **Departamentos** (`department_system.gd`, `data/departments.json`): abrem em
+  `state.office_level >= unlock_office` (4, "Escritório com departamentos"). Cada funcionário
+  tem `department: String` (vazio = nenhum). Um departamento com gerente (`career_level >=
+  MANAGER_CAREER_LEVEL`, o índice de "Gerente" em `data/names.json → career`) e
+  `min_members_for_bonus` pessoas (padrão 2) dá `productivity_bonus` (padrão +8%) a todos ali —
+  `EmployeeSystem.productivity()` multiplica por `DepartmentSystem.productivity_multiplier(e)`.
+  Aba Equipe mostra a visão geral dos departamentos e um seletor por funcionário.
+- **Concorrência** (`competitor_system.gd`, `data/competitors.json`): a partir de `min_day`,
+  todo dia cada prospect parado há mais de `steal_after_idle_days` tem `steal_chance_per_day`
+  de ser fechado por uma agência rival (nome sorteado de `agencies`), via
+  `ClientSystem.lose_client()` — reaproveita o mesmo caminho de perda de cliente (log, som de
+  crise). Complementa os eventos que já existiam (`proposta_concorrente`, `concorrente_cresce`).
+
 ## Fonte pixel art (`tools/gen_font.py`, `assets/fonts/pixel.fnt`)
 
 Bitmap font 5×7 (matriz de pontos), com 2 linhas extras acima para acento — cobre A-Z, a-z,
@@ -165,4 +180,6 @@ para não perder precisão. Versão do save em `version` (1).
 - **Escritório**: `data/offices.json` (posições em tiles de 16 px; linha 0 é a parede).
 - **Objetivo**: `data/objectives.json` (`type` é uma chave de `stats` ou um dos especiais em `ObjectiveSystem.progress_value`).
 - **Era**: `data/eras.json` (`year_start`/`year_end`, `trends` com ids de serviço existentes).
+- **Departamento**: `data/departments.json → departments` (`id`, `name`, `attr`).
+- **Agência concorrente**: `data/competitors.json → agencies` (só o nome, entra no sorteio).
 - **Jornada**: chame `Game.employees.add_journey(e, texto)` em qualquer marco novo.

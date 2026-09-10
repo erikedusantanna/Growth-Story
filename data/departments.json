@@ -1,0 +1,13 @@
+{
+  "unlock_office": 4,
+  "min_members_for_bonus": 2,
+  "productivity_bonus": 0.08,
+  "departments": [
+    {"id": "criacao", "name": "Criação", "attr": "creativity", "desc": "Ideias, peças e campanhas criativas."},
+    {"id": "estrategia", "name": "Estratégia", "attr": "strategy", "desc": "Planejamento e posicionamento."},
+    {"id": "performance", "name": "Performance", "attr": "performance", "desc": "Mídia paga e resultado mensurável."},
+    {"id": "atendimento", "name": "Atendimento", "attr": "communication", "desc": "Relacionamento com o cliente."},
+    {"id": "tecnologia", "name": "Tecnologia", "attr": "technology", "desc": "Ferramentas, dados e automação."},
+    {"id": "gestao", "name": "Gestão", "attr": "management", "desc": "Processos e operação da agência."}
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "agencies": ["Vértice Digital", "Bumerangue Ads", "Estúdio Rival", "Alcance Comunicação", "Prisma Criativo", "Norte Performance"],
+  "min_day": 60,
+  "steal_after_idle_days": 22,
+  "steal_chance_per_day": 0.05
+}

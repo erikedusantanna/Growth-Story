@@ -24,6 +24,8 @@ var hr: Dictionary = {}
 var furniture: Dictionary = {}
 var agency_events: Dictionary = {}
 var eras: Array = []
+var departments: Dictionary = {}
+var competitors: Dictionary = {}
 
 
 func load_all() -> void:
@@ -57,6 +59,8 @@ func load_all() -> void:
 	furniture = _load_json("res://data/furniture.json")
 	agency_events = _load_json("res://data/agency_events.json")
 	eras = _load_json("res://data/eras.json").get("eras", [])
+	departments = _load_json("res://data/departments.json")
+	competitors = _load_json("res://data/competitors.json")
 
 
 func _load_json(path: String) -> Dictionary:

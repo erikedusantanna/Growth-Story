@@ -18,6 +18,8 @@ func _ready() -> void:
 	_test_hr_furniture_events(game)
 	_test_audio(game)
 	_test_era(game)
+	_test_departments(game)
+	_test_competitors(game)
 	if failures == 0:
 		print("\n[OK] Todos os testes passaram.")
 		get_tree().quit(0)
@@ -341,6 +343,48 @@ func _test_era(game) -> void:
 		guard += 1
 	var changed_era: bool = st.log.any(func(l): return String(l.get("text", "")).begins_with("O mercado mudou"))
 	check(changed_era, "log de mudança de era aparece na virada 2011→2012")
+
+
+func _test_departments(game) -> void:
+	print("== Departamentos ==")
+	game.new_game("Depto Test", "Chefe", 5)
+	var st = game.state
+	check(not game.departments.is_unlocked(), "departamentos começam fechados")
+	st.office_level = 4
+	check(game.departments.is_unlocked(), "departamentos abrem no escritório com departamentos")
+	st.money = 500000.0
+	var a = game.employees.generate_candidate("normal")
+	st.candidates.append(a)
+	game.employees.hire(a)
+	var b = game.employees.generate_candidate("normal")
+	st.candidates.append(b)
+	game.employees.hire(b)
+	a.career_level = DepartmentSystem.MANAGER_CAREER_LEVEL
+	var prod_before: float = game.employees.productivity(b)
+	check(game.departments.assign(a, "criacao").ok, "atribuiu gerente ao departamento de Criação")
+	check(not game.departments.has_bonus("criacao"), "só 1 pessoa ainda não rende bônus")
+	check(game.departments.assign(b, "criacao").ok, "segunda pessoa entra no mesmo departamento")
+	check(game.departments.has_bonus("criacao"), "gerente + 2 pessoas rende bônus")
+	check(game.employees.productivity(b) > prod_before, "produtividade sobe com o bônus de departamento (%.3f > %.3f)" % [game.employees.productivity(b), prod_before])
+	var saved: Dictionary = st.to_dict()
+	var loaded = GameState.from_dict(saved)
+	check(loaded.employee_by_id(b.id).department == "criacao", "departamento sobrevive ao save")
+
+
+func _test_competitors(game) -> void:
+	print("== Concorrência ==")
+	game.new_game("Competitor Test", "Chefe", 9)
+	var st = game.state
+	st.day = 100
+	st.money = 500000.0
+	var c: Client = game.clients.spawn_prospect()
+	c.known_on = st.day - 30   # já passou do tempo de espera
+	var guard := 0
+	while c.status == Client.Status.PROSPECT and guard < 400:
+		game.competitors.on_day()
+		st.day += 1
+		guard += 1
+	check(c.status == Client.Status.LOST, "concorrente fecha com o prospect esquecido (%d dias)" % guard)
 
 
 func _test_scoring(game) -> void:

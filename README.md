@@ -65,6 +65,8 @@ Depois: *Projeto → Exportar → Android → Exportar projeto*, ou
 | Contratos | idem | Projeto (entrega única) ou **retainer** (6 ciclos mensais, MRR) liberado após boa entrega |
 | Serviços | `data/services.json` | 16 serviços em 4 tiers (início, intermediário, avançado, **endgame**: IA, MarTech, Dados, Tecnologia Proprietária, Consultoria Enterprise); desbloqueio por caixa + reputação |
 | Eras históricas | `era_system.gd`, `data/eras.json` | GDD §23: 6 eras reais (2010 → 2025+) acompanham o calendário do jogo (`GameState.year()`); cada uma marca serviços "🔥 em alta" que rendem +3 na nota do projeto — a melhor estratégia muda com o tempo. Log ao virar de era, aba Agência mostra a era atual |
+| Departamentos | `department_system.gd`, `data/departments.json` | GDD §30-31: a partir do escritório com departamentos, agrupe a equipe por área (Criação, Estratégia, Performance, Atendimento, Tecnologia, Gestão); um Gerente + 2 pessoas no mesmo departamento rende +8% de produtividade para todos ali |
+| Concorrência | `competitor_system.gd`, `data/competitors.json` | GDD §30-31/§35: prospects esquecidos por muito tempo podem ser fechados por uma agência rival antes de você — soma-se aos eventos que já existiam (proposta a funcionário, concorrente em ascensão) |
 | Finanças | `finance_system.gd` | Caixa, salários, aluguel, ferramentas, histórico mensal, falência abaixo de −R$ 30.000 |
 | Reputação | `reputation_system.gd` | 0–100 com retornos decrescentes; faixas do GDD §27 e fases do §29 |
 | Eventos | `event_system.gd`, `data/events.json` | 27 eventos com escolhas, condições (reputação, equipe, estresse, projetos…) e cooldown por evento; alguns só aparecem em reputação alta e prenunciam o roadmap (cliente internacional, IA generativa, concorrente, investidor) |
@@ -88,4 +90,4 @@ Detalhes de fórmulas e fluxo em `docs/ARQUITETURA.md`.
 2. Arte definitiva: substituir `assets/sprites/*.png` mantendo os tamanhos (16×16 personagens, 32×16 mesa/sofá).
 3. ~~Fonte pixel art e sons (`GDD §40–41`)~~ — feito: `assets/fonts/pixel.fnt` e `src/core/audio_manager.gd`.
 4. ~~Conteúdo: mais clientes, eventos, eras históricas e serviços de endgame~~ — feito: `era_system.gd`, `data/eras.json`.
-5. Departamentos, gerentes, concorrentes e aquisições (Fase 4 do roadmap).
+5. ~~Departamentos, gerentes e concorrentes~~ — feito: `department_system.gd`, `competitor_system.gd`. Falta: imprensa/aquisições e expansão internacional (resto da Fase 4 do roadmap).
