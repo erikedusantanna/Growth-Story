@@ -465,6 +465,35 @@ def cat():
         frames.append(c)
     return hstack(frames)
 
+def meeting_table():
+    """Mesa de reuniao 48x26 com cadeiras ao fundo, papeis e notebook."""
+    c = canvas(48, 26)
+    # cadeiras atras da mesa
+    for x in (9, 30):
+        rect(c, x, 1, 9, 8, "z")
+        rect(c, x + 1, 2, 7, 6, "y")
+    # tampo
+    rect(c, 1, 9, 46, 6, "M")
+    hline(c, 1, 46, 9, "9")
+    rect(c, 1, 15, 46, 3, "m")
+    hline(c, 1, 46, 17, "d")
+    # notebook, papeis e canecas em cima
+    rect(c, 19, 7, 10, 3, "k")
+    rect(c, 20, 8, 8, 1, "s")
+    rect(c, 18, 10, 12, 2, "Y")
+    rect(c, 5, 11, 7, 3, "W")
+    hline(c, 6, 10, 12, "b")
+    rect(c, 35, 11, 4, 3, "W")
+    put(c, 39, 12, "W")
+    rect(c, 41, 12, 3, 2, "B")
+    # pes e sombra
+    rect(c, 3, 18, 3, 8, "d")
+    rect(c, 42, 18, 3, 8, "d")
+    hline(c, 3, 44, 25, "o")
+    vline(c, 0, 9, 17, "o")
+    vline(c, 47, 9, 17, "o")
+    return c
+
 
 # --- Personagem 24x32, 4 poses: parado, andar A, andar B, sentado -----------------
 # Camadas: skin (W), features (contorno/olhos/boca), hair_N (W), shirt (W), legs (fixa)
@@ -684,7 +713,8 @@ def main():
                      ("projector", projector_screen), ("pingpong", pingpong),
                      ("partition", partition), ("partition_top", partition_top), ("hr_sign", hr_sign),
                      ("chair_ergo", chair_ergo), ("desk_wide", desk_wide), ("coffee_premium", coffee_premium),
-                     ("goals_board", goals_board), ("dog", dog), ("cat", cat)):
+                     ("goals_board", goals_board), ("dog", dog), ("cat", cat),
+                     ("meeting_table", meeting_table)):
         write_png(os.path.join(OUT, "furniture", f"{name}.png"), fn())
     characters()
     for name, rows in ICONS.items():

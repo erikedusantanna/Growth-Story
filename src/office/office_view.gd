@@ -2,6 +2,8 @@ class_name OfficeView
 extends Control
 ## Escritório em visão 3/4: parede com janelas e quadro, piso de madeira, mobília e
 ## personagens ordenados por profundidade (y-sort). Mostra balões e números flutuantes.
+## As mesas ficam agrupadas em ilhas; cada ilha tem um tapete (zona) e divisórias entre elas,
+## além da área de convivência com sofá, café e mesa de reunião.
 ## Dá para arrastar (um dedo) e dar zoom (pinça ou roda do mouse); toque no avatar abre a jornada.
 ## Mobília comprada troca sprites (cadeira, mesa, café) ou ocupa slots; o RH contratado ganha
 ## um anexo com divisória, mesa e analista fixa; pets adotados passeiam pelo piso.
@@ -28,12 +30,21 @@ const FURNITURE := {
 	"goals_board": "res://assets/art/furniture/goals_board.png",
 	"door": "res://assets/art/furniture/door.png",
 	"pingpong": "res://assets/art/furniture/pingpong.png",
+	"meeting_table": "res://assets/art/furniture/meeting_table.png",
 	"partition": "res://assets/art/furniture/partition.png",
 	"partition_top": "res://assets/art/furniture/partition_top.png",
 	"hr_sign": "res://assets/art/furniture/hr_sign.png",
 }
 ## Deslocamento vertical dos objetos de parede (a partir do topo da parede).
 const WALL_PROP_Y := {"window": 6, "whiteboard": 6, "shelf": 2, "door": 2, "goals_board": 6, "hr_sign": 9}
+## Tapetes que agrupam as ilhas de mesas: cor de preenchimento por tinta do layout.
+const ZONE_TINTS := {
+	"cool": Color(0.31, 0.49, 0.82, 0.19),
+	"green": Color(0.26, 0.60, 0.37, 0.18),
+	"purple": Color(0.58, 0.42, 0.85, 0.19),
+	"warm": Color(0.96, 0.56, 0.26, 0.16),
+	"lounge": Color(0.39, 0.41, 0.52, 0.17),
+}
 
 var world: Node2D
 var wall_layer: Node2D
@@ -174,6 +185,8 @@ func _build(data: Dictionary) -> void:
 		_add_furniture(swaps.get(p.type, p.type), Vector2(float(p.pos[0]) * TILE, (float(p.pos[1]) + 1.0) * TILE))
 	for sp in data.get("spots", []):
 		spot_positions.append(Vector2((float(sp[0]) + 0.5) * TILE, (float(sp[1]) + 1.0) * TILE))
+	for dv in data.get("dividers", []):
+		_add_divider(float(dv.get("x", 0)) * TILE, float(dv.get("y0", WALL_ROWS)) * TILE, float(dv.get("y1", 6)) * TILE)
 	_build_decor(data)
 	if _has_hr_room():
 		_build_hr_room(data)
@@ -188,6 +201,25 @@ func _add_wall_prop(type: String, x_tile: float) -> void:
 	s.centered = false
 	s.position = Vector2(x_tile * TILE, float(WALL_PROP_Y.get(type, 4)))
 	wall_layer.add_child(s)
+
+
+## Divisória vertical: empilha painéis entre dois pontos e fecha com a peça de topo.
+func _add_divider(px: float, top: float, bottom: float) -> void:
+	var y := top
+	while y + TILE <= bottom:
+		var s := Sprite2D.new()
+		s.texture = load(FURNITURE["partition"])
+		s.centered = false
+		s.offset = Vector2(0, -TILE)
+		s.position = Vector2(px, y + TILE)
+		scene_layer.add_child(s)
+		y += TILE
+	var cap := Sprite2D.new()
+	cap.texture = load(FURNITURE["partition_top"])
+	cap.centered = false
+	cap.offset = Vector2(0, -6)
+	cap.position = Vector2(px, top + 2.0)
+	scene_layer.add_child(cap)
 
 
 ## Mobília comprada com sprite ocupa os slots de decoração do escritório.
@@ -212,21 +244,7 @@ func _build_hr_room(data: Dictionary) -> void:
 	var px := float(w) * TILE - 4.0
 	var top := float(WALL_ROWS * TILE)
 	var bottom := float(h * TILE) - 22.0    # passagem no fim da divisória
-	var y := top
-	while y + TILE <= bottom:
-		var s := Sprite2D.new()
-		s.texture = load(FURNITURE["partition"])
-		s.centered = false
-		s.offset = Vector2(0, -TILE)
-		s.position = Vector2(px, y + TILE)
-		scene_layer.add_child(s)
-		y += TILE
-	var cap := Sprite2D.new()
-	cap.texture = load(FURNITURE["partition_top"])
-	cap.centered = false
-	cap.offset = Vector2(0, -6)
-	cap.position = Vector2(px, top + 2.0)
-	scene_layer.add_child(cap)
+	_add_divider(px, top, bottom)
 	_add_wall_prop("hr_sign", float(w) + float(room.get("sign_x", 1.5)))
 	var d: Array = room.get("desk", [1, 4])
 	var desk_bottom := Vector2(float(w + int(d[0])) * TILE, (float(d[1]) + 1.0) * TILE)
@@ -322,6 +340,14 @@ func _draw_world() -> void:
 		world.draw_texture(wall_tex, Vector2(x * TILE, 0))
 		for y in range(WALL_ROWS, h):
 			world.draw_texture(floor_tex, Vector2(x * TILE, y * TILE))
+	for z in layout.get("zones", []):
+		var r: Array = z.get("rect", [])
+		if r.size() < 4:
+			continue
+		var fill: Color = ZONE_TINTS.get(String(z.get("tint", "lounge")), ZONE_TINTS["lounge"])
+		var rect := Rect2(float(r[0]) * TILE, float(r[1]) * TILE, float(r[2]) * TILE, float(r[3]) * TILE)
+		world.draw_rect(rect, fill)
+		world.draw_rect(rect, Color(fill, minf(fill.a * 3.2, 0.85)).darkened(0.3), false, 1.0)
 
 
 # --- Personagens e pets -----------------------------------------------------------

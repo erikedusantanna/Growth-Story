@@ -19,6 +19,8 @@ func _ready() -> void:
 	await _frames(3)
 	await _shot("02_intro")
 	main.popups.close()
+	await _frames(2)
+	await _shot("02b_escritorio_inicial")
 	Game.manual_time = true
 	# prepara um estado interessante: 3 pessoas, cliente ativo, projeto rodando
 	var st: GameState = Game.state
