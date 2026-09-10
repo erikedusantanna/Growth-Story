@@ -115,6 +115,17 @@ func _ready() -> void:
 	print("  resultado de evento da agência com cena: %s" % agency_scene)
 	main.popups.close()
 	await _drain_popups(main)
+	# dezembro: o escritório ganha decoração de Natal; janeiro a tira de novo
+	Game.state.day = GameState.DAYS_PER_MONTH * 11
+	EventBus.state_changed.emit()
+	await get_tree().process_frame
+	var decor_seen: bool = main.office_view.season_nodes.size() > 1
+	print("  decoração de dezembro: %d nós · janelas: %d" % [main.office_view.season_nodes.size(), main.office_view.window_positions.size()])
+	Game.state.day = 0
+	EventBus.state_changed.emit()
+	await get_tree().process_frame
+	var decor_gone: bool = main.office_view.season_nodes.is_empty()
+	print("  decoração some em janeiro: %s" % decor_gone)
 	main.show_screen("company")
 	await get_tree().process_frame
 	# avança o tempo pelo _process real (manual_time = false) e resolve eventos automaticamente
@@ -134,7 +145,7 @@ func _ready() -> void:
 	main.show_title()
 	await get_tree().process_frame
 	print("  workers no escritório: %d" % main.office_view.workers.size())
-	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene
+	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone
 	print("[%s] UI smoke" % ("OK" if ok else "FALHA"))
 	get_tree().quit(0 if ok else 1)
 

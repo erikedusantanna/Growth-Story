@@ -20,6 +20,7 @@ func _ready() -> void:
 	_test_era(game)
 	_test_departments(game)
 	_test_competitors(game)
+	_test_office_life(game)
 	if failures == 0:
 		print("\n[OK] Todos os testes passaram.")
 		get_tree().quit(0)
@@ -299,6 +300,17 @@ func _test_audio(game) -> void:
 	check(Audio != null, "singleton Audio existe")
 	check(Audio.sfx_enabled, "efeitos começam ligados")
 	check(Audio.music_enabled, "música começa ligada")
+	var stream = Audio._music_player.stream
+	check(stream != null and stream is AudioStreamWAV, "trilha carregada como WAV")
+	if stream != null and stream is AudioStreamWAV:
+		var seconds: float = float(stream.data.size()) / 2.0 / float(stream.mix_rate)
+		check(stream.loop_mode == AudioStreamWAV.LOOP_FORWARD and stream.loop_end > 0, "trilha em loop com fim marcado (loop_end %d)" % stream.loop_end)
+		check(seconds >= 50.0, "trilha tem pelo menos 50 s (%.1f s)" % seconds)
+	check(Audio.music_volume_db >= -9.0, "música não fica 20 dB abaixo dos efeitos (%.0f dB)" % Audio.music_volume_db)
+	Audio.toggle_music()
+	check(not Audio.music_enabled, "botão de mudo desliga a música")
+	Audio.toggle_music()
+	check(Audio.music_enabled, "botão de mudo religa a música")
 	Audio.set_sfx_enabled(false)
 	check(not Audio.sfx_enabled, "desligar efeitos")
 	Audio.set_music_enabled(false)
@@ -419,3 +431,50 @@ func _test_scoring(game) -> void:
 	check(game.clients.proposed_budget(c, 0.8) < c.budget, "preço proposto acompanha o slider")
 	check(FinanceSystem.format_money(1234567.0) == "R$ 1.234.567", "formatação de dinheiro")
 	check(FinanceSystem.format_money(-950.0) == "-R$ 950", "formatação negativa")
+
+
+func _test_office_life(game) -> void:
+	print("== Vida no escritório ==")
+	# datas comemorativas por mês (0 = janeiro)
+	check(game.seasons.theme_for_month(0).is_empty(), "janeiro não tem decoração")
+	check(String(game.seasons.theme_for_month(1).get("id", "")) == "carnaval", "fevereiro é Carnaval")
+	check(String(game.seasons.theme_for_month(5).get("id", "")) == "junina", "junho é Festa Junina")
+	check(String(game.seasons.theme_for_month(9).get("id", "")) == "halloween", "outubro é Halloween")
+	check(String(game.seasons.theme_for_month(10).get("id", "")) == "black_friday", "novembro é Black Friday")
+	check(String(game.seasons.theme_for_month(11).get("id", "")) == "natal", "dezembro é Natal")
+	for t in game.seasons.themes():
+		check(ResourceLoader.exists("res://assets/art/seasons/%s.png" % t.get("garland", "")), "guirlanda de %s existe" % t.get("id"))
+		check(ResourceLoader.exists("res://assets/art/seasons/%s.png" % t.get("prop", "")), "objeto de %s existe" % t.get("id"))
+	for o in game.content.offices:
+		check(o.has("season_slot"), "escritório nível %d tem lugar para a decoração" % int(o.get("level", 0)))
+	# feed avisa na virada do mês
+	game.new_game("Teste Natal", "Tester")
+	game.state.day = GameState.DAYS_PER_MONTH * 11 - 1   # último dia de novembro
+	var before: int = game.state.log.size()
+	game.on_day()
+	check(game.state.month() == 11, "virou dezembro")
+	var logged := false
+	for entry in game.state.log.slice(before, game.state.log.size()):
+		if String(entry.get("text", "")).contains("Natal"):
+			logged = true
+	check(logged, "feed avisa da decoração de Natal")
+	# hora do dia e luz
+	check(is_equal_approx(OfficeView.hour_of(0.0), 8.0) and is_equal_approx(OfficeView.hour_of(1.0), 20.0), "dia de trabalho vai das 08:00 às 20:00")
+	var noon: Dictionary = OfficeView.daylight(13.0)
+	var night: Dictionary = OfficeView.daylight(20.0)
+	var dusk: Dictionary = OfficeView.daylight(17.5)
+	check(float((noon["tint"] as Color).a) < 0.001 and float(noon["lamp"]) == 0.0, "meio-dia sem tinta nem luminárias")
+	check(float((night["tint"] as Color).a) > 0.2 and float(night["lamp"]) == 1.0 and float(night["night"]) == 1.0, "20:00 é noite com luminárias acesas")
+	check((dusk["sky_bottom"] as Color).r > (noon["sky_bottom"] as Color).r, "fim de tarde tem céu mais alaranjado")
+	check(Hud.clock_text().length() == 5, "relógio do HUD formata HH:MM (%s)" % Hud.clock_text())
+	# som ambiente
+	var amb = Audio._ambience_player.stream
+	check(amb != null and amb is AudioStreamWAV and amb.loop_mode == AudioStreamWAV.LOOP_FORWARD and amb.loop_end > 0, "som ambiente do escritório carregado em loop")
+	check(Audio.ambience_enabled, "som ambiente começa ligado")
+	Audio.set_ambience_people(1)
+	var quiet: float = Audio._ambience_player.volume_db
+	Audio.set_ambience_people(10)
+	check(Audio._ambience_player.volume_db > quiet, "mais gente, escritório mais barulhento (%.1f → %.1f dB)" % [quiet, Audio._ambience_player.volume_db])
+	Audio.set_ambience_enabled(false)
+	check(not Audio.ambience_enabled, "toggle desliga o som ambiente")
+	Audio.set_ambience_enabled(true)

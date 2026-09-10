@@ -38,6 +38,23 @@ const FURNITURE := {
 ## Deslocamento vertical dos objetos de parede (a partir do topo da parede).
 const WALL_PROP_Y := {"window": 10, "whiteboard": 10, "shelf": 0, "door": 4, "goals_board": 10, "hr_sign": 18}
 ## Tapetes que agrupam as ilhas de mesas: cor de preenchimento por tinta do layout.
+## O dia de trabalho vai das 08:00 às 20:00; a fração do dia vem do TimeSystem.
+const DAY_START_HOUR := 8.0
+const DAY_HOURS := 12.0
+## Luz por hora: [hora, céu em cima, céu embaixo, tinta sobre o escritório, luminárias 0..1]
+const LIGHT_KEYS := [
+	[8.0, Color("#9fc4e6"), Color("#f7c184"), Color(1.0, 0.72, 0.42, 0.10), 0.0],
+	[9.5, Color("#dff1fb"), Color("#a9d8f0"), Color(1.0, 1.0, 1.0, 0.0), 0.0],
+	[16.0, Color("#dff1fb"), Color("#a9d8f0"), Color(1.0, 1.0, 1.0, 0.0), 0.0],
+	[17.5, Color("#ffd27a"), Color("#f28c4a"), Color(1.0, 0.6, 0.3, 0.14), 0.3],
+	[19.0, Color("#3b3f7a"), Color("#b06a6a"), Color(0.25, 0.2, 0.45, 0.22), 1.0],
+	[20.0, Color("#141c30"), Color("#243559"), Color(0.10, 0.14, 0.32, 0.32), 1.0],
+]
+const STARS := [Vector2(6, 5), Vector2(14, 9), Vector2(20, 4), Vector2(29, 11), Vector2(38, 6), Vector2(10, 15), Vector2(41, 15)]
+## Balões de pensamento por situação do personagem
+const BUBBLES_WORK := ["💡", "📊", "✍️", "📈", "🎯", "☕"]
+const BUBBLES_IDLE := ["☕", "💬", "🎵", "📱", "🙂"]
+const BUBBLES_REST := ["😴", "😮‍💨"]
 const ZONE_TINTS := {
 	"cool": Color(0.31, 0.49, 0.82, 0.11),
 	"green": Color(0.26, 0.60, 0.37, 0.10),
@@ -47,8 +64,11 @@ const ZONE_TINTS := {
 }
 
 var world: Node2D
+var sky_layer: Node2D        # céu atrás das janelas (muda com a hora)
 var wall_layer: Node2D
 var scene_layer: Node2D      # y-sort: mobília + personagens + pets
+var tint_layer: Node2D       # luz do dia sobre o escritório
+var glow_layer: Node2D       # luminárias das mesas à noite (aditivo)
 var fx_layer: Node2D
 var floor_tex := preload("res://assets/art/tiles/floor_wood.png")
 var wall_tex := preload("res://assets/art/tiles/wall.png")
@@ -62,6 +82,11 @@ var built_key := ""
 var door_pos := Vector2.ZERO
 var training_room: TrainingRoom
 var hr_worker: Worker
+var window_positions: Array = []   # canto superior esquerdo de cada janela, em px do mundo
+var season_nodes: Array = []       # decoração da data comemorativa do mês
+var cloud_t := 0.0                 # tempo acumulado para nuvens, estrelas e balões
+var bubble_timer := 3.0            # próximo balão de "pensamento" de alguém
+var _drawn_hour := -1.0
 
 # câmera
 var zoom := 2.0
@@ -80,11 +105,23 @@ func _ready() -> void:
 	clip_contents = true
 	world = Node2D.new()
 	add_child(world)
+	sky_layer = Node2D.new()
+	world.add_child(sky_layer)
+	sky_layer.draw.connect(_draw_sky)
 	wall_layer = Node2D.new()
 	world.add_child(wall_layer)
 	scene_layer = Node2D.new()
 	scene_layer.y_sort_enabled = true
 	world.add_child(scene_layer)
+	tint_layer = Node2D.new()
+	world.add_child(tint_layer)
+	tint_layer.draw.connect(_draw_tint)
+	glow_layer = Node2D.new()
+	var add_mat := CanvasItemMaterial.new()
+	add_mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	glow_layer.material = add_mat
+	world.add_child(glow_layer)
+	glow_layer.draw.connect(_draw_glow)
 	fx_layer = Node2D.new()
 	world.add_child(fx_layer)
 	world.draw.connect(_draw_world)
@@ -111,7 +148,7 @@ func refresh() -> void:
 	if not Game.has_game():
 		return
 	var st: GameState = Game.state
-	var key := "%d/%d/%s" % [st.office_level, st.furniture.size(), st.hr_hired]
+	var key := "%d/%d/%s/%s" % [st.office_level, st.furniture.size(), st.hr_hired, String(Game.seasons.current().get("id", ""))]
 	if key != built_key:
 		built_key = key
 		_build(Game.office.current())
@@ -163,12 +200,16 @@ func _build(data: Dictionary) -> void:
 	hr_worker = null
 	desk_positions.clear()
 	spot_positions.clear()
+	window_positions.clear()
+	season_nodes.clear()
 	var swaps := _visual_swaps()
 	door_pos = Vector2(float(data.get("width", 10)) * TILE - 48, WALL_ROWS * TILE + 16)
 	for p in data.get("wall", []):
 		_add_wall_prop(String(p.type), float(p.x))
 		if p.type == "door":
 			door_pos = Vector2(float(p.x) * TILE + 20, WALL_ROWS * TILE + 12)
+		elif p.type == "window":
+			window_positions.append(Vector2(float(p.x) * TILE, float(WALL_PROP_Y["window"])))
 	# quadros comprados vão para os espaços livres da parede
 	var wall_slots: Array = data.get("wall_slots", [])
 	var wall_index := 0
@@ -191,8 +232,12 @@ func _build(data: Dictionary) -> void:
 	_build_decor(data)
 	if _has_hr_room():
 		_build_hr_room(data)
+	var theme: Dictionary = Game.seasons.current()
+	if not theme.is_empty():
+		_build_season(theme, data)
 	_layout_world(true)
 	world.queue_redraw()
+	_drawn_hour = -1.0
 
 
 func _add_wall_prop(type: String, x_tile: float) -> void:
@@ -268,13 +313,173 @@ func _build_hr_room(data: Dictionary) -> void:
 
 
 func _add_furniture(type: String, bottom_left: Vector2) -> void:
-	var tex: Texture2D = load(FURNITURE.get(type, FURNITURE["plant"]))
+	_add_floor_sprite(load(FURNITURE.get(type, FURNITURE["plant"])), bottom_left)
+
+
+func _add_floor_sprite(tex: Texture2D, bottom_left: Vector2) -> Sprite2D:
 	var s := Sprite2D.new()
 	s.texture = tex
 	s.centered = false
 	s.offset = Vector2(0, -tex.get_height())
 	s.position = bottom_left
 	scene_layer.add_child(s)
+	return s
+
+
+## Data comemorativa do mês: guirlanda repetida ao longo da parede e um objeto no chão.
+func _build_season(theme: Dictionary, data: Dictionary) -> void:
+	var garland := String(theme.get("garland", ""))
+	if garland != "":
+		var tex: Texture2D = load("res://assets/art/seasons/%s.png" % garland)
+		for x in int(data.get("width", 10)):
+			var s := Sprite2D.new()
+			s.texture = tex
+			s.centered = false
+			s.position = Vector2(float(x) * TILE, 2.0)
+			wall_layer.add_child(s)
+			season_nodes.append(s)
+	var prop := String(theme.get("prop", ""))
+	if prop != "":
+		var slot: Array = data.get("season_slot", [0, 2])
+		var sprite := _add_floor_sprite(load("res://assets/art/seasons/%s.png" % prop),
+			Vector2(float(slot[0]) * TILE, (float(slot[1]) + 1.0) * TILE))
+		season_nodes.append(sprite)
+
+
+# --- Hora do dia: céu nas janelas, luz e luminárias ------------------------------------
+
+static func hour_of(fraction: float) -> float:
+	return DAY_START_HOUR + DAY_HOURS * clampf(fraction, 0.0, 1.0)
+
+
+static func current_hour() -> float:
+	if not Game.has_game():
+		return 10.0
+	return hour_of(Game.time.day_fraction())
+
+
+## Interpola as chaves de luz: {sky_top, sky_bottom, tint, lamp, night}.
+static func daylight(hour: float) -> Dictionary:
+	var a: Array = LIGHT_KEYS[0]
+	var b: Array = LIGHT_KEYS[LIGHT_KEYS.size() - 1]
+	for i in LIGHT_KEYS.size() - 1:
+		if hour >= float(LIGHT_KEYS[i][0]) and hour <= float(LIGHT_KEYS[i + 1][0]):
+			a = LIGHT_KEYS[i]
+			b = LIGHT_KEYS[i + 1]
+			break
+	var span: float = maxf(float(b[0]) - float(a[0]), 0.001)
+	var t := clampf((hour - float(a[0])) / span, 0.0, 1.0)
+	return {
+		"sky_top": (a[1] as Color).lerp(b[1], t),
+		"sky_bottom": (a[2] as Color).lerp(b[2], t),
+		"tint": (a[3] as Color).lerp(b[3], t),
+		"lamp": lerpf(float(a[4]), float(b[4]), t),
+		"night": clampf((hour - 18.0) / 2.0, 0.0, 1.0),
+	}
+
+
+func _process(delta: float) -> void:
+	if layout.is_empty() or not is_visible_in_tree() or not Game.has_game():
+		return
+	var running: bool = Game.is_running()
+	if running:
+		cloud_t += delta
+		_tick_bubbles(delta)
+	var hour := current_hour()
+	if running or absf(hour - _drawn_hour) > 0.01:
+		_drawn_hour = hour
+		sky_layer.queue_redraw()
+		tint_layer.queue_redraw()
+		glow_layer.queue_redraw()
+
+
+func _draw_sky() -> void:
+	var light := daylight(current_hour())
+	var hour := current_hour()
+	var night: float = light["night"]
+	var hill := Color("#7bbf6a").lerp(Color("#1e2a3a"), night * 0.75)
+	var hill_lo := Color("#4f9a4a").lerp(Color("#141c28"), night * 0.75)
+	for wp in window_positions:
+		var glass := Rect2(wp + Vector2(3, 3), Vector2(42, 34))
+		var sky := Rect2(glass.position, Vector2(42, 21))
+		sky_layer.draw_rect(glass, light["sky_bottom"])
+		sky_layer.draw_rect(Rect2(glass.position, Vector2(42, 8)), light["sky_top"])
+		sky_layer.draw_rect(Rect2(glass.position + Vector2(0, 8), Vector2(42, 6)), (light["sky_top"] as Color).lerp(light["sky_bottom"], 0.5))
+		# sol de manhã até o fim da tarde; lua e estrelas à noite
+		if hour < 18.5:
+			var p := (hour - DAY_START_HOUR) / 10.5
+			var sun := Rect2(glass.position + Vector2(5.0 + 32.0 * p, 22.0 - 15.0 * sin(PI * clampf(p, 0.0, 1.0))), Vector2(4, 4))
+			_draw_clipped(sun, Color("#ffe066"), sky)
+			_draw_clipped(Rect2(sun.position, Vector2(2, 1)), Color("#fff6c0"), sky)
+		if night > 0.0:
+			_draw_clipped(Rect2(glass.position + Vector2(33, 6), Vector2(4, 4)), Color(0.95, 0.95, 0.9, night), sky)
+			_draw_clipped(Rect2(glass.position + Vector2(33, 6), Vector2(2, 2)), Color(1, 1, 1, night), sky)
+			for i in STARS.size():
+				var twinkle := 0.6 if int(cloud_t * 2.0 + i) % 2 == 0 else 1.0
+				_draw_clipped(Rect2(glass.position + STARS[i], Vector2(1, 1)), Color(1, 1, 1, night * twinkle), sky)
+		# nuvens passando
+		var cloud_col := Color(1, 1, 1, 0.9).lerp(Color("#6c7594"), night)
+		for i in 2:
+			var cx := fmod(float(i) * 31.0 + cloud_t * 3.0, 62.0) - 14.0
+			var cy := 5.0 + float(i) * 8.0
+			_draw_clipped(Rect2(glass.position + Vector2(cx, cy + 2), Vector2(11, 3)), cloud_col, sky)
+			_draw_clipped(Rect2(glass.position + Vector2(cx + 3, cy), Vector2(6, 2)), cloud_col, sky)
+		# morros ao fundo
+		for r in [Rect2(0, 21, 12, 4), Rect2(14, 19, 16, 4), Rect2(32, 22, 10, 4), Rect2(0, 24, 42, 10)]:
+			sky_layer.draw_rect(Rect2(glass.position + r.position, r.size), hill)
+		sky_layer.draw_rect(Rect2(glass.position + Vector2(0, 30), Vector2(42, 4)), hill_lo)
+
+
+func _draw_clipped(r: Rect2, color: Color, clip: Rect2) -> void:
+	var c := r.intersection(clip)
+	if c.size.x > 0.0 and c.size.y > 0.0:
+		sky_layer.draw_rect(c, color)
+
+
+## Tinta da hora do dia sobre todo o escritório (nada no meio do dia).
+func _draw_tint() -> void:
+	var light := daylight(current_hour())
+	var tint: Color = light["tint"]
+	if tint.a <= 0.001:
+		return
+	tint_layer.draw_rect(Rect2(0, 0, float(_total_width()) * TILE, float(layout.get("height", 7)) * TILE), tint)
+
+
+## Luminárias das mesas acendem no fim da tarde (círculos aditivos sobre os monitores).
+func _draw_glow() -> void:
+	var lamp: float = daylight(current_hour())["lamp"]
+	if lamp <= 0.01:
+		return
+	var centers: Array = desk_positions.duplicate()
+	if hr_worker != null:
+		centers.append(hr_worker.position)
+	for d in centers:
+		var c: Vector2 = d + Vector2(30, -24)
+		# três anéis com alfa decrescente: halo suave em vez de um disco chapado
+		glow_layer.draw_circle(c, 34.0, Color(1.0, 0.8, 0.5, 0.045 * lamp))
+		glow_layer.draw_circle(c, 24.0, Color(1.0, 0.82, 0.55, 0.06 * lamp))
+		glow_layer.draw_circle(c, 14.0, Color(1.0, 0.86, 0.6, 0.08 * lamp))
+
+
+## De vez em quando alguém "pensa" alguma coisa: balão com emoji conforme o que está fazendo.
+func _tick_bubbles(delta: float) -> void:
+	bubble_timer -= delta
+	if bubble_timer > 0.0:
+		return
+	bubble_timer = randf_range(4.0, 9.0)
+	var candidates: Array = []
+	for w in workers.values():
+		if w.visible and (w.state == Worker.State.AT_DESK or w.state == Worker.State.AT_SPOT):
+			candidates.append(w)
+	if candidates.is_empty():
+		return
+	var w: Worker = candidates[randi() % candidates.size()]
+	var pool: Array = BUBBLES_IDLE
+	if w.resting:
+		pool = BUBBLES_REST
+	elif w.state == Worker.State.AT_DESK and w.on_project:
+		pool = BUBBLES_WORK
+	show_feedback(w.employee_id, pool[randi() % pool.size()], "bubble")
 
 
 # --- Câmera -----------------------------------------------------------------------
@@ -379,6 +584,7 @@ func _sync_workers() -> void:
 		if not seen.has(id):
 			workers[id].queue_free()
 			workers.erase(id)
+	Audio.set_ambience_people(st.employees.size())
 
 
 func _sync_pets() -> void:

@@ -82,6 +82,7 @@ func build() -> void:
 	var sound_row := UIKit.hbox()
 	sound_row.add_child(UIKit.toggle("🎵 Música", Audio.music_enabled, func(on): Audio.set_music_enabled(on)))
 	sound_row.add_child(UIKit.toggle("🔊 Efeitos", Audio.sfx_enabled, func(on): Audio.set_sfx_enabled(on)))
+	sound_row.add_child(UIKit.toggle("🏢 Escritório", Audio.ambience_enabled, func(on): Audio.set_ambience_enabled(on)))
 	soundv.add_child(sound_row)
 	content.add_child(sound)
 

@@ -27,6 +27,7 @@ var eras: Array = []
 var departments: Dictionary = {}
 var competitors: Dictionary = {}
 var scenes: Dictionary = {}          # cenários de evento (data/scenes.json)
+var seasons: Array = []              # datas comemorativas (data/seasons.json)
 
 
 func load_all() -> void:
@@ -61,6 +62,7 @@ func load_all() -> void:
 	agency_events = _load_json("res://data/agency_events.json")
 	eras = _load_json("res://data/eras.json").get("eras", [])
 	scenes = _load_json("res://data/scenes.json").get("scenes", {})
+	seasons = _load_json("res://data/seasons.json").get("seasons", [])
 	departments = _load_json("res://data/departments.json")
 	competitors = _load_json("res://data/competitors.json")
 

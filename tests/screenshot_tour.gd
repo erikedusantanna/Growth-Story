@@ -112,6 +112,27 @@ func _ready() -> void:
 	await _frames(2)
 	await _shot("07g_escritorio_zoom_out")
 	main.office_view._layout_world(true)
+	# hora do dia: fim de tarde e noite (a fração do dia vem do acumulador do TimeSystem)
+	Game.time.accumulator = TimeSystem.SECONDS_PER_DAY * 0.8
+	await _frames(2)
+	await _shot("07i_escritorio_tarde")
+	Game.time.accumulator = TimeSystem.SECONDS_PER_DAY * 0.99
+	await _frames(2)
+	await _shot("07j_escritorio_noite")
+	Game.time.accumulator = TimeSystem.SECONDS_PER_DAY * 0.3
+	# dezembro: decoração de Natal
+	var saved_day := st.day
+	st.day = GameState.DAYS_PER_MONTH * 11 + 3
+	EventBus.state_changed.emit()
+	await _frames(2)
+	await _shot("07k_escritorio_natal")
+	st.day = GameState.DAYS_PER_MONTH * 5 + 3
+	EventBus.state_changed.emit()
+	await _frames(2)
+	await _shot("07l_escritorio_junina")
+	st.day = saved_day
+	EventBus.state_changed.emit()
+	await _frames(2)
 	main.popups.show_people_picker(Game.agency_events.event_by_id("workshop"))
 	await _frames(2)
 	await _shot("07h_evento_pessoas")

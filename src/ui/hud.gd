@@ -8,6 +8,7 @@ var date_label: Label
 var phase_label: Label
 var speed_buttons: Array = []
 var pause_button: Button
+var music_button: Button
 
 
 func _ready() -> void:
@@ -30,7 +31,7 @@ func _ready() -> void:
 	var date_box := UIKit.hbox(6)
 	date_box.size_flags_horizontal = 0
 	date_box.add_child(UIKit.icon("calendar"))
-	date_label = UIKit.number("01 Jan 2010", 17, UIKit.COLOR_TEXT)
+	date_label = UIKit.number("01 Jan 2010  08:00", 17, UIKit.COLOR_TEXT)
 	date_box.add_child(date_label)
 	top.add_child(date_box)
 
@@ -51,11 +52,34 @@ func _ready() -> void:
 		b.custom_minimum_size.x = 48
 		bottom.add_child(b)
 		speed_buttons.append(b)
+	music_button = UIKit.button("🔊", func():
+		Audio.toggle_music()
+		refresh(), false, 36)
+	music_button.size_flags_horizontal = 0
+	music_button.custom_minimum_size.x = 44
+	music_button.tooltip_text = "Música ligada/desligada"
+	bottom.add_child(music_button)
 
 	EventBus.state_changed.connect(refresh)
 	EventBus.day_passed.connect(func(_d): refresh())
 	EventBus.money_changed.connect(func(_v, _d): refresh())
 	EventBus.reputation_changed.connect(func(_v, _d): refresh())
+
+
+## Hora do dia de trabalho (08:00–20:00), em passos de 10 minutos, a partir da fração do dia.
+static func clock_text() -> String:
+	var hour := OfficeView.current_hour()
+	var h := int(floor(hour))
+	var m := int(floor((hour - float(h)) * 6.0)) * 10
+	return "%02d:%02d" % [h, m]
+
+
+func _process(_delta: float) -> void:
+	if not Game.has_game():
+		return
+	var text := "%s  %s" % [Game.state.date_text(), clock_text()]
+	if text != date_label.text:
+		date_label.text = text
 
 
 func refresh() -> void:
@@ -65,9 +89,10 @@ func refresh() -> void:
 	money_label.text = UIKit.money(st.money)
 	money_label.add_theme_color_override("font_color", UIKit.COLOR_NUMBER if st.money >= 0.0 else UIKit.COLOR_RED)
 	rep_label.text = "%d" % int(roundf(st.reputation))
-	date_label.text = st.date_text()
+	date_label.text = "%s  %s" % [st.date_text(), clock_text()]
 	phase_label.text = "%s · %s" % [st.agency_name, Game.reputation.phase_name()]
 	pause_button.text = ">" if st.paused else "II"
+	music_button.text = "🔊" if Audio.music_enabled else "🔇"
 	for i in speed_buttons.size():
 		var b: Button = speed_buttons[i]
 		var active: bool = st.speed == i + 1 and not st.paused

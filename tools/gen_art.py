@@ -568,19 +568,19 @@ def character(direction, skin, hair, shirt, pants, style="short", glasses=False,
 # --- Mobilia (continuacao): tamanhos 2x da arte antiga, ancora no canto inferior esquerdo --
 
 def window():
+    """Moldura com barras; o vidro fica transparente e o jogo desenha o ceu atras, conforme a hora."""
     c = canvas(48, 40)
     rect(c, 0, 0, 48, 40, "metal")
     rect(c, 3, 3, 42, 34, "sky")
-    rect(c, 3, 3, 42, 7, "sky_hi")
-    for x, y, w in ((3, 24, 12), (17, 22, 16), (35, 25, 10)):
-        rect(c, x, y, w, 4, "hill")
-    rect(c, 3, 27, 42, 10, "hill")
-    rect(c, 3, 33, 42, 4, "hill_lo")
     rect(c, 22, 3, 3, 34, "metal")
     rect(c, 3, 19, 42, 2, "metal")
     hline(c, 1, 46, 1, "metal_hi"); vline(c, 1, 1, 38, "metal_hi")
     hline(c, 1, 46, 38, "metal_lo"); vline(c, 46, 1, 38, "metal_lo")
     outline(c)
+    for y in range(40):
+        for x in range(48):
+            if c[y][x] == "sky":
+                c[y][x] = None
     return c
 
 
@@ -921,6 +921,231 @@ def export_characters(out_dir):
                 write_png(os.path.join(out_dir, "legs.png"), _split(sheet, ["pants", "shoe"]))
 
 
+# --- Decoracao sazonal (data/seasons.json): guirlanda repetida na parede + um objeto no chao ----
+PAL.update({
+    "pine": hx("#2f7d3a"), "pine_hi": hx("#4caa52"), "pine_lo": hx("#1e5427"),
+    "lt_r": hx("#ff5c4d"), "lt_g": hx("#5be36a"), "lt_y": hx("#ffe066"), "lt_b": hx("#5fb8ff"), "wire": hx("#2b3340"),
+    "pumpkin": hx("#f28c28"), "pumpkin_hi": hx("#ffb055"), "pumpkin_lo": hx("#b85f12"), "pface": hx("#ffe066"),
+    "straw": hx("#e6c15a"), "straw_lo": hx("#b8923a"), "corn": hx("#ffd94a"), "corn_lo": hx("#d9a92a"),
+    "check_r": hx("#d94a3d"), "check_w": hx("#f7f4ec"),
+    "bf": hx("#14161c"), "bf_hi": hx("#2b2f3a"), "bf_y": hx("#ffd23c"),
+    "box": hx("#d8a86a"), "box_hi": hx("#efc48c"), "box_lo": hx("#a67a45"), "tape": hx("#f1e9d8"),
+    "string": hx("#e8e2d2"), "web": hx("#dfe4ea"),
+})
+FEST = ["red", "screen", "gold", "leaf_hi", "purple"]   # cores de festa (balões, bandeirinhas, serpentinas)
+
+
+def garland_lights():
+    """Pisca-pisca de Natal: fio caído com lâmpadas coloridas."""
+    c = canvas(32, 16)
+    ys = [2 + int(round(5 * (1 - ((x - 15.5) / 15.5) ** 2))) for x in range(32)]
+    for x, y in enumerate(ys):
+        put(c, x, y, "wire")
+    for i, x in enumerate((3, 11, 19, 27)):
+        col = ("lt_r", "lt_g", "lt_y", "lt_b")[i]
+        y = ys[x] + 1
+        put(c, x, y, "wire")
+        rect(c, x - 1, y + 1, 3, 4, col)
+        put(c, x - 1, y + 1, "mug")
+    outline(c)
+    return c
+
+
+def garland_streamers():
+    """Carnaval: serpentinas onduladas e confete."""
+    c = canvas(32, 16)
+    for i, x0 in enumerate((3, 12, 21, 28)):
+        col = FEST[i % len(FEST)]
+        for y in range(0, 15):
+            dx = (0, 1, 1, 0, -1, -1)[(y + i) % 6]
+            put(c, x0 + dx, y, col)
+            put(c, x0 + dx + 1, y, col)
+    for x, y, col in ((7, 9, "gold"), (17, 4, "leaf_hi"), (25, 12, "screen"), (9, 14, "red"), (15, 12, "purple")):
+        put(c, x, y, col)
+    outline(c)
+    return c
+
+
+def garland_flags():
+    """Festa junina: bandeirinhas triangulares num barbante."""
+    c = canvas(32, 16)
+    hline(c, 0, 31, 1, "string")
+    for i, x0 in enumerate((0, 8, 16, 24)):
+        col = FEST[(i + 1) % len(FEST)]
+        for r in range(7):
+            w = 7 - r
+            if w <= 0:
+                break
+            rect(c, x0 + r // 2 + 1, 2 + r, max(1, 7 - r), 1, col)
+        put(c, x0 + 2, 3, "mug")
+    outline(c)
+    return c
+
+
+def garland_bats():
+    """Halloween: morcegos e aboborinhas de papel pendurados."""
+    c = canvas(32, 16)
+    hline(c, 0, 31, 1, "string")
+    # morcego
+    for x0 in (3, 19):
+        vline(c, x0 + 4, 2, 5, "string")
+        rect(c, x0 + 3, 6, 3, 3, "o")
+        rect(c, x0, 7, 3, 2, "o"); rect(c, x0 + 6, 7, 3, 2, "o")
+        put(c, x0, 9, "o"); put(c, x0 + 8, 9, "o")
+        put(c, x0 + 3, 7, "lt_y"); put(c, x0 + 5, 7, "lt_y")
+    # aboborinha
+    for x0 in (12, 27):
+        vline(c, x0 + 2, 2, 5, "string")
+        rect(c, x0, 6, 5, 4, "pumpkin")
+        put(c, x0 + 1, 7, "pumpkin_hi"); vline(c, x0 + 2, 6, 9, "pumpkin_lo")
+    outline(c)
+    return c
+
+
+def garland_sale():
+    """Black Friday: faixa preta com etiquetas amarelas de desconto."""
+    c = canvas(32, 16)
+    rect(c, 0, 1, 32, 12, "bf")
+    hline(c, 0, 31, 2, "bf_hi")
+    for x0 in (2, 18):
+        rect(c, x0, 3, 11, 8, "bf_y")
+        put(c, x0 + 1, 6, "bf")                                   # furo da etiqueta
+        put(c, x0 + 3, 4, "bf"); put(c, x0 + 4, 4, "bf"); put(c, x0 + 3, 5, "bf"); put(c, x0 + 4, 5, "bf")   # "%"
+        put(c, x0 + 8, 8, "bf"); put(c, x0 + 9, 8, "bf"); put(c, x0 + 8, 9, "bf"); put(c, x0 + 9, 9, "bf")
+        for i in range(6):
+            put(c, x0 + 9 - i, 4 + i, "bf")
+    outline(c)
+    return c
+
+
+def season_tree():
+    """Árvore de Natal com estrela, bolas e presentes."""
+    c = canvas(40, 56)
+    rect(c, 17, 46, 6, 6, "wood_lo")
+    for tier, (top, h, half) in enumerate(((30, 18, 19), (18, 16, 14), (7, 14, 9))):
+        for r in range(h):
+            w = max(2, int(half * 2 * (r + 2) / (h + 1)))
+            x = 20 - w // 2
+            rect(c, x, top + r, w, 1, "pine")
+            put(c, x, top + r, "pine_hi")
+            if r >= h - 2:
+                rect(c, x, top + r, w, 1, "pine_lo")
+    for x, y, col in ((14, 42, "red"), (24, 40, "gold"), (19, 36, "screen"), (16, 28, "gold"), (23, 26, "red"),
+                      (20, 20, "screen"), (18, 14, "red"), (22, 12, "gold")):
+        rect(c, x, y, 2, 2, col)
+    _stars(c, [(20, 5)], "gold_hi"); put(c, 20, 5, "gold")
+    # presentes
+    rect(c, 2, 46, 12, 9, "red"); rect(c, 2, 46, 12, 1, "red_hi"); vline(c, 8, 46, 54, "gold_hi"); hline(c, 2, 13, 49, "gold_hi")
+    rect(c, 27, 48, 10, 7, "screen"); rect(c, 27, 48, 10, 1, "screen_hi"); vline(c, 32, 48, 54, "gold_hi"); hline(c, 27, 36, 51, "gold_hi")
+    outline(c)
+    return c
+
+
+def season_balloons():
+    """Cacho de balões de Carnaval preso a um peso."""
+    c = canvas(28, 44)
+    balls = ((4, 6, "red"), (13, 2, "screen"), (20, 7, "gold"), (8, 15, "leaf_hi"), (17, 16, "purple"))
+    for x, y, col in balls:
+        rect(c, x + 1, y, 5, 8, col); rect(c, x, y + 1, 7, 6, col)
+        put(c, x + 2, y + 1, "mug")
+        put(c, x + 3, y + 8, col)
+        # linha até o peso
+        for t in range(1, 30):
+            lx = int(round(x + 3 + (13 - (x + 3)) * t / 30))
+            ly = y + 9 + int((37 - (y + 9)) * t / 30)
+            if ly < 38 and c[ly][lx] is None:
+                c[ly][lx] = "metal_lo"
+    rect(c, 10, 37, 7, 5, "metal"); rect(c, 10, 37, 7, 1, "metal_hi"); hline(c, 10, 16, 41, "metal_lo")
+    outline(c)
+    return c
+
+
+def season_junina_table():
+    """Mesa com toalha xadrez, chapéu de palha e espigas de milho."""
+    c = canvas(40, 32)
+    for y in range(12, 20):
+        for x in range(2, 38):
+            c[y][x] = "check_r" if ((x // 3) + (y // 3)) % 2 == 0 else "check_w"
+    rect(c, 2, 20, 36, 2, "wood_lo")
+    rect(c, 4, 22, 3, 9, "wood"); rect(c, 33, 22, 3, 9, "wood")
+    # chapéu
+    rect(c, 5, 8, 14, 3, "straw"); hline(c, 5, 18, 10, "straw_lo")
+    rect(c, 8, 3, 8, 6, "straw"); rect(c, 8, 7, 8, 1, "red"); hline(c, 8, 15, 3, "straw_lo")
+    # milho
+    for x0 in (23, 30):
+        rect(c, x0 + 1, 2, 3, 9, "corn"); put(c, x0 + 1, 3, "corn_lo"); put(c, x0 + 3, 6, "corn_lo"); put(c, x0 + 2, 9, "corn_lo")
+        rect(c, x0, 8, 2, 4, "leaf"); rect(c, x0 + 3, 8, 2, 4, "leaf_hi")
+    outline(c)
+    return c
+
+
+def season_pumpkins():
+    """Duas abóboras de Halloween com rosto iluminado."""
+    c = canvas(36, 24)
+    def pumpkin(x, y, w, h):
+        rect(c, x + 1, y, w - 2, h, "pumpkin"); rect(c, x, y + 1, w, h - 2, "pumpkin")
+        for gx in range(x + 3, x + w - 2, 4):
+            vline(c, gx, y + 1, y + h - 2, "pumpkin_lo")
+        rect(c, x + 2, y + 1, 3, 1, "pumpkin_hi")
+        rect(c, x + w // 2 - 1, y - 3, 2, 3, "leaf_lo")
+        # olhos e boca
+        ey = y + h // 3
+        put(c, x + w // 3, ey, "pface"); put(c, x + w // 3 + 1, ey + 1, "pface"); put(c, x + w // 3 - 1, ey + 1, "pface")
+        put(c, x + 2 * w // 3, ey, "pface"); put(c, x + 2 * w // 3 + 1, ey + 1, "pface"); put(c, x + 2 * w // 3 - 1, ey + 1, "pface")
+        my = y + h - 4
+        for i, mx in enumerate(range(x + 3, x + w - 3)):
+            put(c, mx, my + (i % 2), "pface")
+    pumpkin(0, 8, 20, 15)
+    pumpkin(21, 12, 14, 11)
+    outline(c)
+    return c
+
+
+def season_boxes():
+    """Pilha de caixas de campanha com etiqueta de desconto."""
+    c = canvas(36, 36)
+    def box(x, y, w, h):
+        rect(c, x, y, w, h, "box"); rect(c, x, y, w, 2, "box_hi"); rect(c, x, y + h - 2, w, 2, "box_lo")
+        vline(c, x + w // 2, y, y + h - 1, "tape"); vline(c, x + w // 2 + 1, y, y + h - 1, "tape")
+    box(2, 20, 20, 15)
+    box(23, 24, 12, 11)
+    box(6, 7, 16, 13)
+    rect(c, 25, 10, 9, 7, "bf_y"); put(c, 26, 11, "bf"); put(c, 28, 11, "bf"); put(c, 29, 12, "bf"); put(c, 30, 13, "bf"); put(c, 31, 14, "bf"); put(c, 32, 15, "bf"); put(c, 26, 15, "bf")
+    vline(c, 24, 8, 12, "wire")
+    outline(c)
+    return c
+
+
+SEASON_ART = {
+    "garland_lights": garland_lights, "garland_streamers": garland_streamers, "garland_flags": garland_flags,
+    "garland_bats": garland_bats, "garland_sale": garland_sale,
+    "tree": season_tree, "balloons": season_balloons, "junina_table": season_junina_table,
+    "pumpkins": season_pumpkins, "boxes": season_boxes,
+}
+
+
+def export_seasons(root):
+    out = os.path.join(root, "assets", "art", "seasons")
+    for name, fn in SEASON_ART.items():
+        write_png(os.path.join(out, f"{name}.png"), fn())
+
+
+def season_sheet(path, scale=3):
+    c = canvas(300, 130, "floor")
+    rect(c, 0, 0, 300, 40, "wall")
+    x = 4
+    for name in ("garland_lights", "garland_streamers", "garland_flags", "garland_bats", "garland_sale"):
+        art = SEASON_ART[name]()
+        blit(c, art, x, 4); blit(c, art, x + 32, 4)
+        x += 64 - 8
+    x = 4
+    for name in ("tree", "balloons", "junina_table", "pumpkins", "boxes"):
+        blit_bottom(c, SEASON_ART[name](), x, 120)
+        x += 52
+    write_png(path, c, scale)
+
+
+
 def export_all(root):
     art = os.path.join(root, "assets", "art")
     write_png(os.path.join(art, "tiles", "floor_wood.png"), floor_tile())
@@ -937,6 +1162,8 @@ def export_all(root):
         write_png(os.path.join(art, "furniture", f"{name}.png"), fn())
     export_characters(os.path.join(art, "characters"))
     export_scenes(root)
+    export_title(root)
+    export_seasons(root)
 
 
 def furniture_sheet(path, scale=2):
@@ -1234,6 +1461,195 @@ def scenes_sheet(path, scale=2):
     write_png(path, c, scale)
 
 
+# --- Tela inicial: fundo da cidade (270x480, exibido em 2x) e logo ---------------------
+import ast as _ast
+import re as _re
+
+PAL.update({
+    "sky0": hx("#5fb5ee"), "sky1": hx("#79c4f2"), "sky2": hx("#95d2f6"), "sky3": hx("#b6e1fa"), "sky4": hx("#d6eefc"),
+    "cloud": hx("#ffffff"), "cloud_lo": hx("#dcecf7"),
+    "far": hx("#9dbfda"), "far_lo": hx("#86a9c6"), "far_win": hx("#c5dbeb"),
+    "mid_teal": hx("#3f6b7a"), "mid_teal_hi": hx("#5a8b9c"), "mid_beige": hx("#d9c4a0"), "mid_beige_lo": hx("#b9a27e"),
+    "mid_brick": hx("#b8624a"), "mid_brick_lo": hx("#8e4634"), "mid_blue": hx("#4b7fb5"), "mid_blue_hi": hx("#7fb0dc"),
+    "mid_gray": hx("#8c96a3"), "mid_gray_lo": hx("#6a737e"),
+    "win_lit": hx("#ffe9a3"), "win_dark": hx("#2d3a4d"), "win_glass": hx("#a9d8f0"),
+    "side": hx("#c9ccd2"), "side_lo": hx("#a8acb4"), "road": hx("#4a4f5a"), "road_lo": hx("#3a3e47"), "lane": hx("#e8d36a"),
+    "tree": hx("#4f9a4a"), "tree_hi": hx("#7dc466"), "tree_lo": hx("#2f6b33"), "trunk": hx("#7a4b2a"),
+    "car_y": hx("#f2c53d"), "car_b": hx("#3b7dd8"), "car_r": hx("#d94a3d"), "car_w": hx("#f4f4f6"), "tire": hx("#1f2633"),
+    "awning_r": hx("#d94a3d"), "awning_w": hx("#f7f2e8"), "sign_blue": hx("#2c4f8a"), "sign_green": hx("#3d7a4e"), "sign_red": hx("#c43b3b"),
+    "logo_y": hx("#f6c02e"), "logo_y_hi": hx("#ffe27a"), "logo_y_lo": hx("#c98d12"),
+    "logo_w": hx("#ffffff"), "logo_w_lo": hx("#c9d6e6"), "logo_b": hx("#2c5fb0"), "logo_b_hi": hx("#5c8fe0"),
+    "bar1": hx("#4b8fd8"), "bar2": hx("#3cb371"), "bar3": hx("#f2a851"), "bar4": hx("#e05d5d"), "arrow": hx("#3cb371"),
+})
+
+TITLE_W, TITLE_H = 270, 480
+
+
+def _glyphs():
+    src = open(os.path.join(ROOT, "tools", "gen_font.py")).read()
+    m = _re.search(r"^BASE = (\{.*?^\})", src, _re.S | _re.M)
+    return _ast.literal_eval(m.group(1))
+
+
+def draw_text(c, text, x, y, scale, col, glyphs, spacing=1, hi=None, lo=None, shadow=None):
+    """Escreve com a fonte 5x7 do jogo ampliada `scale` vezes. hi/lo pintam brilho no topo e sombra embaixo."""
+    for ch in text:
+        g = glyphs.get(ch, glyphs.get(ch.upper()))
+        if ch == " " or g is None:
+            x += (3 if ch == " " else 5) * scale + spacing * scale
+            continue
+        rows = len(g)
+        for gy, row in enumerate(g):
+            for gx, bit in enumerate(row):
+                if bit != "#":
+                    continue
+                if shadow:
+                    rect(c, x + gx * scale + scale // 2, y + gy * scale + scale // 2, scale, scale, shadow)
+                colr = col
+                if hi and gy == 0:
+                    colr = hi
+                elif lo and gy >= rows - 2:
+                    colr = lo
+                rect(c, x + gx * scale, y + gy * scale, scale, scale, colr)
+        x += 5 * scale + spacing * scale
+    return x
+
+
+def _building(c, x, y, w, h, col, col_lo, win, rows_gap=9, cols_gap=8, sign=None, glyphs=None, sign_col="sign_blue"):
+    rect(c, x, y, w, h, col)
+    rect(c, x + w - 3, y, 3, h, col_lo)
+    rect(c, x, y, w, 2, col_lo)
+    for wy in range(y + 6, y + h - 6, rows_gap):
+        for wx in range(x + 4, x + w - 6, cols_gap):
+            rect(c, wx, wy, 4, 5, win)
+            put(c, wx, wy, "win_glass")
+    if sign and glyphs:
+        sw = len(sign) * 6 * 1 + 4
+        sx = x + (w - sw) // 2
+        rect(c, sx, y + 12, sw, 11, sign_col)
+        rect(c, sx, y + 12, sw, 1, "cloud")
+        draw_text(c, sign, sx + 2, y + 14, 1, "cloud", glyphs, spacing=1)
+
+
+def _tree(c, x, base_y, size=10):
+    rect(c, x + size // 2 - 1, base_y - 6, 3, 6, "trunk")
+    for i, (dx, dy, r) in enumerate(((0, -14, size), (-4, -10, size - 2), (4, -9, size - 3), (0, -20, size - 4))):
+        rect(c, x + dx, base_y + dy - r // 2, r, r, "tree")
+        put(c, x + dx + 1, base_y + dy - r // 2 + 1, "tree_hi")
+        put(c, x + dx + 2, base_y + dy - r // 2 + 1, "tree_hi")
+    rect(c, x + 2, base_y - 8, size - 2, 2, "tree_lo")
+
+
+def _car(c, x, y, col, flip=False):
+    rect(c, x, y + 4, 22, 7, col); rect(c, x + 4, y, 13, 5, col); rect(c, x + 5, y + 1, 5, 3, "win_glass"); rect(c, x + 11, y + 1, 5, 3, "win_glass")
+    rect(c, x, y + 4, 22, 1, "cloud"); rect(c, x + 3, y + 10, 4, 3, "tire"); rect(c, x + 15, y + 10, 4, 3, "tire")
+    put(c, x if flip else x + 21, y + 6, "win_lit")
+
+
+def _cloud(c, x, y, w):
+    rect(c, x, y + 3, w, 5, "cloud"); rect(c, x + 3, y, w - 8, 4, "cloud"); rect(c, x + w // 3, y - 2, w // 3, 3, "cloud")
+    rect(c, x, y + 7, w, 1, "cloud_lo")
+
+
+def title_background():
+    g = _glyphs()
+    c = canvas(TITLE_W, TITLE_H, "sky1")
+    for i, col in enumerate(("sky0", "sky1", "sky2", "sky3", "sky4")):
+        rect(c, 0, i * 52, TITLE_W, 52, col)
+    for x, y, w in ((10, 26, 40), (120, 14, 52), (215, 40, 44), (60, 70, 34), (170, 90, 30), (230, 120, 36)):
+        _cloud(c, x, y, w)
+    # skyline distante
+    for x, w, h in ((0, 22, 90), (18, 14, 130), (34, 26, 70), (62, 18, 110), (84, 30, 60), (118, 16, 140), (138, 24, 95),
+                    (166, 20, 120), (190, 28, 75), (222, 18, 105), (244, 26, 85), (262, 12, 60)):
+        rect(c, x, 250 - h, w, h + 10, "far"); rect(c, x + w - 2, 250 - h, 2, h + 10, "far_lo")
+        for wy in range(254 - h, 250, 6):
+            for wx in range(x + 2, x + w - 3, 5):
+                rect(c, wx, wy, 2, 3, "far_win")
+    # prédios do meio (com letreiros)
+    _building(c, 4, 190, 58, 130, "mid_gray", "mid_gray_lo", "win_dark", sign="MARKETING", glyphs=g, sign_col="sign_blue")
+    _building(c, 66, 214, 44, 106, "mid_beige", "mid_beige_lo", "win_dark", sign="IDEAS", glyphs=g, sign_col="sign_blue")
+    _building(c, 114, 200, 52, 120, "mid_brick", "mid_brick_lo", "win_lit", sign="BRANDS", glyphs=g, sign_col="sign_green")
+    _building(c, 170, 224, 40, 96, "mid_beige", "mid_beige_lo", "win_dark", sign="SEO", glyphs=g, sign_col="sign_red")
+    _building(c, 214, 180, 56, 140, "mid_blue", "mid_blue_hi", "win_glass", sign="DIGITAL", glyphs=g, sign_col="sign_blue")
+    # calcada, rua
+    rect(c, 0, 400, TITLE_W, 22, "side"); rect(c, 0, 400, TITLE_W, 2, "cloud"); rect(c, 0, 420, TITLE_W, 2, "side_lo")
+    rect(c, 0, 422, TITLE_W, 58, "road"); rect(c, 0, 422, TITLE_W, 3, "road_lo")
+    for x in range(4, TITLE_W, 24):
+        rect(c, x, 450, 12, 2, "lane")
+    # agência (esquerda) e cafeteria (direita) em primeiro plano
+    rect(c, 0, 300, 96, 100, "mid_teal"); rect(c, 92, 300, 4, 100, "mid_teal_hi"); rect(c, 0, 300, 96, 3, "mid_teal_hi")
+    for fy in (312, 340, 368):
+        for fx in range(6, 88, 22):
+            rect(c, fx, fy, 16, 20, "win_glass"); rect(c, fx, fy, 16, 4, "cloud")
+            rect(c, fx + 2, fy + 14, 12, 6, "wood")                       # mesa
+            person = (("pot_hi", "car_b"), ("hill_lo", "car_r"), ("pot", "leaf"))[(fx // 22 + fy // 28) % 3]
+            rect(c, fx + 6, fy + 5, 4, 4, person[0]); rect(c, fx + 5, fy + 9, 6, 5, person[1])   # cabeça e camisa
+            rect(c, fx + 6, fy + 5, 4, 2, "wood_lo")                      # cabelo
+    rect(c, 8, 384, 80, 12, "sign_blue"); draw_text(c, "AGENCY", 14, 386, 1, "cloud", g, spacing=2)
+    rect(c, 178, 330, 92, 70, "mid_beige"); rect(c, 266, 330, 4, 70, "mid_beige_lo")
+    for i in range(0, 92, 8):
+        rect(c, 178 + i, 344, 8, 10, "awning_r" if (i // 8) % 2 == 0 else "awning_w")
+    rect(c, 178, 354, 92, 2, "mid_beige_lo")
+    rect(c, 186, 332, 76, 10, "wood_lo"); draw_text(c, "COFFEE", 200, 334, 1, "cloud", g, spacing=2)
+    rect(c, 186, 360, 30, 34, "win_lit"); rect(c, 224, 360, 30, 34, "win_lit"); rect(c, 186, 360, 30, 2, "cloud"); rect(c, 224, 360, 30, 2, "cloud")
+    rect(c, 236, 372, 8, 22, "wood"); put(c, 242, 384, "metal_hi")
+    rect(c, 190, 370, 20, 6, "wood"); rect(c, 192, 366, 6, 4, "mug"); rect(c, 200, 366, 6, 4, "mug")
+    # árvores, postes, ponto de ônibus
+    for x in (104, 150, 258):
+        _tree(c, x, 400, 12)
+    for x in (130, 236):
+        rect(c, x, 372, 2, 28, "metal_lo"); rect(c, x - 2, 370, 6, 3, "metal_hi"); rect(c, x - 1, 368, 4, 2, "win_lit")
+    rect(c, 150, 380, 34, 3, "metal"); rect(c, 150, 383, 2, 17, "metal_lo"); rect(c, 182, 383, 2, 17, "metal_lo"); rect(c, 154, 384, 26, 8, "glass")
+    # carros
+    _car(c, 30, 432, "car_y"); _car(c, 120, 452, "car_b", True); _car(c, 210, 434, "car_r"); _car(c, 236, 460, "car_w", True)
+    return c
+
+
+def title_logo():
+    """'A GROWTH STORY' em blocos: A e STORY em branco com sombra azul, GROWTH em amarelo com contorno."""
+    g = _glyphs()
+    c = canvas(240, 118)
+    # 'A' pequeno
+    draw_text(c, "A", 104, 4, 4, "logo_w", g, hi="logo_w", lo="logo_w_lo", shadow="logo_b")
+    # GROWTH
+    x = 8
+    for ch in "GROWTH":
+        # contorno grosso: escreve a letra em azul deslocada nas 8 direcoes e depois em amarelo
+        for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2), (-2, -2), (2, 2), (-2, 2), (2, -2)):
+            draw_text(c, ch, x + dx, 40 + dy, 6, "logo_b", g)
+        draw_text(c, ch, x, 43, 6, "logo_y_lo", g)
+        draw_text(c, ch, x, 40, 6, "logo_y", g, hi="logo_y_hi", lo="logo_y_lo")
+        x += 6 * 6 + 3
+    # grafico de barras entre o 'O' e o 'W'? — vai a direita, sobre o H
+    for i, (bx, bh, col) in enumerate(((186, 10, "bar1"), (196, 16, "bar2"), (206, 22, "bar3"), (216, 30, "bar4"))):
+        rect(c, bx, 36 - bh, 8, bh, col); rect(c, bx, 36 - bh, 8, 2, "cloud")
+    for i in range(6):
+        put(c, 222 + i, 4 + (5 - i), "arrow"); put(c, 222 + i, 5 + (5 - i), "arrow")
+    rect(c, 226, 2, 2, 6, "arrow"); rect(c, 222, 2, 6, 2, "arrow")
+    # STORY
+    x = 44
+    for ch in "STORY":
+        for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2), (-2, -2), (2, 2), (-2, 2), (2, -2)):
+            draw_text(c, ch, x + dx, 88 + dy, 4, "logo_b", g)
+        draw_text(c, ch, x, 90, 4, "logo_w_lo", g)
+        draw_text(c, ch, x, 88, 4, "logo_w", g, lo="logo_w_lo")
+        x += 4 * 6 + 4
+    return c
+
+
+def export_title(root):
+    out = os.path.join(root, "assets", "art", "title")
+    write_png(os.path.join(out, "background.png"), title_background())
+    write_png(os.path.join(out, "logo.png"), title_logo())
+
+
+def title_sheet(path, scale=2):
+    c = canvas(TITLE_W, TITLE_H)
+    blit(c, title_background(), 0, 0)
+    blit(c, title_logo(), 15, 40)
+    write_png(path, c, scale)
+
+
 # --- Prova de estilo ---------------------------------------------------------------
 def _register_cast():
     cast = {
@@ -1342,5 +1758,8 @@ if __name__ == "__main__":
     if "--scenes" in sys.argv:
         out = sys.argv[sys.argv.index("--scenes") + 1]
         scenes_sheet(out)
+    if "--title" in sys.argv:
+        out = sys.argv[sys.argv.index("--title") + 1]
+        title_sheet(out)
     if "--export" in sys.argv:
         export_all(ROOT)

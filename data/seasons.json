@@ -1,0 +1,14 @@
+{
+  "seasons": [
+    {"id": "carnaval", "month": 1, "name": "Carnaval", "icon": "🎭", "garland": "garland_streamers", "prop": "balloons",
+     "log": "🎭 Fevereiro chegou: serpentinas e balões no escritório. Carnaval é época de campanha relâmpago."},
+    {"id": "junina", "month": 5, "name": "Festa Junina", "icon": "🌽", "garland": "garland_flags", "prop": "junina_table",
+     "log": "🌽 Junho chegou: bandeirinhas na parede e milho na copa. Arraiá da agência!"},
+    {"id": "halloween", "month": 9, "name": "Halloween", "icon": "🎃", "garland": "garland_bats", "prop": "pumpkins",
+     "log": "🎃 Outubro chegou: abóboras e morcegos de papel decoram o escritório."},
+    {"id": "black_friday", "month": 10, "name": "Black Friday", "icon": "🏷️", "garland": "garland_sale", "prop": "boxes",
+     "log": "🏷️ Novembro chegou: etiquetas de Black Friday na parede e caixas de campanha empilhadas."},
+    {"id": "natal", "month": 11, "name": "Natal", "icon": "🎄", "garland": "garland_lights", "prop": "tree",
+     "log": "🎄 Dezembro chegou: pisca-pisca na parede e árvore de Natal com presentes."}
+  ]
+}

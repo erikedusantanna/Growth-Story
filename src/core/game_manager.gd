@@ -17,6 +17,7 @@ var agency_events := AgencyEventSystem.new()
 var era := EraSystem.new()
 var departments := DepartmentSystem.new()
 var competitors := CompetitorSystem.new()
+var seasons := SeasonSystem.new()
 var save := SaveSystem.new()
 var time := TimeSystem.new()
 
@@ -29,7 +30,7 @@ var ui_blocking := false
 func _ready() -> void:
 	content = ContentDB.new()
 	content.load_all()
-	for system in [services, employees, clients, projects, finance, reputation, events, office, objectives, hr, agency_events, era, departments, competitors, time]:
+	for system in [services, employees, clients, projects, finance, reputation, events, office, objectives, hr, agency_events, era, departments, competitors, seasons, time]:
 		system.setup(self)
 	EventBus.state_changed.connect(func(): if state != null: objectives.check())
 
@@ -115,6 +116,7 @@ func on_day() -> void:
 func on_month() -> void:
 	finance.on_month()
 	employees.on_month()
+	seasons.on_month()
 	save_game()
 	EventBus.month_passed.emit(state.month_index())
 	EventBus.state_changed.emit()
