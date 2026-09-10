@@ -132,32 +132,102 @@ def gen_sfx():
               note(G5, 0.025, "square", 0.22, attack=0.002, release=0.015))
 
 
-def gen_music():
-    # trilha leve e repetível: arpejo de baixo (triângulo) + melodia esparsa (quadrada suave)
-    # em Dó maior, 96 bpm, 8 compassos em loop.
-    beat = 60.0 / 96.0
-    bass_pattern = [C4, E4, G4, E4] * 8
-    bass = seq(*[note(f, beat * 0.9, "triangle", 0.22, attack=0.01, release=beat * 0.2) for f in bass_pattern])
+def noise(dur: float, vol: float = 0.2, decay: float = 0.03, seed: int = 7) -> list:
+    """Ruído branco curto com decaimento exponencial (chimbal/caixa 8-bit)."""
+    import random
+    rng = random.Random(seed)
+    n = max(1, int(RATE * dur))
+    return [(rng.random() * 2.0 - 1.0) * vol * math.exp(-i / RATE / decay) for i in range(n)]
 
-    lead_notes = [
-        None, E5, G5, None, C5, None, D5, E5,
-        None, G5, None, E5, D5, None, C5, None,
-        None, E5, G5, A5, G5, None, E5, None,
-        None, D5, None, C5, D5, E5, None, None,
+
+def kick(dur: float = 0.14, vol: float = 0.5) -> list:
+    """Bumbo: senoide descendo de 150 para 45 Hz."""
+    return note(150.0, dur, "sine", vol, attack=0.002, release=dur * 0.6, glide_to=45.0)
+
+
+C3, D3, E3, F3, G3, A3, B3 = 130.8, 146.8, 164.8, 174.6, 196.0, 220.0, 246.9
+C2, F2, G2, A2 = 65.4, 87.3, 98.0, 110.0
+
+
+def gen_music():
+    """Trilha de fundo em loop (~77 s): Dó maior, 100 bpm, 32 compassos em três seções
+    (A: I-vi-IV-V, B: vi-IV-I-V com melodia mais alta, A': variação). Acordes em triângulo,
+    baixo em quadrada, melodia em quadrada suave, bateria de ruído/senoide."""
+    bpm = 100.0
+    beat = 60.0 / bpm
+    bar = beat * 4
+    eighth = beat / 2
+
+    chords = {  # baixo, tríade (triângulos), oitava do baixo
+        "C": (C2, (C4, E4, G4)), "Am": (A2, (A3, C4, E4)), "F": (F2, (F3, A3, C4)), "G": (G2, (G3, B3, D4)),
+        "Dm": (D3, (D4, F4, A4)), "Em": (E3, (E4, G4, B4)),
+    }
+    section_a = ["C", "Am", "F", "G"] * 2
+    section_b = ["Am", "F", "C", "G", "Am", "F", "Dm", "G"]
+    progression = section_a + section_b + section_a
+
+    # --- acordes sustentados (pad) ---
+    pad = []
+    for ch in progression:
+        _, tri = chords[ch]
+        block = None
+        for f in tri:
+            n = note(f, bar * 0.98, "triangle", 0.085, attack=0.05, release=bar * 0.25)
+            block = n if block is None else [a + b for a, b in zip(block, n)]
+        pad.extend(block)
+        pad.extend(silence(bar * 0.02))
+
+    # --- baixo: raiz, raiz, quinta, raiz (semínimas) ---
+    bass = []
+    for ch in progression:
+        root, _ = chords[ch]
+        fifth = root * 1.5
+        for f in (root, root, fifth, root):
+            bass.extend(note(f, beat * 0.8, "square", 0.14, attack=0.005, release=beat * 0.2))
+            bass.extend(silence(beat * 0.2))
+
+    # --- melodia por seção (colcheias; None = pausa) ---
+    mel_a = [
+        E5, None, G5, None, A5, G5, E5, None,   C5, None, E5, None, D5, None, None, None,
+        F5, None, A5, None, G5, F5, E5, None,   D5, None, G5, None, E5, None, None, None,
+        E5, G5, A5, None, C6, None, A5, G5,     E5, None, D5, C5, D5, None, None, None,
+        F5, None, E5, D5, C5, None, D5, None,   E5, None, D5, None, C5, None, None, None,
+    ]
+    mel_b = [
+        A5, None, C6, None, B5, A5, G5, None,   F5, None, A5, None, G5, None, None, None,
+        E5, None, G5, None, E5, None, D5, None, G5, None, F5, E5, D5, None, None, None,
+        A5, None, C6, None, B5, A5, G5, None,   F5, None, A5, None, C6, None, None, None,
+        D5, None, F5, A5, G5, None, F5, None,   E5, None, D5, None, C5, None, None, None,
+    ]
+    mel_a2 = [
+        E5, None, G5, None, A5, G5, E5, None,   C5, None, E5, None, D5, None, E5, D5,
+        F5, None, A5, None, G5, F5, E5, None,   D5, None, G5, None, E5, None, None, None,
+        E5, G5, A5, None, C6, None, A5, G5,     E5, None, D5, C5, D5, None, E5, None,
+        F5, None, E5, D5, C5, None, D5, None,   C5, None, None, None, None, None, None, None,
     ]
     lead = []
-    for f in lead_notes:
+    for f in mel_a + mel_b + mel_a2:
         if f is None:
-            lead.extend(silence(beat / 2))
+            lead.extend(silence(eighth))
         else:
-            lead.extend(note(f, beat / 2 * 0.85, "square", 0.16, attack=0.015, release=beat / 2 * 0.3))
-            lead.extend(silence(beat / 2 * 0.15))
-    # o lead tem metade da duração por evento (colcheias); repete 1x para casar com o baixo (2 compassos por linha)
-    lead = lead * 1
-    total = max(len(bass), len(lead))
-    bass = bass + [0.0] * (total - len(bass))
-    lead = lead + [0.0] * (total - len(lead))
-    write_wav(os.path.join(OUT_MUSIC, "theme_loop.wav"), mix(bass, lead))
+            lead.extend(note(f, eighth * 0.82, "square", 0.11, attack=0.012, release=eighth * 0.3))
+            lead.extend(silence(eighth * 0.18))
+
+    # --- bateria: bumbo nos tempos 1 e 3, caixa no 2 e 4, chimbal nas colcheias ---
+    drums = []
+    for i in range(len(progression)):
+        for b in range(4):
+            hit = kick(0.14, 0.42) if b in (0, 2) else noise(0.09, 0.28, 0.035, seed=i * 4 + b)
+            hat = noise(0.03, 0.09, 0.012, seed=100 + i * 8 + b)
+            first = [a + c for a, c in zip(hit + [0.0] * int(RATE * eighth), (hat + [0.0] * int(RATE * eighth))[: len(hit) + int(RATE * eighth)])]
+            first = first[: int(RATE * eighth)]
+            second = (hat + [0.0] * int(RATE * eighth))[: int(RATE * eighth)]
+            drums.extend(first)
+            drums.extend(second)
+
+    total = len(pad)
+    tracks = [t + [0.0] * (total - len(t)) if len(t) < total else t[:total] for t in (pad, bass, lead, drums)]
+    write_wav(os.path.join(OUT_MUSIC, "theme_loop.wav"), mix(*tracks))
 
 
 if __name__ == "__main__":

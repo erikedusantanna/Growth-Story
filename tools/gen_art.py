@@ -937,6 +937,7 @@ def export_all(root):
         write_png(os.path.join(art, "furniture", f"{name}.png"), fn())
     export_characters(os.path.join(art, "characters"))
     export_scenes(root)
+    export_title(root)
 
 
 def furniture_sheet(path, scale=2):
@@ -1234,6 +1235,195 @@ def scenes_sheet(path, scale=2):
     write_png(path, c, scale)
 
 
+# --- Tela inicial: fundo da cidade (270x480, exibido em 2x) e logo ---------------------
+import ast as _ast
+import re as _re
+
+PAL.update({
+    "sky0": hx("#5fb5ee"), "sky1": hx("#79c4f2"), "sky2": hx("#95d2f6"), "sky3": hx("#b6e1fa"), "sky4": hx("#d6eefc"),
+    "cloud": hx("#ffffff"), "cloud_lo": hx("#dcecf7"),
+    "far": hx("#9dbfda"), "far_lo": hx("#86a9c6"), "far_win": hx("#c5dbeb"),
+    "mid_teal": hx("#3f6b7a"), "mid_teal_hi": hx("#5a8b9c"), "mid_beige": hx("#d9c4a0"), "mid_beige_lo": hx("#b9a27e"),
+    "mid_brick": hx("#b8624a"), "mid_brick_lo": hx("#8e4634"), "mid_blue": hx("#4b7fb5"), "mid_blue_hi": hx("#7fb0dc"),
+    "mid_gray": hx("#8c96a3"), "mid_gray_lo": hx("#6a737e"),
+    "win_lit": hx("#ffe9a3"), "win_dark": hx("#2d3a4d"), "win_glass": hx("#a9d8f0"),
+    "side": hx("#c9ccd2"), "side_lo": hx("#a8acb4"), "road": hx("#4a4f5a"), "road_lo": hx("#3a3e47"), "lane": hx("#e8d36a"),
+    "tree": hx("#4f9a4a"), "tree_hi": hx("#7dc466"), "tree_lo": hx("#2f6b33"), "trunk": hx("#7a4b2a"),
+    "car_y": hx("#f2c53d"), "car_b": hx("#3b7dd8"), "car_r": hx("#d94a3d"), "car_w": hx("#f4f4f6"), "tire": hx("#1f2633"),
+    "awning_r": hx("#d94a3d"), "awning_w": hx("#f7f2e8"), "sign_blue": hx("#2c4f8a"), "sign_green": hx("#3d7a4e"), "sign_red": hx("#c43b3b"),
+    "logo_y": hx("#f6c02e"), "logo_y_hi": hx("#ffe27a"), "logo_y_lo": hx("#c98d12"),
+    "logo_w": hx("#ffffff"), "logo_w_lo": hx("#c9d6e6"), "logo_b": hx("#2c5fb0"), "logo_b_hi": hx("#5c8fe0"),
+    "bar1": hx("#4b8fd8"), "bar2": hx("#3cb371"), "bar3": hx("#f2a851"), "bar4": hx("#e05d5d"), "arrow": hx("#3cb371"),
+})
+
+TITLE_W, TITLE_H = 270, 480
+
+
+def _glyphs():
+    src = open(os.path.join(ROOT, "tools", "gen_font.py")).read()
+    m = _re.search(r"^BASE = (\{.*?^\})", src, _re.S | _re.M)
+    return _ast.literal_eval(m.group(1))
+
+
+def draw_text(c, text, x, y, scale, col, glyphs, spacing=1, hi=None, lo=None, shadow=None):
+    """Escreve com a fonte 5x7 do jogo ampliada `scale` vezes. hi/lo pintam brilho no topo e sombra embaixo."""
+    for ch in text:
+        g = glyphs.get(ch, glyphs.get(ch.upper()))
+        if ch == " " or g is None:
+            x += (3 if ch == " " else 5) * scale + spacing * scale
+            continue
+        rows = len(g)
+        for gy, row in enumerate(g):
+            for gx, bit in enumerate(row):
+                if bit != "#":
+                    continue
+                if shadow:
+                    rect(c, x + gx * scale + scale // 2, y + gy * scale + scale // 2, scale, scale, shadow)
+                colr = col
+                if hi and gy == 0:
+                    colr = hi
+                elif lo and gy >= rows - 2:
+                    colr = lo
+                rect(c, x + gx * scale, y + gy * scale, scale, scale, colr)
+        x += 5 * scale + spacing * scale
+    return x
+
+
+def _building(c, x, y, w, h, col, col_lo, win, rows_gap=9, cols_gap=8, sign=None, glyphs=None, sign_col="sign_blue"):
+    rect(c, x, y, w, h, col)
+    rect(c, x + w - 3, y, 3, h, col_lo)
+    rect(c, x, y, w, 2, col_lo)
+    for wy in range(y + 6, y + h - 6, rows_gap):
+        for wx in range(x + 4, x + w - 6, cols_gap):
+            rect(c, wx, wy, 4, 5, win)
+            put(c, wx, wy, "win_glass")
+    if sign and glyphs:
+        sw = len(sign) * 6 * 1 + 4
+        sx = x + (w - sw) // 2
+        rect(c, sx, y + 12, sw, 11, sign_col)
+        rect(c, sx, y + 12, sw, 1, "cloud")
+        draw_text(c, sign, sx + 2, y + 14, 1, "cloud", glyphs, spacing=1)
+
+
+def _tree(c, x, base_y, size=10):
+    rect(c, x + size // 2 - 1, base_y - 6, 3, 6, "trunk")
+    for i, (dx, dy, r) in enumerate(((0, -14, size), (-4, -10, size - 2), (4, -9, size - 3), (0, -20, size - 4))):
+        rect(c, x + dx, base_y + dy - r // 2, r, r, "tree")
+        put(c, x + dx + 1, base_y + dy - r // 2 + 1, "tree_hi")
+        put(c, x + dx + 2, base_y + dy - r // 2 + 1, "tree_hi")
+    rect(c, x + 2, base_y - 8, size - 2, 2, "tree_lo")
+
+
+def _car(c, x, y, col, flip=False):
+    rect(c, x, y + 4, 22, 7, col); rect(c, x + 4, y, 13, 5, col); rect(c, x + 5, y + 1, 5, 3, "win_glass"); rect(c, x + 11, y + 1, 5, 3, "win_glass")
+    rect(c, x, y + 4, 22, 1, "cloud"); rect(c, x + 3, y + 10, 4, 3, "tire"); rect(c, x + 15, y + 10, 4, 3, "tire")
+    put(c, x if flip else x + 21, y + 6, "win_lit")
+
+
+def _cloud(c, x, y, w):
+    rect(c, x, y + 3, w, 5, "cloud"); rect(c, x + 3, y, w - 8, 4, "cloud"); rect(c, x + w // 3, y - 2, w // 3, 3, "cloud")
+    rect(c, x, y + 7, w, 1, "cloud_lo")
+
+
+def title_background():
+    g = _glyphs()
+    c = canvas(TITLE_W, TITLE_H, "sky1")
+    for i, col in enumerate(("sky0", "sky1", "sky2", "sky3", "sky4")):
+        rect(c, 0, i * 52, TITLE_W, 52, col)
+    for x, y, w in ((10, 26, 40), (120, 14, 52), (215, 40, 44), (60, 70, 34), (170, 90, 30), (230, 120, 36)):
+        _cloud(c, x, y, w)
+    # skyline distante
+    for x, w, h in ((0, 22, 90), (18, 14, 130), (34, 26, 70), (62, 18, 110), (84, 30, 60), (118, 16, 140), (138, 24, 95),
+                    (166, 20, 120), (190, 28, 75), (222, 18, 105), (244, 26, 85), (262, 12, 60)):
+        rect(c, x, 250 - h, w, h + 10, "far"); rect(c, x + w - 2, 250 - h, 2, h + 10, "far_lo")
+        for wy in range(254 - h, 250, 6):
+            for wx in range(x + 2, x + w - 3, 5):
+                rect(c, wx, wy, 2, 3, "far_win")
+    # prédios do meio (com letreiros)
+    _building(c, 4, 190, 58, 130, "mid_gray", "mid_gray_lo", "win_dark", sign="MARKETING", glyphs=g, sign_col="sign_blue")
+    _building(c, 66, 214, 44, 106, "mid_beige", "mid_beige_lo", "win_dark", sign="IDEAS", glyphs=g, sign_col="sign_blue")
+    _building(c, 114, 200, 52, 120, "mid_brick", "mid_brick_lo", "win_lit", sign="BRANDS", glyphs=g, sign_col="sign_green")
+    _building(c, 170, 224, 40, 96, "mid_beige", "mid_beige_lo", "win_dark", sign="SEO", glyphs=g, sign_col="sign_red")
+    _building(c, 214, 180, 56, 140, "mid_blue", "mid_blue_hi", "win_glass", sign="DIGITAL", glyphs=g, sign_col="sign_blue")
+    # calcada, rua
+    rect(c, 0, 400, TITLE_W, 22, "side"); rect(c, 0, 400, TITLE_W, 2, "cloud"); rect(c, 0, 420, TITLE_W, 2, "side_lo")
+    rect(c, 0, 422, TITLE_W, 58, "road"); rect(c, 0, 422, TITLE_W, 3, "road_lo")
+    for x in range(4, TITLE_W, 24):
+        rect(c, x, 450, 12, 2, "lane")
+    # agência (esquerda) e cafeteria (direita) em primeiro plano
+    rect(c, 0, 300, 96, 100, "mid_teal"); rect(c, 92, 300, 4, 100, "mid_teal_hi"); rect(c, 0, 300, 96, 3, "mid_teal_hi")
+    for fy in (312, 340, 368):
+        for fx in range(6, 88, 22):
+            rect(c, fx, fy, 16, 20, "win_glass"); rect(c, fx, fy, 16, 4, "cloud")
+            rect(c, fx + 2, fy + 14, 12, 6, "wood")                       # mesa
+            person = (("pot_hi", "car_b"), ("hill_lo", "car_r"), ("pot", "leaf"))[(fx // 22 + fy // 28) % 3]
+            rect(c, fx + 6, fy + 5, 4, 4, person[0]); rect(c, fx + 5, fy + 9, 6, 5, person[1])   # cabeça e camisa
+            rect(c, fx + 6, fy + 5, 4, 2, "wood_lo")                      # cabelo
+    rect(c, 8, 384, 80, 12, "sign_blue"); draw_text(c, "AGENCY", 14, 386, 1, "cloud", g, spacing=2)
+    rect(c, 178, 330, 92, 70, "mid_beige"); rect(c, 266, 330, 4, 70, "mid_beige_lo")
+    for i in range(0, 92, 8):
+        rect(c, 178 + i, 344, 8, 10, "awning_r" if (i // 8) % 2 == 0 else "awning_w")
+    rect(c, 178, 354, 92, 2, "mid_beige_lo")
+    rect(c, 186, 332, 76, 10, "wood_lo"); draw_text(c, "COFFEE", 200, 334, 1, "cloud", g, spacing=2)
+    rect(c, 186, 360, 30, 34, "win_lit"); rect(c, 224, 360, 30, 34, "win_lit"); rect(c, 186, 360, 30, 2, "cloud"); rect(c, 224, 360, 30, 2, "cloud")
+    rect(c, 236, 372, 8, 22, "wood"); put(c, 242, 384, "metal_hi")
+    rect(c, 190, 370, 20, 6, "wood"); rect(c, 192, 366, 6, 4, "mug"); rect(c, 200, 366, 6, 4, "mug")
+    # árvores, postes, ponto de ônibus
+    for x in (104, 150, 258):
+        _tree(c, x, 400, 12)
+    for x in (130, 236):
+        rect(c, x, 372, 2, 28, "metal_lo"); rect(c, x - 2, 370, 6, 3, "metal_hi"); rect(c, x - 1, 368, 4, 2, "win_lit")
+    rect(c, 150, 380, 34, 3, "metal"); rect(c, 150, 383, 2, 17, "metal_lo"); rect(c, 182, 383, 2, 17, "metal_lo"); rect(c, 154, 384, 26, 8, "glass")
+    # carros
+    _car(c, 30, 432, "car_y"); _car(c, 120, 452, "car_b", True); _car(c, 210, 434, "car_r"); _car(c, 236, 460, "car_w", True)
+    return c
+
+
+def title_logo():
+    """'A GROWTH STORY' em blocos: A e STORY em branco com sombra azul, GROWTH em amarelo com contorno."""
+    g = _glyphs()
+    c = canvas(240, 118)
+    # 'A' pequeno
+    draw_text(c, "A", 104, 4, 4, "logo_w", g, hi="logo_w", lo="logo_w_lo", shadow="logo_b")
+    # GROWTH
+    x = 8
+    for ch in "GROWTH":
+        # contorno grosso: escreve a letra em azul deslocada nas 8 direcoes e depois em amarelo
+        for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2), (-2, -2), (2, 2), (-2, 2), (2, -2)):
+            draw_text(c, ch, x + dx, 40 + dy, 6, "logo_b", g)
+        draw_text(c, ch, x, 43, 6, "logo_y_lo", g)
+        draw_text(c, ch, x, 40, 6, "logo_y", g, hi="logo_y_hi", lo="logo_y_lo")
+        x += 6 * 6 + 3
+    # grafico de barras entre o 'O' e o 'W'? — vai a direita, sobre o H
+    for i, (bx, bh, col) in enumerate(((186, 10, "bar1"), (196, 16, "bar2"), (206, 22, "bar3"), (216, 30, "bar4"))):
+        rect(c, bx, 36 - bh, 8, bh, col); rect(c, bx, 36 - bh, 8, 2, "cloud")
+    for i in range(6):
+        put(c, 222 + i, 4 + (5 - i), "arrow"); put(c, 222 + i, 5 + (5 - i), "arrow")
+    rect(c, 226, 2, 2, 6, "arrow"); rect(c, 222, 2, 6, 2, "arrow")
+    # STORY
+    x = 44
+    for ch in "STORY":
+        for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2), (-2, -2), (2, 2), (-2, 2), (2, -2)):
+            draw_text(c, ch, x + dx, 88 + dy, 4, "logo_b", g)
+        draw_text(c, ch, x, 90, 4, "logo_w_lo", g)
+        draw_text(c, ch, x, 88, 4, "logo_w", g, lo="logo_w_lo")
+        x += 4 * 6 + 4
+    return c
+
+
+def export_title(root):
+    out = os.path.join(root, "assets", "art", "title")
+    write_png(os.path.join(out, "background.png"), title_background())
+    write_png(os.path.join(out, "logo.png"), title_logo())
+
+
+def title_sheet(path, scale=2):
+    c = canvas(TITLE_W, TITLE_H)
+    blit(c, title_background(), 0, 0)
+    blit(c, title_logo(), 15, 40)
+    write_png(path, c, scale)
+
+
 # --- Prova de estilo ---------------------------------------------------------------
 def _register_cast():
     cast = {
@@ -1342,5 +1532,8 @@ if __name__ == "__main__":
     if "--scenes" in sys.argv:
         out = sys.argv[sys.argv.index("--scenes") + 1]
         scenes_sheet(out)
+    if "--title" in sys.argv:
+        out = sys.argv[sys.argv.index("--title") + 1]
+        title_sheet(out)
     if "--export" in sys.argv:
         export_all(ROOT)

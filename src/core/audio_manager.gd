@@ -10,7 +10,7 @@ const POOL_SIZE := 6
 
 var music_enabled := true
 var sfx_enabled := true
-var music_volume_db := -14.0
+var music_volume_db := -7.0
 var sfx_volume_db := -4.0
 
 var _pool: Array = []
@@ -40,6 +40,10 @@ func _ready() -> void:
 	if music != null:
 		if music is AudioStreamWAV:
 			music.loop_mode = AudioStreamWAV.LOOP_FORWARD
+			# loop_end 0 faria o stream voltar ao início a cada quadro (silêncio); o import já
+			# marca o fim, mas garantimos aqui: 16 bits mono = 2 bytes por amostra
+			if music.loop_end <= 0:
+				music.loop_end = music.data.size() / 2
 		_music_player.stream = music
 		_music_player.volume_db = music_volume_db
 	EventBus.employee_hired.connect(func(_e): play_sfx("hire"))
@@ -50,6 +54,11 @@ func _ready() -> void:
 	EventBus.reputation_changed.connect(_on_reputation_changed)
 	EventBus.project_completed.connect(_on_project_completed)
 	EventBus.game_started.connect(func(): _last_rep_tier = -1; play_music())
+	call_deferred("play_music")   # toca desde a tela inicial
+
+
+func toggle_music() -> void:
+	set_music_enabled(not music_enabled)
 
 
 ## Libera as streams em uso antes do motor encerrar (evita aviso de recurso vazado ao sair).

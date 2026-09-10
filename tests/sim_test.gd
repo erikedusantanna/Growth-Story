@@ -299,6 +299,17 @@ func _test_audio(game) -> void:
 	check(Audio != null, "singleton Audio existe")
 	check(Audio.sfx_enabled, "efeitos começam ligados")
 	check(Audio.music_enabled, "música começa ligada")
+	var stream = Audio._music_player.stream
+	check(stream != null and stream is AudioStreamWAV, "trilha carregada como WAV")
+	if stream != null and stream is AudioStreamWAV:
+		var seconds: float = float(stream.data.size()) / 2.0 / float(stream.mix_rate)
+		check(stream.loop_mode == AudioStreamWAV.LOOP_FORWARD and stream.loop_end > 0, "trilha em loop com fim marcado (loop_end %d)" % stream.loop_end)
+		check(seconds >= 50.0, "trilha tem pelo menos 50 s (%.1f s)" % seconds)
+	check(Audio.music_volume_db >= -9.0, "música não fica 20 dB abaixo dos efeitos (%.0f dB)" % Audio.music_volume_db)
+	Audio.toggle_music()
+	check(not Audio.music_enabled, "botão de mudo desliga a música")
+	Audio.toggle_music()
+	check(Audio.music_enabled, "botão de mudo religa a música")
 	Audio.set_sfx_enabled(false)
 	check(not Audio.sfx_enabled, "desligar efeitos")
 	Audio.set_music_enabled(false)

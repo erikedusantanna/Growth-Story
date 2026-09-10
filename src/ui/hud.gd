@@ -8,6 +8,7 @@ var date_label: Label
 var phase_label: Label
 var speed_buttons: Array = []
 var pause_button: Button
+var music_button: Button
 
 
 func _ready() -> void:
@@ -51,6 +52,13 @@ func _ready() -> void:
 		b.custom_minimum_size.x = 48
 		bottom.add_child(b)
 		speed_buttons.append(b)
+	music_button = UIKit.button("🔊", func():
+		Audio.toggle_music()
+		refresh(), false, 36)
+	music_button.size_flags_horizontal = 0
+	music_button.custom_minimum_size.x = 44
+	music_button.tooltip_text = "Música ligada/desligada"
+	bottom.add_child(music_button)
 
 	EventBus.state_changed.connect(refresh)
 	EventBus.day_passed.connect(func(_d): refresh())
@@ -68,6 +76,7 @@ func refresh() -> void:
 	date_label.text = st.date_text()
 	phase_label.text = "%s · %s" % [st.agency_name, Game.reputation.phase_name()]
 	pause_button.text = ">" if st.paused else "II"
+	music_button.text = "🔊" if Audio.music_enabled else "🔇"
 	for i in speed_buttons.size():
 		var b: Button = speed_buttons[i]
 		var active: bool = st.speed == i + 1 and not st.paused

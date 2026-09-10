@@ -95,9 +95,9 @@ Depois: *Projeto → Exportar → Android → Exportar projeto*, ou
 | Eventos da agência | `agency_event_system.gd`, `data/agency_events.json` | Abrem com reputação 40: custam dinheiro e/ou pessoas por alguns dias e rendem reputação, prospects, candidatos, moral ou patrocínio |
 | Cenas de evento | `src/office/event_stage.gd`, `data/scenes.json`, `assets/art/scenes/` | A "câmera" sai do escritório e mostra o time no palco da premiação, no auditório da palestra, no estande da feira, no meetup, no estúdio do podcast, na sala de reunião com o investidor ou na coletiva de imprensa — cenário por evento (`scene` em `events.json`/`agency_events.json`), montado na hora com os próprios funcionários (a primeira pessoa segura o troféu). O popup do evento passa a abrir abaixo da cena |
 | Save/Load | `save_system.gd` | JSON em `user://savegame.json`, autosave mensal, botão na aba Empresa |
-| UI | `src/ui/` | HUD, escritório, feed de humor, 6 abas (Equipe, Clientes, Projetos, Empresa, RH, Agência), modais |
+| UI | `src/ui/` | Tela inicial com a cidade da agência (fundo e logo gerados em `tools/gen_art.py`), HUD, escritório, feed de humor, 6 abas (Equipe, Clientes, Projetos, Empresa, RH, Agência), modais |
 | Fonte pixel art | `tools/gen_font.py`, `assets/fonts/pixel.fnt` | Bitmap font 5×7 com acentuação (á é í ó ú ã õ â ê ô ç), gerada por código; usada em títulos e números do HUD (`UIKit.pixel_font()`) |
-| Som | `src/core/audio_manager.gd`, `tools/gen_audio.py` | Música e 9 efeitos sonoros 8-bit sintetizados por código (sem samples externos); autoload `Audio` reage aos sinais do `EventBus` (contratação, pagamento, projeto concluído, evento, cliente feliz, crise, promoção); liga/desliga na aba Empresa |
+| Som | `src/core/audio_manager.gd`, `tools/gen_audio.py` | Trilha de ~58 s em loop (acordes, baixo, melodia e bateria 8-bit) que toca desde a tela inicial, e 9 efeitos sonoros — tudo sintetizado por código; autoload `Audio` reage aos sinais do `EventBus`; botão de mudo 🔊/🔇 na tela inicial e no HUD (e toggles na aba Empresa) |
 
 Detalhes de fórmulas e fluxo em `docs/ARQUITETURA.md`.
 
