@@ -93,6 +93,11 @@ de reputação. Um jogador real tende a crescer mais devagar que o bot; a faixa 
   `morale_daily` (incluindo pets), `stress_rate` e `productivity`; `attr_bonus` é aplicado a todos na compra e a cada
   contratação. No escritório: `sprite` ocupa os `decor_slots`, `wall_sprite` ocupa os `wall_slots` da parede e
   `visual` troca o sprite de um tipo (`chair → chair_ergo`, `desk → desk_wide`, `coffee → coffee_premium`).
+- **Setorização do escritório** (`data/offices.json`): as mesas ficam agrupadas em ilhas em vez de espalhadas em
+  grade. Cada layout traz `zones` (tapetes coloridos desenhados sob a mobília, `rect` em tiles + `tint` de
+  `OfficeView.ZONE_TINTS`) e `dividers` (`x`, `y0`, `y1` — divisórias verticais montadas com o mesmo par de sprites
+  do anexo do RH). Entre as ilhas fica um corredor de piso de madeira, e os níveis 3 e 4 têm ala de convivência
+  com mesa de reunião (`meeting_table`), sofá, café e bebedouro.
 - **Escritório interativo** (`OfficeView`): câmera com zoom entre "cabe inteiro" e 4×; arrastar com um dedo, pinça
   com dois (eventos de toque; roda do mouse no desktop); toque curto no avatar emite `worker_tapped`. Cada `Worker`
   desenha a barra de moral sobre a cabeça; `Pet` passeia pelo piso do escritório principal.
@@ -177,7 +182,8 @@ para não perder precisão. Versão do save em `version` (1).
 - **Serviço**: `data/services.json` + atualizar `match_table`/`problem_solutions`; o papel
   correspondente em `data/names.json → roles` gera candidatos especialistas.
 - **Evento**: `data/events.json`; novos tipos de efeito em `EventSystem._apply_effect`.
-- **Escritório**: `data/offices.json` (posições em tiles de 16 px; linha 0 é a parede).
+- **Escritório**: `data/offices.json` (posições em tiles de 16 px; linha 0 é a parede). Mesas adjacentes formam
+  uma ilha (cada mesa ocupa 2 tiles); `zones` pinta o tapete do setor e `dividers` levanta a divisória entre ilhas.
 - **Objetivo**: `data/objectives.json` (`type` é uma chave de `stats` ou um dos especiais em `ObjectiveSystem.progress_value`).
 - **Era**: `data/eras.json` (`year_start`/`year_end`, `trends` com ids de serviço existentes).
 - **Departamento**: `data/departments.json → departments` (`id`, `name`, `attr`).
