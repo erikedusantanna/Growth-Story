@@ -12,6 +12,7 @@ var objective_label: Label
 var screens: Dictionary = {}
 var nav_buttons: Dictionary = {}
 var popups: Popups
+var event_stage: EventStage
 var title_screen: TitleScreen
 var current_screen := "clients"
 
@@ -88,6 +89,11 @@ func _ready() -> void:
 
 	popups = Popups.new()
 	add_child(popups)
+	var stage_layer := CanvasLayer.new()
+	stage_layer.layer = 11   # acima do escurecimento dos popups
+	add_child(stage_layer)
+	event_stage = EventStage.new()
+	stage_layer.add_child(event_stage)
 
 	title_screen = TitleScreen.new()
 	title_screen.start_requested.connect(_on_game_started)
@@ -111,6 +117,22 @@ func show_screen(name: String) -> void:
 			b.remove_theme_stylebox_override("normal")
 			b.remove_theme_color_override("font_color")
 	screens[name].refresh()
+
+
+## Corte de câmera: o cenário do evento cobre exatamente o painel do escritório.
+func show_event_scene(kind: String, employees: Array) -> void:
+	event_stage.global_position = office_view.global_position
+	event_stage.size = office_view.size
+	event_stage.show_scene(kind, employees)
+
+
+func hide_event_scene() -> void:
+	event_stage.hide_scene()
+
+
+## Altura em que um popup deve começar para não cobrir a cena do evento.
+func below_office_y() -> float:
+	return office_view.global_position.y + office_view.size.y + 10.0
 
 
 func show_title() -> void:

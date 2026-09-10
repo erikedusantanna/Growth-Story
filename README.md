@@ -9,7 +9,7 @@ Estética pixel art simples. Este repositório contém **as bases e as mecânica
 
 - **Godot 4.3** (GDScript), renderer *Mobile*, viewport 540×960 em retrato.
 - Conteúdo em JSON (`data/`), lógica em sistemas independentes (`src/systems/`).
-- Sprites placeholder gerados por script (`tools/gen_sprites.py`, sem dependências).
+- Arte pixel art gerada por script, sem dependências: `tools/gen_art.py` (tile de 32 px, estilo chibi com contorno escuro e 3 tons; personagens em camadas recoloríveis, 7 cabelos, óculos e 4 direções) e `tools/gen_icons.py` (ícones do HUD).
 - Testes headless (`tests/`) executados também no CI (`.github/workflows/tests.yml`).
 
 ## Como rodar
@@ -77,6 +77,7 @@ Depois: *Projeto → Exportar → Android → Exportar projeto*, ou
 | RH | `hr_system.gd`, `data/hr_actions.json`, `hr_screen.gd` | Aba própria. Contrata-se uma analista (custo único + salário mensal; exige escritório profissional e reputação 30) que ganha um anexo com divisória no escritório. Libera pizza, happy hour, feriado prolongado, energético com paçoca (buff), festa, bem-estar, retiro e as políticas pet friendly (cachorro e depois gato, permanentes no escritório, com moral diária) |
 | Mobília | `office_system.gd`, `data/furniture.json` | Comprada na aba Empresa: teto de moral, moral diária, estresse, produtividade e bônus permanentes de atributo (valem para quem entra depois). Toda mobília aparece no escritório: troca de sprite (cadeiras ergonômicas, monitores ultrawide, café premium), quadro na parede ou item nos slots de decoração |
 | Eventos da agência | `agency_event_system.gd`, `data/agency_events.json` | Abrem com reputação 40: custam dinheiro e/ou pessoas por alguns dias e rendem reputação, prospects, candidatos, moral ou patrocínio |
+| Cenas de evento | `src/office/event_stage.gd`, `data/scenes.json`, `assets/art/scenes/` | A "câmera" sai do escritório e mostra o time no palco da premiação, no auditório da palestra, no estande da feira, no meetup, no estúdio do podcast, na sala de reunião com o investidor ou na coletiva de imprensa — cenário por evento (`scene` em `events.json`/`agency_events.json`), montado na hora com os próprios funcionários (a primeira pessoa segura o troféu). O popup do evento passa a abrir abaixo da cena |
 | Save/Load | `save_system.gd` | JSON em `user://savegame.json`, autosave mensal, botão na aba Empresa |
 | UI | `src/ui/` | HUD, escritório, feed de humor, 6 abas (Equipe, Clientes, Projetos, Empresa, RH, Agência), modais |
 | Fonte pixel art | `tools/gen_font.py`, `assets/fonts/pixel.fnt` | Bitmap font 5×7 com acentuação (á é í ó ú ã õ â ê ô ç), gerada por código; usada em títulos e números do HUD (`UIKit.pixel_font()`) |
@@ -87,7 +88,7 @@ Detalhes de fórmulas e fluxo em `docs/ARQUITETURA.md`.
 ## Próximos passos sugeridos
 
 1. **Balanceamento** com testes de jogadores reais. A simulação em `tests/sim_test.gd` imprime a curva ano a ano e falha se fugir da régua do GDD §53 (ver `docs/ARQUITETURA.md`).
-2. Arte definitiva: substituir `assets/sprites/*.png` mantendo os tamanhos (16×16 personagens, 32×16 mesa/sofá).
+2. ~~Arte definitiva~~ — feito: arte v2 em `tools/gen_art.py` (tile 32 px). Para trocar por arte desenhada à mão, mantenha os tamanhos gerados e a estrutura de camadas dos personagens (`assets/art/characters/`).
 3. ~~Fonte pixel art e sons (`GDD §40–41`)~~ — feito: `assets/fonts/pixel.fnt` e `src/core/audio_manager.gd`.
 4. ~~Conteúdo: mais clientes, eventos, eras históricas e serviços de endgame~~ — feito: `era_system.gd`, `data/eras.json`.
 5. ~~Departamentos, gerentes e concorrentes~~ — feito: `department_system.gd`, `competitor_system.gd`. Falta: imprensa/aquisições e expansão internacional (resto da Fase 4 do roadmap).

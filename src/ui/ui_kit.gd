@@ -175,13 +175,14 @@ static func portrait(e: Employee, scale: int = 4) -> Control:
 	var holder := Control.new()
 	holder.custom_minimum_size = Vector2(16 * scale, 16 * scale)
 	box.add_child(holder)
-	var region := Rect2(4, 0, 16, 16)
+	var region := Rect2(3, 0, 26, 26)   # cabeça do quadro parado de frente
 	var style_idx: int = clampi(e.hair_style, 0, Employee.HAIR_STYLES - 1)
+	var tag := "%d%s" % [style_idx, "g" if e.glasses else ""]
 	var layers := [
-		["res://assets/art/characters/outline_%d.png" % style_idx, Color.WHITE],
 		["res://assets/art/characters/skin.png", Color(e.skin)],
 		["res://assets/art/characters/shirt.png", Color(e.color)],
-		["res://assets/art/characters/hair_%d.png" % style_idx, Color(e.hair_color)],
+		["res://assets/art/characters/hair_%s.png" % tag, Color(e.hair_color)],
+		["res://assets/art/characters/outline_%s.png" % tag, Color.WHITE],
 	]
 	for layer in layers:
 		var atlas := AtlasTexture.new()

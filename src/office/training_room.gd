@@ -3,11 +3,11 @@ extends PanelContainer
 ## Mini sala de aula que aparece sobre o escritório enquanto alguém está em treinamento.
 ## Instrutor ao telão, alunos (os funcionários em curso) sentados nas mesas.
 
-const TILE := 16
+const TILE := 32
 const ROOM_W := 8
 const ROOM_H := 6
-const SCALE := 2.0
-const DESK_SLOTS := [Vector2(8, 60), Vector2(48, 60), Vector2(88, 60), Vector2(28, 88)]
+const SCALE := 1.0
+const DESK_SLOTS := [Vector2(16, 120), Vector2(96, 120), Vector2(176, 120), Vector2(56, 176)]
 
 var world: Node2D
 var scene_layer: Node2D
@@ -46,12 +46,12 @@ func _ready() -> void:
 	var projector := Sprite2D.new()
 	projector.texture = load("res://assets/art/furniture/projector.png")
 	projector.centered = false
-	projector.position = Vector2(8, 2)
+	projector.position = Vector2(16, 4)
 	world.add_child(projector)
 	var plant := Sprite2D.new()
 	plant.texture = load("res://assets/art/furniture/plant.png")
 	plant.centered = false
-	plant.position = Vector2(ROOM_W * TILE - 18, ROOM_H * TILE - 26)
+	plant.position = Vector2(ROOM_W * TILE - 36, ROOM_H * TILE - 52)
 	world.add_child(plant)
 	scene_layer = Node2D.new()
 	scene_layer.y_sort_enabled = true
@@ -63,7 +63,7 @@ func _ready() -> void:
 	look.hair_style = 3
 	look.hair_color = "#2a2432"
 	look.color = "#2b2a33"
-	instructor.setup(look, Vector2(ROOM_W * TILE - 30, 48), [], 1)
+	instructor.setup(look, Vector2(ROOM_W * TILE - 60, 96), [], 1)
 	instructor.static_pose = true
 	scene_layer.add_child(instructor)
 	visible = false
@@ -86,14 +86,14 @@ func sync(trainees: Array) -> void:
 		if w == null:
 			w = Worker.new()
 			var slot: Vector2 = DESK_SLOTS[index % DESK_SLOTS.size()]
-			w.setup(e, slot + Vector2(16, -16), [], e.id)
+			w.setup(e, slot + Vector2(18, -22), [], e.id)
 			w.static_pose = true
 			w.sitting = true
 			scene_layer.add_child(w)
 			var desk := Sprite2D.new()
 			desk.texture = load("res://assets/art/furniture/desk.png")
 			desk.centered = false
-			desk.offset = Vector2(0, -28)
+			desk.offset = Vector2(0, -56)
 			desk.position = slot
 			desk.name = "desk_%d" % e.id
 			scene_layer.add_child(desk)

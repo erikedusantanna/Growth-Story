@@ -22,6 +22,7 @@ func _ready() -> void:
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(holder)
 	EventBus.event_triggered.connect(show_event)
+	EventBus.agency_event_finished.connect(show_agency_result)
 	EventBus.project_completed.connect(show_result)
 	EventBus.game_over.connect(show_game_over)
 
@@ -41,6 +42,9 @@ func _open(builder: Callable) -> void:
 
 
 func close() -> void:
+	var m = _main()
+	if m != null:
+		m.hide_event_scene()
 	if current != null:
 		current.queue_free()
 		current = null
@@ -53,13 +57,13 @@ func close() -> void:
 
 
 ## Painel padrão: título, corpo rolável e barra de botões.
-func _panel(title: String) -> Dictionary:
+func _panel(title: String, top: float = 90.0) -> Dictionary:
 	var panel := PanelContainer.new()
 	panel.theme = UIKit.theme()
 	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	panel.offset_left = 20
 	panel.offset_right = -20
-	panel.offset_top = 90
+	panel.offset_top = top
 	panel.offset_bottom = -90
 	var v := UIKit.vbox(10)
 	panel.add_child(v)
@@ -93,9 +97,23 @@ func show_choice(title: String, text: String, choices: Array, callback: Callable
 		return parts.panel)
 
 
+func _main():
+	return get_tree().get_first_node_in_group("main")   # Variant: a cena principal expõe show_event_scene/hide_event_scene
+
+
+## Abre a cena do evento (se houver) e devolve a altura em que o popup deve começar.
+func _scene_top(ev: Dictionary, employees: Array) -> float:
+	var kind := String(ev.get("scene", ""))
+	var m = _main()
+	if kind == "" or m == null or employees.is_empty():
+		return 90.0
+	m.show_event_scene(kind, employees)
+	return m.below_office_y()
+
+
 func show_event(ev: Dictionary) -> void:
 	_open(func():
-		var parts := _panel(ev.get("title", "Evento"))
+		var parts := _panel(ev.get("title", "Evento"), _scene_top(ev, Game.state.employees))
 		parts.body.add_child(UIKit.label(ev.get("text", ""), 17, UIKit.COLOR_TEXT, true))
 		var choices: Array = ev.get("choices", [])
 		for i in choices.size():
@@ -107,6 +125,24 @@ func show_event(ev: Dictionary) -> void:
 			parts.buttons.add_child(UIKit.button("OK", func():
 				close()
 				Game.resolve_event(0), true))
+		return parts.panel)
+
+
+## Fim de um evento promovido pela agência: a cena mostra quem foi e o resumo do que rendeu.
+func show_agency_result(ev: Dictionary, people: Array, summary: String) -> void:
+	_open(func():
+		var team: Array = []
+		for id in people:
+			var e: Employee = Game.state.employee_by_id(int(id))
+			if e != null:
+				team.append(e)
+		if team.is_empty():
+			team = Game.state.employees.duplicate()
+		var parts := _panel("🎪 %s" % String(ev.get("name", "Evento")), _scene_top(ev, team))
+		parts.body.add_child(UIKit.label(String(ev.get("desc", "")), 16, UIKit.COLOR_TEXT, true))
+		if summary != "":
+			parts.body.add_child(UIKit.label("Rendeu: %s." % summary, 16, UIKit.COLOR_GREEN, true))
+		parts.buttons.add_child(UIKit.button("➡️ Continuar", close, true))
 		return parts.panel)
 
 

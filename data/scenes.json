@@ -1,0 +1,293 @@
+{
+  "scenes": {
+    "stage": {
+      "backdrop": "stage",
+      "hold": "trophy",
+      "hold_offset": [
+        4,
+        -30
+      ],
+      "marks": [
+        [
+          135,
+          150,
+          "front"
+        ],
+        [
+          96,
+          152,
+          "front"
+        ],
+        [
+          174,
+          152,
+          "front"
+        ],
+        [
+          64,
+          156,
+          "right"
+        ],
+        [
+          206,
+          156,
+          "left"
+        ],
+        [
+          116,
+          162,
+          "front"
+        ],
+        [
+          154,
+          162,
+          "front"
+        ]
+      ]
+    },
+    "auditorium": {
+      "backdrop": "auditorium",
+      "marks": [
+        [
+          135,
+          132,
+          "front"
+        ],
+        [
+          176,
+          134,
+          "front"
+        ],
+        [
+          96,
+          134,
+          "front"
+        ],
+        [
+          212,
+          136,
+          "left"
+        ],
+        [
+          64,
+          136,
+          "right"
+        ]
+      ]
+    },
+    "booth": {
+      "backdrop": "booth",
+      "front": [
+        {
+          "sprite": "counter",
+          "x": 60,
+          "y": 112
+        }
+      ],
+      "marks": [
+        [
+          110,
+          128,
+          "front"
+        ],
+        [
+          152,
+          128,
+          "front"
+        ],
+        [
+          82,
+          130,
+          "right"
+        ],
+        [
+          180,
+          130,
+          "left"
+        ],
+        [
+          131,
+          132,
+          "front"
+        ],
+        [
+          40,
+          158,
+          "left"
+        ],
+        [
+          230,
+          158,
+          "right"
+        ]
+      ]
+    },
+    "meetup": {
+      "backdrop": "meetup",
+      "marks": [
+        [
+          62,
+          130,
+          "right"
+        ],
+        [
+          100,
+          126,
+          "left"
+        ],
+        [
+          150,
+          140,
+          "front"
+        ],
+        [
+          190,
+          150,
+          "left"
+        ],
+        [
+          42,
+          158,
+          "front"
+        ],
+        [
+          232,
+          140,
+          "right"
+        ],
+        [
+          122,
+          160,
+          "back"
+        ]
+      ]
+    },
+    "studio": {
+      "backdrop": "studio",
+      "front": [
+        {
+          "sprite": "table_long",
+          "x": 35,
+          "y": 118
+        },
+        {
+          "sprite": "mic_stand",
+          "x": 94,
+          "y": 82
+        },
+        {
+          "sprite": "mic_stand",
+          "x": 166,
+          "y": 82
+        }
+      ],
+      "marks": [
+        [
+          104,
+          134,
+          "front",
+          "sit"
+        ],
+        [
+          170,
+          134,
+          "front",
+          "sit"
+        ],
+        [
+          137,
+          138,
+          "front",
+          "sit"
+        ]
+      ]
+    },
+    "boardroom": {
+      "backdrop": "boardroom",
+      "front": [
+        {
+          "sprite": "table_long",
+          "x": 35,
+          "y": 104
+        }
+      ],
+      "marks": [
+        [
+          80,
+          122,
+          "front",
+          "sit"
+        ],
+        [
+          136,
+          122,
+          "front",
+          "sit"
+        ],
+        [
+          192,
+          122,
+          "front",
+          "sit"
+        ],
+        [
+          50,
+          162,
+          "back"
+        ],
+        [
+          222,
+          162,
+          "back"
+        ]
+      ]
+    },
+    "press": {
+      "backdrop": "press",
+      "front": [
+        {
+          "sprite": "mic_stand",
+          "x": 122,
+          "y": 108
+        },
+        {
+          "sprite": "mic_stand",
+          "x": 144,
+          "y": 114
+        },
+        {
+          "sprite": "mic_stand",
+          "x": 100,
+          "y": 116
+        }
+      ],
+      "marks": [
+        [
+          135,
+          140,
+          "front"
+        ],
+        [
+          94,
+          142,
+          "front"
+        ],
+        [
+          176,
+          142,
+          "front"
+        ],
+        [
+          58,
+          148,
+          "front"
+        ],
+        [
+          212,
+          148,
+          "front"
+        ]
+      ]
+    }
+  }
+}
