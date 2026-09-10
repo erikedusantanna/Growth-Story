@@ -56,17 +56,17 @@ Depois: *Projeto → Exportar → Android → Exportar projeto*, ou
 | Funcionários | `employee_system.gd`, `models/employee.gd` | 6 atributos, motivação, estresse, lealdade, potencial, 8 personalidades, carreira em 8 níveis, burnout, pedidos de demissão |
 | Contratação | idem | Candidatos procedurais (nomes BR), qualidade cresce com reputação, expiram em 45 dias, capacidade do escritório |
 | Treinamento | `data/training.json` | 7 cursos com custo, dias e ganhos de atributo (potencial multiplica) |
-| Clientes | `client_system.gd`, `data/clients.json` | 12 clientes escritos à mão + geração procedural; segmento, tier, personalidade, objetivo declarado e **problema real oculto** |
+| Clientes | `client_system.gd`, `data/clients.json` | 23 clientes escritos à mão (tiers 1–5) + geração procedural; segmento, tier, personalidade, objetivo declarado e **problema real oculto** |
 | Proposta comercial | `client_system.gd`, `popups.gd` | Slider de preço (60% a 140% do orçamento): desconto aumenta a chance de fechar, prêmio reduz e eleva a expectativa do cliente |
 | Diagnóstico | idem | Auditoria paga que revela o problema real; a estratégia certa ganha +15 de Estratégia |
 | Projetos | `project_system.gd` | Escolha de 1–3 serviços + equipe, execução diária com 4 indicadores, prazo, atraso, micro-eventos de humor |
 | Combinações | `service_system.gd`, `match_table` | Segmento × serviços = *Perfect match* (+35%), boa, neutra ou ruim (−25%) |
 | Avaliação | `project_system.gd` | Nota 0–100 → 1 a 5 estrelas, pagamento, ROI, reputação, corações do cliente, manchetes de imprensa |
 | Contratos | idem | Projeto (entrega única) ou **retainer** (6 ciclos mensais, MRR) liberado após boa entrega |
-| Serviços | `data/services.json` | 11 serviços em 3 tiers; desbloqueio por caixa + reputação |
+| Serviços | `data/services.json` | 16 serviços em 4 tiers (início, intermediário, avançado, **endgame**: IA, MarTech, Dados, Tecnologia Proprietária, Consultoria Enterprise); desbloqueio por caixa + reputação |
 | Finanças | `finance_system.gd` | Caixa, salários, aluguel, ferramentas, histórico mensal, falência abaixo de −R$ 30.000 |
 | Reputação | `reputation_system.gd` | 0–100 com retornos decrescentes; faixas do GDD §27 e fases do §29 |
-| Eventos | `event_system.gd`, `data/events.json` | 20 eventos com escolhas, condições (reputação, equipe, estresse, projetos…) e cooldown por evento |
+| Eventos | `event_system.gd`, `data/events.json` | 27 eventos com escolhas, condições (reputação, equipe, estresse, projetos…) e cooldown por evento; alguns só aparecem em reputação alta e prenunciam o roadmap (cliente internacional, IA generativa, concorrente, investidor) |
 | Jornada | `employee_system.gd`, `popups.gd` | Linha do tempo por colaborador: contratação, cursos, promoções, campanhas, eventos (Equipe → Jornada) |
 | Objetivos | `objective_system.gd`, `data/objectives.json` | 13 objetivos sequenciais que guiam o primeiro ano, com bônus em caixa (GDD §37) |
 | Escritório | `office_system.gd`, `src/office/` | 4 níveis (4 / 7 / 12 / 18 lugares) com layout em tiles; ampliação pela aba Equipe ou Empresa; funcionários andam entre mesa, café e sofá, com barra de moral sobre a cabeça; arrastar com um dedo e zoom com pinça (ou roda do mouse); toque no avatar abre a jornada |
