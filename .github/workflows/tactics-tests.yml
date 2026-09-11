@@ -1,0 +1,36 @@
+name: Tactics — testes headless
+
+on:
+  push:
+    paths:
+      - "games/tactics/**"
+      - ".github/workflows/tactics-tests.yml"
+  pull_request:
+    paths:
+      - "games/tactics/**"
+      - ".github/workflows/tactics-tests.yml"
+
+jobs:
+  godot-tests:
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: 4.3-stable
+    defaults:
+      run:
+        working-directory: games/tactics
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Baixar Godot
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv Godot_v${GODOT_VERSION}_linux.x86_64 godot
+          chmod +x godot
+          ./godot --headless --version
+
+      - name: Importar projeto
+        run: ./godot --headless --path . --import 2>&1 | tee import.log; ! grep -q "SCRIPT ERROR" import.log
+
+      - name: Smoke test
+        run: ./godot --headless --path . res://tests/smoke_test.tscn

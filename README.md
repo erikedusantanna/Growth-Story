@@ -5,6 +5,12 @@ você começa como freelancer de marketing digital e evolui até dono de agênci
 Estética pixel art simples. Este repositório contém **as bases e as mecânicas do MVP**
 (GDD em `docs/GDD.md`), com placeholders visuais que serão substituídos por arte definitiva.
 
+## Outros jogos neste repositório
+
+- **Tactics** (nome provisório): projeto Godot independente em [`games/tactics/`](games/tactics/README.md).
+  A pasta `games/` tem um `.gdignore`, então o Godot do Growth-Story não importa nem exporta nada de lá.
+  Abra com `godot --path games/tactics`; o CI roda seus testes em `.github/workflows/tactics-tests.yml`.
+
 ## Stack
 
 - **Godot 4.3** (GDScript), renderer *Mobile*, viewport 540×960 em retrato.
