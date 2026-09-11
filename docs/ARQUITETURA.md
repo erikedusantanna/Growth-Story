@@ -128,7 +128,11 @@ de reputação. Um jogador real tende a crescer mais devagar que o bot; a faixa 
   altura em que o painel deve começar (`Main.below_office_y()`); `Popups.close()` esconde a cena. Ao terminar um
   evento promovido, `AgencyEventSystem.on_day()` emite `EventBus.agency_event_finished(ev, people, summary)` e o
   popup de resultado mostra quem foi.
-- **Eventos da agência** (`AgencyEventSystem`): abrem com reputação 40. Custam `cost` e `people` por `days`
+- **Projetos complexos** (`ProjectSystem`, cliente tier ≥ `COMPLEX_TIER` = 5 e contrato de projeto): `can_create` exige
+  `COMPLEX_MIN_TEAM` (4) pessoas e `COMPLEX_MIN_ROLES` (2) papéis diferentes; `quote` aplica `COMPLEX_BUDGET_MULT` (1,5) e
+  `COMPLEX_EFFORT_MULT` (1,4); em `on_day`, ao passar de 50% de progresso, `_checkpoint` avalia com `_score` sem sorteio:
+  nota < 50 → esforço × (1 + `COMPLEX_REWORK` 0,25) e moral −3 na equipe; senão +3 de Execução.
+- **Eventos da agência** (`AgencyEventSystem`): abrem com reputação 40 e exigem `requires_region`. Custam `cost` e `people` por `days`
   (as pessoas ficam com `busy_reason = "Em evento"` e saem pela porta). Ao terminar, aplicam `effects`:
   `reputation`, `prospects` (+`prospect_tier_bonus`), `candidates`, `money` (patrocínio), `morale`, `delay_days`.
 
@@ -155,7 +159,7 @@ dois ou mais em `best` → *perfect*; um → *boa*; caso contrário *neutra*.
 ## Eventos (`data/events.json`)
 
 Campos de condição: `min_day`, `min_reputation`, `min_employees`, `min_active_clients`,
-`min_running_projects`, `min_cases`, `min_avg_stress`, `min_office_level`,
+`min_running_projects`, `min_cases`, `min_avg_stress`, `min_office_level`, `min_region`/`max_region` (região do World Map),
 `requires_personality`, `once`, `cooldown_days` (padrão 120: o mesmo evento não repete antes disso). Placeholders no texto: `{best_employee}`, `{random_client}`,
 `{personality_employee}`. Efeitos suportados estão em `EventSystem._apply_effect`.
 

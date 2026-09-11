@@ -80,6 +80,8 @@ func _eligible(ev: Dictionary) -> bool:
 		return false
 	if st.office_level < int(ev.get("min_office_level", 0)):
 		return false
+	if game.office.region() < int(ev.get("min_region", 1)) or game.office.region() > int(ev.get("max_region", 99)):
+		return false
 	if ev.has("min_avg_stress"):
 		var total := 0.0
 		for e in st.employees:

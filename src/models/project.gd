@@ -32,6 +32,8 @@ var boosts: Dictionary = {"strategy": 0.0, "creativity": 0.0, "execution": 0.0, 
 var match_quality: String = "neutral" # perfect / good / neutral / poor
 var addresses_problem: bool = false
 var briefing: String = ""             # tema do projeto (data/briefings.json)
+var complex: bool = false             # projeto complexo (cliente tier 5): equipe mínima e checkpoint na metade
+var checkpoint_done: bool = false
 var months_left: int = 0              # retainer
 var cycle: int = 0                    # ciclos concluídos (retainer)
 var result: Dictionary = {}           # último resultado {stars, score, payment, ...}
@@ -59,6 +61,7 @@ func to_dict() -> Dictionary:
 		"effort_total": effort_total, "effort_done": effort_done,
 		"indicators": indicators.duplicate(), "targets": targets.duplicate(), "boosts": boosts.duplicate(),
 		"match_quality": match_quality, "addresses_problem": addresses_problem, "briefing": briefing,
+		"complex": complex, "checkpoint_done": checkpoint_done,
 		"months_left": months_left, "cycle": cycle, "result": result.duplicate(true),
 		"history": history.duplicate(true),
 	}
@@ -78,6 +81,8 @@ static func from_dict(d: Dictionary) -> Project:
 	p.finished_on = int(d.get("finished_on", -1))
 	p.objective = d.get("objective", "")
 	p.briefing = String(d.get("briefing", ""))
+	p.complex = bool(d.get("complex", false))
+	p.checkpoint_done = bool(d.get("checkpoint_done", false))
 	p.services = Array(d.get("services", []))
 	p.team = []
 	for t in d.get("team", []):

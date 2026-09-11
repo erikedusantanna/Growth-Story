@@ -26,6 +26,7 @@ func _ready() -> void:
 	_test_morale_moods(game)
 	_test_regions(game)
 	_test_rivals(game)
+	_test_region_content(game)
 	if failures == 0:
 		print("\n[OK] Todos os testes passaram.")
 		get_tree().quit(0)
@@ -751,3 +752,62 @@ func _test_rivals(game) -> void:
 	check(c.budget < budget_before and c.is_active(), "igualar o desconto mantém o cliente com orçamento menor")
 	var restored = GameState.from_dict(st.to_dict())
 	check(restored.rivals.has("vertice") and restored.last_raid_day == st.last_raid_day, "rivais sobrevivem ao save")
+
+
+func _test_region_content(game) -> void:
+	print("== Conteúdo por região e projetos complexos ==")
+	game.new_game("Conteúdo", "Chefe", 8)
+	var st = game.state
+	st.day = 400
+	var pool_r1: Array = game.content.events.filter(func(ev): return game.events._eligible(ev)).map(func(ev): return String(ev.id))
+	check(pool_r1.has("vizinho_logo") and not pool_r1.has("greve_transporte") and not pool_r1.has("cliente_internacional"), "no bairro só os eventos da Região 1 entram no sorteio")
+	var fi = game.agency_events.event_by_id("feira_internacional")
+	check(not fi.is_empty() and not game.agency_events.can_run(fi, []).ok, "feira internacional trancada fora do Hub Global")
+	var terraco = game.office.furniture_by_id("terraco")
+	st.money = 5000000.0
+	check(not game.office.can_buy(terraco).ok, "terraço exige a torre global")
+	# vai até o Hub Global
+	st.reputation = 95.0
+	for r in [2, 3, 4, 5]:
+		check(game.office.move_to(r).ok, "mudou para a região %d" % r)
+	check(game.office.upgrade(), "expandiu no Hub Global")
+	check(game.office.can_buy(terraco).ok, "terraço liberado na torre global")
+	var pool_r5: Array = game.content.events.filter(func(ev): return game.events._eligible(ev)).map(func(ev): return String(ev.id))
+	check(pool_r5.has("cambio") and not pool_r5.has("vizinho_logo"), "no Hub Global entram os eventos globais e saem os do bairro")
+	check(game.clients.max_tier() == 1, "tier ainda limitado pela equipe pequena")
+	for i in 12:
+		st.candidates.append(game.employees.generate_candidate("high"))
+		game.employees.hire(st.candidates[st.candidates.size() - 1])
+	check(game.clients.max_tier() == 5, "com equipe grande no Hub Global chegam clientes tier 5")
+	var c = game.clients.spawn_prospect()
+	check(c.tier >= 4, "prospect do topo (tier %d)" % c.tier)
+	c.tier = 5
+	c.status = Client.Status.ACTIVE
+	check(game.projects.is_complex(c, Project.Kind.PROJECT), "cliente tier 5 gera projeto complexo")
+	var two: Array = [st.employees[0].id, st.employees[1].id]
+	check(not game.projects.can_create(c, ["social_media"], two).ok, "projeto complexo recusa equipe pequena")
+	var team: Array = []
+	var roles := {}
+	for e in st.employees:
+		if team.size() >= 5:
+			break
+		if e.is_available(st.day):
+			team.append(e.id)
+			roles[e.role] = true
+	if roles.size() < 2:
+		st.employees[1].role = "design"
+	var q = game.projects.quote(c, Project.Kind.PROJECT)
+	check(bool(q.complex) and float(q.effort) > 12.0 + float(q.budget) / 350.0, "orçamento e esforço maiores no projeto complexo")
+	var r = game.projects.create_project(c, ["social_media", "design"], team)
+	check(r.ok, "projeto complexo criado com 5 pessoas e 2 papéis (%s)" % r.reason)
+	var p: Project = st.running_projects()[0]
+	check(p.complex and not p.checkpoint_done, "projeto marcado como complexo")
+	for i in 120:
+		if p.checkpoint_done or not p.is_running():
+			break
+		game.on_day()
+		if not st.pending_event.is_empty():
+			game.resolve_event(0)
+	check(p.checkpoint_done, "checkpoint aconteceu na metade")
+	check(Project.from_dict(p.to_dict()).complex, "projeto complexo sobrevive ao save")
+	check(game.content.client_templates.filter(func(t): return int(t.tier) == 5).size() >= 6, "há clientes tier 5 suficientes")

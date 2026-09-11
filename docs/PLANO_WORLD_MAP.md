@@ -294,7 +294,7 @@ aquisições** (10). Novas, que nascem do mapa:
 | A ✅ | Regiões e mapa: `data/regions.json`, mudança de sede, expansões internas, tier por região, HUD 🗺️, tela do mapa, fundos de janela por região, rebalance de custos e da régua | — | grande |
 | B ✅ | Moral rebalanceada + estados visíveis (humores) + régua de moral | — (independente; pode ir antes) | médio |
 | C ✅ | Concorrentes reais: dados, propostas nos dois sentidos, contratar da rival, painel no mapa, Agência do Ano com rivais | A | grande |
-| D | Eventos e mobília por região (os `min_region`), conteúdo novo (clientes tier 4–5, eventos, mobília) | A | médio |
+| D ✅ | Eventos e mobília por região (os `min_region`), conteúdo novo (clientes tier 4–5, eventos, mobília) | A | médio |
 
 Recomendação: **B primeiro** (rápido, melhora o jogo já, e os humores serão usados pelos
 concorrentes: "assediado", "saindo"), depois **A**, **C**, **D**.

@@ -184,6 +184,7 @@ func show_rival(id: String) -> void:
 					show_info("Não deu", "%s recusou (chance era %d%%). A investida do trimestre foi gasta." % [String(cd.get("name", "")), int(r.chance)]), false, 40)
 			pb.disabled = not raid.ok
 			pb.size_flags_horizontal = 0
+			pb.custom_minimum_size.x = 150
 			row.add_child(pb)
 			b.add_child(row)
 		b.add_child(UIKit.label("💼 Equipe dela (contratar: −%d de reputação se aceitar)" % int(Game.content.competitors.get("rep_cost_employee", 3)), 16, UIKit.COLOR_ACCENT))
@@ -211,6 +212,7 @@ func show_rival(id: String) -> void:
 					show_info("Não deu", "%s recusou (chance era %d%%). A investida do trimestre foi gasta." % [tmp.name, int(r.chance)]), false, 40)
 			hb.disabled = not raid.ok
 			hb.size_flags_horizontal = 0
+			hb.custom_minimum_size.x = 150
 			row.add_child(hb)
 			b.add_child(row)
 		b.add_child(UIKit.muted("Ela também faz propostas: todo mês pode tentar levar seu funcionário menos leal ou seu cliente com relação mais fraca.", 12))

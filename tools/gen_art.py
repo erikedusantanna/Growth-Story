@@ -1546,6 +1546,117 @@ def _regions_pos(root):
 
 
 
+# --- Mobilia das regioes (bloco D) ---------------------------------------------------------
+PAL.update({"steel": hx("#8d97a5"), "steel_hi": hx("#c2cad4"), "steel_lo": hx("#5b6470"), "mat": hx("#3f7fb0"), "mat_hi": hx("#6fa6d6"),
+            "deck": hx("#c98a4b"), "deck_lo": hx("#9a6332"), "rail": hx("#d9dee6"), "led": hx("#5be36a"), "led_r": hx("#ff5c4d"),
+            "tile_w": hx("#f2f2f2"), "tile_g": hx("#dfe6ea"), "counter": hx("#e8dcc4"), "counter_lo": hx("#c6b89b")})
+
+
+def reception():
+    """Balcao de recepcao com sofa pequeno e tablet (48x40)."""
+    c = canvas(48, 40)
+    rect(c, 2, 14, 30, 18, "wood"); rect(c, 2, 14, 30, 3, "wood_hi"); rect(c, 2, 29, 30, 3, "wood_lo")
+    rect(c, 6, 18, 22, 8, "wood_lo"); draw_text = None
+    rect(c, 10, 8, 8, 6, "frame"); rect(c, 11, 9, 6, 4, "screen")
+    rect(c, 34, 20, 13, 12, "red"); rect(c, 34, 18, 13, 3, "red_hi"); rect(c, 34, 30, 13, 2, "red_lo"); rect(c, 33, 22, 2, 8, "red_lo"); rect(c, 46, 22, 2, 8, "red_lo")
+    rect(c, 4, 32, 26, 6, "shadow"); rect(c, 34, 32, 13, 4, "shadow")
+    outline(c)
+    return c
+
+
+def glass_room():
+    """Sala de reuniao envidracada com mesa e telao (64x48)."""
+    c = canvas(64, 48)
+    rect(c, 0, 0, 64, 40, "glass"); rect(c, 0, 0, 64, 40, None)
+    rect(c, 0, 0, 2, 40, "metal"); rect(c, 62, 0, 2, 40, "metal"); rect(c, 0, 0, 64, 2, "metal"); rect(c, 31, 0, 2, 40, "metal")
+    for x in range(3, 62, 1):
+        for y in range(3, 12):
+            if (x + y) % 5 == 0:
+                put(c, x, y, "glass_hi")
+    rect(c, 4, 4, 20, 12, "frame"); rect(c, 5, 5, 18, 10, "screen"); rect(c, 7, 8, 8, 2, "screen_hi"); rect(c, 7, 11, 12, 1, "screen_lo")
+    rect(c, 12, 22, 40, 12, "wood"); rect(c, 12, 22, 40, 2, "wood_hi"); rect(c, 12, 32, 40, 2, "wood_lo")
+    for x in (10, 26, 42):
+        rect(c, x, 36, 8, 4, "metal_lo"); rect(c, x + 1, 33, 6, 3, "red")
+    rect(c, 2, 40, 60, 6, "shadow")
+    outline(c)
+    return c
+
+
+def studio():
+    """Estudio: microfone de pedestal, painel acustico e luz ON AIR (32x48)."""
+    c = canvas(32, 48)
+    rect(c, 0, 4, 32, 26, "foam"); 
+    for y in range(6, 30, 6):
+        for x in range(2, 30, 6):
+            rect(c, x, y, 3, 3, "foam_hi")
+    rect(c, 8, 0, 16, 6, "onair_lo"); rect(c, 10, 1, 12, 4, "onair")
+    rect(c, 14, 20, 4, 20, "metal_lo"); rect(c, 10, 40, 12, 3, "metal")
+    rect(c, 12, 12, 8, 10, "metal"); rect(c, 13, 13, 6, 8, "metal_hi"); rect(c, 14, 14, 4, 2, "metal_lo")
+    rect(c, 6, 43, 20, 4, "shadow")
+    outline(c)
+    return c
+
+
+def kitchen():
+    """Cozinha: bancada com fogao, pia e geladeira (64x44)."""
+    c = canvas(64, 44)
+    rect(c, 0, 12, 40, 22, "counter"); rect(c, 0, 12, 40, 3, "tile_w"); rect(c, 0, 31, 40, 3, "counter_lo")
+    rect(c, 4, 16, 14, 8, "metal"); 
+    for x, y in ((6, 18), (12, 18), (6, 21), (12, 21)):
+        rect(c, x, y, 3, 2, "frame")
+    rect(c, 22, 16, 14, 8, "metal_hi"); rect(c, 24, 18, 10, 4, "glass"); rect(c, 28, 12, 2, 5, "metal_lo")
+    rect(c, 44, 2, 18, 32, "tile_g"); rect(c, 44, 2, 18, 2, "tile_w"); rect(c, 44, 16, 18, 1, "metal_lo"); rect(c, 58, 6, 2, 8, "metal_lo"); rect(c, 58, 19, 2, 8, "metal_lo")
+    rect(c, 2, 34, 36, 6, "shadow"); rect(c, 44, 34, 18, 6, "shadow")
+    outline(c)
+    return c
+
+
+def gym():
+    """Academia: esteira, halteres e colchonete (56x44)."""
+    c = canvas(56, 44)
+    rect(c, 2, 26, 30, 8, "steel"); rect(c, 2, 26, 30, 2, "steel_hi"); rect(c, 2, 32, 30, 2, "steel_lo")
+    rect(c, 26, 6, 4, 22, "steel_lo"); rect(c, 18, 4, 14, 6, "frame"); rect(c, 20, 5, 10, 3, "screen")
+    rect(c, 36, 20, 18, 12, "mat"); rect(c, 36, 20, 18, 2, "mat_hi")
+    for x in (38, 46):
+        rect(c, x, 14, 3, 6, "steel_lo"); rect(c, x + 3, 16, 4, 2, "steel"); rect(c, x + 7, 14, 3, 6, "steel_lo")
+    rect(c, 4, 34, 28, 6, "shadow"); rect(c, 36, 32, 18, 6, "shadow")
+    outline(c)
+    return c
+
+
+def server_rack():
+    """War room: rack de servidores com leds e telao de dashboards (48x56)."""
+    c = canvas(48, 56)
+    rect(c, 2, 8, 20, 44, "steel_lo"); rect(c, 2, 8, 20, 2, "steel")
+    for y in range(12, 50, 6):
+        rect(c, 4, y, 16, 4, "steel"); put(c, 18, y + 1, "led" if (y // 6) % 3 else "led_r"); put(c, 16, y + 1, "led")
+    rect(c, 26, 4, 20, 26, "frame"); rect(c, 27, 5, 18, 24, "screen_lo")
+    for i, h in enumerate((6, 10, 8, 14, 11, 16)):
+        rect(c, 28 + i * 3, 27 - h, 2, h, "screen_hi" if i % 2 else "gold")
+    rect(c, 34, 30, 4, 6, "metal_lo"); rect(c, 30, 36, 12, 2, "metal_lo")
+    rect(c, 4, 52, 18, 3, "shadow"); rect(c, 28, 38, 16, 3, "shadow")
+    outline(c)
+    return c
+
+
+def terrace():
+    """Terraco: deck de madeira com guarda-corpo, espreguicadeira e plantas (64x40)."""
+    c = canvas(64, 40)
+    rect(c, 0, 14, 64, 20, "deck")
+    for y in range(16, 34, 4):
+        hline(c, 0, 63, y, "deck_lo")
+    rect(c, 0, 4, 64, 2, "rail"); 
+    for x in range(2, 64, 8):
+        rect(c, x, 4, 2, 10, "rail")
+    rect(c, 10, 20, 22, 8, "red"); rect(c, 10, 18, 8, 4, "red_hi"); rect(c, 10, 28, 22, 2, "red_lo"); rect(c, 12, 30, 2, 3, "metal_lo"); rect(c, 28, 30, 2, 3, "metal_lo")
+    for x in (40, 52):
+        rect(c, x, 22, 8, 8, "pot"); rect(c, x, 22, 8, 2, "pot_hi"); rect(c, x + 1, 14, 6, 8, "leaf"); rect(c, x + 2, 12, 4, 3, "leaf_hi"); put(c, x + 1, 20, "leaf_lo")
+    rect(c, 2, 34, 60, 5, "shadow")
+    outline(c)
+    return c
+
+
+
 def export_all(root):
     art = os.path.join(root, "assets", "art")
     write_png(os.path.join(art, "tiles", "floor_wood.png"), floor_tile())
@@ -1558,7 +1669,9 @@ def export_all(root):
                      ("shelf", shelf), ("window", window), ("whiteboard", whiteboard), ("goals_board", goals_board),
                      ("door", door), ("pingpong", pingpong), ("partition", partition_tile),
                      ("partition_top", partition_cap), ("hr_sign", hr_sign), ("projector", projector_screen),
-                     ("meeting_table", meeting_table), ("dog", dog), ("cat", cat)):
+                     ("meeting_table", meeting_table), ("dog", dog), ("cat", cat),
+                     ("reception", reception), ("glass_room", glass_room), ("studio", studio), ("kitchen", kitchen),
+                     ("gym", gym), ("server_rack", server_rack), ("terrace", terrace)):
         write_png(os.path.join(art, "furniture", f"{name}.png"), fn())
     export_characters(os.path.join(art, "characters"))
     export_scenes(root)

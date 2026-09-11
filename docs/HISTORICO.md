@@ -398,6 +398,12 @@ README.
   (`LIGHT_FADE_RATE`), entardecer começa às 16h, roxo às 18h30, noite às 20h; a virada 20h → 8h vira um
   amanhecer lento.
 
+## 8e. Bloco D do plano (conteúdo por região) — feito nesta sessão
+
+- Eventos com `min_region`/`max_region` (10 novos, 2 por região), eventos da agência com `requires_region`
+  (+ feira internacional), 7 mobílias novas por nível (com sprites em `tools/gen_art.py`), 8 clientes tier 4–5,
+  projetos complexos para tier 5 (equipe mínima, checkpoint com refação).
+
 ## 9. Checklist para retomar o projeto
 
 1. Ler este documento, depois `README.md` (tabela "O que já existe") e `docs/ARQUITETURA.md`;
