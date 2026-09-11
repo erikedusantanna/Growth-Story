@@ -3,13 +3,16 @@ extends Control
 ## World Map: a cidade isométrica em tela cheia com os marcos das 5 regiões. Tocar no marco da
 ## região atual amplia o escritório; tocar na próxima região muda a sede (custo alto, reputação
 ## mínima); regiões à frente ficam com cadeado. Concorrentes aparecem nas regiões 2–4 quando a
-## agência chega lá (painel deles no bloco C).
+## agência chega lá (painel deles no bloco C). A camada viva (WorldMapLife) anima a cidade:
+## carros, barcos, nuvens, avião, pássaros, luzes à noite e o caminhão da mudança de sede.
 
 const MAP_SCALE := 2.0
 const MARKER_W := 230.0
 
 var scroll: ScrollContainer
 var board: Control
+var map: TextureRect
+var life: WorldMapLife
 var markers: Control
 var header_title: Label
 var marker_nodes: Array = []
@@ -32,13 +35,16 @@ func _ready() -> void:
 	var map_tex: Texture2D = preload("res://assets/art/map/world.png")
 	board.custom_minimum_size = map_tex.get_size() * MAP_SCALE
 	scroll.add_child(board)
-	var map := TextureRect.new()
+	map = TextureRect.new()
 	map.texture = map_tex
 	map.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	map.stretch_mode = TextureRect.STRETCH_SCALE
 	map.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	map.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	board.add_child(map)
+	life = WorldMapLife.new()
+	life.scale = Vector2(MAP_SCALE, MAP_SCALE)
+	board.add_child(life)
 	markers = Control.new()
 	markers.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	markers.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -78,21 +84,51 @@ func _ready() -> void:
 	lg.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	legend.add_child(lg)
 	EventBus.state_changed.connect(func(): if visible: _build_markers())
+	set_process(false)
 
 
 func open() -> void:
 	visible = true
 	Game.ui_blocking = true
+	set_process(true)
 	_build_markers()
 	await get_tree().process_frame
-	var rd: Dictionary = Game.office.region_data(Game.office.region())
-	var pos: Array = rd.get("map_pos", [0, 0])
-	scroll.scroll_vertical = int(clampf(float(pos[1]) * MAP_SCALE - size.y * 0.5, 0.0, board.custom_minimum_size.y))
+	var target := _scroll_for(_hq_map_pos())
+	# começa um pouco acima e desce até a sede: a cidade "chega" em vez de aparecer pronta
+	scroll.scroll_vertical = int(maxf(target - 140.0, 0.0))
+	_scroll_to(target, 0.55)
 
 
 func close() -> void:
 	visible = false
+	set_process(false)
 	Game.ui_blocking = false
+
+
+## Posição 1x do marco da região atual.
+func _hq_map_pos() -> Vector2:
+	if not Game.has_game():
+		return Vector2.ZERO
+	var pos: Array = Game.office.region_data(Game.office.region()).get("map_pos", [0, 0])
+	return Vector2(float(pos[0]), float(pos[1]))
+
+
+func _scroll_for(map_pos: Vector2) -> float:
+	return clampf(map_pos.y * MAP_SCALE - size.y * 0.5, 0.0, maxf(board.custom_minimum_size.y - scroll.size.y, 0.0))
+
+
+func _scroll_to(target: float, duration: float) -> void:
+	var tw := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tw.tween_method(func(v: float): scroll.scroll_vertical = int(v), float(scroll.scroll_vertical), target, duration)
+
+
+func _process(_delta: float) -> void:
+	if not visible or life == null:
+		return
+	map.modulate = life.tint
+	if life.truck_active():
+		# a câmera acompanha o caminhão da mudança
+		scroll.scroll_vertical = int(_scroll_for(life.truck_position()))
 
 
 func _build_markers() -> void:
@@ -104,6 +140,9 @@ func _build_markers() -> void:
 	var st: GameState = Game.state
 	header_title.text = "🌎 %s · %s" % [st.agency_name, String(Game.office.region_data(current).get("name", ""))]
 	var regions: Array = Game.office.regions()
+	life.hq_pos = _hq_map_pos()
+	life.parked_truck = Game.office.is_moving()
+	life.flags = PackedVector2Array()
 	# concorrentes das regiões já alcançadas (sede desenhada ao lado do marco; toque abre o painel)
 	for a in Game.competitors.active_rivals():
 		var rd: Dictionary = Game.office.region_data(int(a.get("region", 1)))
@@ -127,6 +166,10 @@ func _build_markers() -> void:
 			pin.position = Vector2(float(pos[0]) * MAP_SCALE - 16.0, float(pos[1]) * MAP_SCALE - 46.0)
 			pin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			markers.add_child(pin)
+			# o pino "flutua" sobre a sede
+			var tw := pin.create_tween().set_loops().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+			tw.tween_property(pin, "position:y", pin.position.y - 6.0, 0.8)
+			tw.tween_property(pin, "position:y", pin.position.y, 0.8)
 
 
 func _rival_sprite(rd: Dictionary, a: Dictionary) -> Control:
@@ -141,6 +184,7 @@ func _rival_sprite(rd: Dictionary, a: Dictionary) -> Control:
 	tex.position = Vector2(float(pos[0]) * MAP_SCALE + 110.0, float(pos[1]) * MAP_SCALE - 96.0)
 	tex.position.x = minf(tex.position.x, board.custom_minimum_size.x - 86.0)
 	holder.add_child(tex)
+	life.flags.append(tex.position / MAP_SCALE + Vector2(6.0, -5.0))
 	var label := UIKit.label("⚔️ %s%s" % [String(a.get("name", "")), " 😠" if Game.competitors.is_aggressive(String(a.get("id", ""))) else ""], 11, Color.WHITE)
 	label.add_theme_constant_override("outline_size", 3)
 	label.add_theme_color_override("font_outline_color", Color(0.1, 0.12, 0.2))
@@ -201,6 +245,11 @@ func _marker(rd: Dictionary, r: int, current: int) -> PanelContainer:
 		b.disabled = not check.ok
 		b.tooltip_text = check.reason
 		v.add_child(b)
+		if check.ok:
+			# dá para mudar: o botão respira para chamar atenção
+			var tw := b.create_tween().set_loops().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+			tw.tween_property(b, "modulate", Color(1.0, 1.0, 1.0, 0.72), 0.7)
+			tw.tween_property(b, "modulate", Color.WHITE, 0.7)
 		if not check.ok:
 			v.add_child(UIKit.label(check.reason, 11, UIKit.COLOR_RED, true))
 	else:
@@ -230,9 +279,20 @@ func _confirm_move(rd: Dictionary, r: int) -> void:
 			UIKit.money(float(first.get("rent", 0)) * Game.state.rent_modifier), int(rd.get("tier", r)), int(Game.content.regions.get("moving_days", 7))],
 		["🚚 Mudar", "✖️ Agora não"], func(i: int):
 			if i == 0:
+				var from: int = Game.office.region()
 				var res: Dictionary = Game.office.move_to(r)
 				if res.ok:
 					_build_markers()
-					p.show_info("Sede nova!", "Bem-vindos a %s. As caixas ficam no escritório por uma semana; depois disso é vida nova." % String(rd.get("name", "")))
+					_play_move_and_announce(from, r, String(rd.get("name", "")))
 				else:
 					p.show_info("Mudança", res.reason))
+
+
+## O caminhão atravessa a avenida até a região nova (a câmera acompanha); a mensagem vem depois.
+func _play_move_and_announce(from: int, to: int, region_name: String) -> void:
+	if life.play_move(from, to):
+		await life.truck_arrived
+	if not visible:
+		return
+	_scroll_to(_scroll_for(_hq_map_pos()), 0.4)
+	_popups().show_info("Sede nova!", "Bem-vindos a %s. As caixas ficam no escritório por uma semana; depois disso é vida nova." % region_name)

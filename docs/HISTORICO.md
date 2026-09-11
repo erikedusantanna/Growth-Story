@@ -419,6 +419,19 @@ README.
 - **Velocidades**: `SECONDS_PER_DAY` 10,5 s e `SPEEDS` [1, 3, 7.5] — o 1x ficou 3× mais lento, o 2x é o
   antigo 1x (3,5 s) e o 3x (1,4 s) é um pouco mais lento que o antigo 3x (1,17 s).
 
+## 8g. World Map com animação e movimento (pedido do usuário)
+
+- Nova camada `WorldMapLife` entre a imagem e os cartões: 70+ veículos (carros na avenida e nas
+  ruas, barcos), nuvens com sombra, avião com rastro, bandos de pássaros, espuma animada, anel
+  pulsando na sede, bandeiras nas rivais, janelas acesas e farol girando à noite (mesma hora do
+  escritório, mapa escurece via `modulate`), caminhão da mudança de sede com câmera acompanhando,
+  rolagem suave ao abrir, pino flutuando e botão "Mudar a sede" respirando quando dá para mudar.
+- `tools/gen_art.py` exporta `data/map_life.json` (rotas/pontos) e os sprites pequenos
+  (`car`, `truck`, `boat`, `plane`, `bird`, `cloud_a/b`, `flag`).
+- **Atenção:** o `world.png` do repositório vinha de uma versão anterior do gerador (cidade mais
+  densa); ao reexportar, o mapa passou a ser o do código atual (mais aberto, ruas visíveis). Se o
+  usuário preferir a versão densa, é ajustar as probabilidades em `world_map()` e reexportar.
+
 ## 9. Checklist para retomar o projeto
 
 1. Ler este documento, depois `README.md` (tabela "O que já existe") e `docs/ARQUITETURA.md`;

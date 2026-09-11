@@ -255,8 +255,12 @@ func _ready() -> void:
 	st.money = 500000.0
 	st.reputation = 60.0
 	main.show_world_map()
-	await _frames(3)
+	await get_tree().create_timer(0.7).timeout   # rolagem de abertura termina
 	await _shot("14_mapa")
+	# caminhão da mudança atravessando a avenida (região 1 → 2), câmera acompanhando
+	main.world_map.life.play_move(1, 2)
+	await get_tree().create_timer(1.3).timeout
+	await _shot("14a_mapa_caminhao")
 	main.world_map.close()
 	Game.office.move_to(2)
 	Game.office.move_to(3)
@@ -264,10 +268,14 @@ func _ready() -> void:
 	await _frames(3)
 	await get_tree().create_timer(0.8).timeout
 	await _shot("14b_escritorio_capital_mudanca")
+	# mapa à noite: luzes da cidade e farol
+	Game.time.accumulator = TimeSystem.SECONDS_PER_DAY * 0.99
 	main.show_world_map()
-	await _frames(3)
-	await _shot("14c_mapa_capital")
+	await get_tree().create_timer(0.7).timeout
+	await _shot("14c_mapa_capital_noite")
 	main.world_map.close()
+	Game.time.accumulator = TimeSystem.SECONDS_PER_DAY * 0.3
+	main.office_view.settle_light()
 	if not Game.competitors.active_rivals().is_empty():
 		main.popups.show_rival(String(Game.competitors.active_rivals()[0].id))
 		await _frames(2)
