@@ -34,6 +34,12 @@ func _ready() -> void:
 	date_label = UIKit.number("01 Jan 2010  08:00", 17, UIKit.COLOR_TEXT)
 	date_box.add_child(date_label)
 	top.add_child(date_box)
+	var map_button := UIKit.button("🌎", func(): get_tree().call_group("main", "show_world_map"), false, 36)
+	map_button.size_flags_horizontal = 0
+	map_button.custom_minimum_size.x = 44
+	map_button.tooltip_text = "Mapa: regiões, mudança de sede e concorrentes"
+	map_button.set_meta("tutorial", "map")
+	top.add_child(map_button)
 
 	var bottom := UIKit.hbox(6)
 	v.add_child(bottom)

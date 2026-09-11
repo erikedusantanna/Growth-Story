@@ -380,6 +380,15 @@ README.
 - Números finais ficaram em `docs/ARQUITETURA.md` (seção Moral). O restante do plano (mapa isométrico,
   regiões, concorrentes reais, eventos/mobília por região, projetos complexos) segue em `docs/PLANO_WORLD_MAP.md`.
 
+## 8c. Bloco A do plano (World Map e regiões) — feito nesta sessão
+
+- `tools/gen_layouts.py` gera `data/offices.json` (16 níveis) e `data/regions.json`; `office_level` virou índice
+  global e os limiares de RH/mobília/departamentos/eventos foram remapeados (4, 7, 11).
+- Mapa isométrico gerado em `tools/gen_art.py` (`world_map`, `iso_box`, `fill_poly`), `WorldMapScreen`, botão 🌎
+  no HUD (a fonte não tem o emoji 🗺️), parede e janela por região, semana de mudança com caixas.
+- O bot da simulação quase nunca junta caixa para mudar de sede; a régua continua sendo medida na Região 1.
+  Balanceamento das mudanças de sede depende de teste jogado.
+
 ## 9. Checklist para retomar o projeto
 
 1. Ler este documento, depois `README.md` (tabela "O que já existe") e `docs/ARQUITETURA.md`;

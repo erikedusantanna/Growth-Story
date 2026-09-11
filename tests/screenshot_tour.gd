@@ -32,7 +32,7 @@ func _ready() -> void:
 	Game.manual_time = true
 	# prepara um estado interessante: 3 pessoas, cliente ativo, projeto rodando
 	var st: GameState = Game.state
-	st.office_level = 2
+	st.office_level = 4
 	st.money = 50000.0
 	for i in 2:
 		Game.employees.hire(Game.employees.generate_candidate("high"))
@@ -81,7 +81,7 @@ func _ready() -> void:
 	main.show_screen("unlocks")
 	await _frames(2)
 	await _shot("07_unlocks")
-	st.office_level = 3
+	st.office_level = 7
 	st.reputation = 45.0
 	st.money = 120000.0
 	Game.office.buy(Game.office.furniture_by_id("plantas"))
@@ -237,7 +237,7 @@ func _ready() -> void:
 	main.show_screen("unlocks")
 	await _frames(2)
 	await _shot("12_concorrencia")
-	st.office_level = 4
+	st.office_level = 11
 	st.money = 200000.0
 	st.employees[0].career_level = 5
 	Game.departments.assign(st.employees[0], "criacao")
@@ -247,6 +247,23 @@ func _ready() -> void:
 	main.show_screen("team")
 	await _frames(3)
 	await _shot("13_departamentos")
+	# mapa e sede na Capital (região 3) com a semana de mudança
+	st.money = 500000.0
+	st.reputation = 60.0
+	main.show_world_map()
+	await _frames(3)
+	await _shot("14_mapa")
+	main.world_map.close()
+	Game.office.move_to(2)
+	Game.office.move_to(3)
+	main.show_screen("clients")
+	await _frames(3)
+	await get_tree().create_timer(0.8).timeout
+	await _shot("14b_escritorio_capital_mudanca")
+	main.show_world_map()
+	await _frames(3)
+	await _shot("14c_mapa_capital")
+	main.world_map.close()
 	print("screenshots em %s" % ProjectSettings.globalize_path(out_dir))
 	get_tree().quit(0)
 

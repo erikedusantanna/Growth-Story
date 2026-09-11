@@ -70,7 +70,7 @@ func _ready() -> void:
 	main.popups.close()
 	print("  objetivo atual: %s" % main.objective_label.text)
 	Game.state.money = 50000.0
-	Game.state.office_level = 2
+	Game.state.office_level = 4
 	var trainee: Employee = Game.employees.generate_candidate("normal")
 	Game.state.candidates.append(trainee)
 	Game.employees.hire(trainee)
@@ -84,7 +84,7 @@ func _ready() -> void:
 		Game.on_day()
 	await get_tree().process_frame
 	print("  sala de treinamento escondida após o curso: %s" % (not main.office_view.training_room.visible))
-	Game.state.office_level = 3
+	Game.state.office_level = 7
 	Game.state.reputation = 45.0
 	Game.state.money = 80000.0
 	EventBus.state_changed.emit()
@@ -144,6 +144,15 @@ func _ready() -> void:
 	await get_tree().process_frame
 	var leaving_ok: bool = w1 != null and is_instance_valid(w1) and w1.leaving_for_good and w1.carrying_box and not main.office_view.workers.has(extra.id)
 	print("  humor exausto no personagem: %s · saída pela porta com caixa: %s" % [mood_ok, leaving_ok])
+	# mapa: abre em tela cheia com os 5 marcos e fecha
+	main.show_world_map()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var map_ok: bool = main.world_map.visible and main.world_map.marker_nodes.size() == 5 and Game.ui_blocking
+	main.world_map.close()
+	await get_tree().process_frame
+	map_ok = map_ok and not main.world_map.visible and not Game.ui_blocking
+	print("  mapa abre com 5 regiões e fecha: %s" % map_ok)
 	main.popups.show_awards(Game.awards.evaluate_year(GameState.START_YEAR))
 	await get_tree().process_frame
 	var awards_scene: bool = main.popups.is_open() and main.event_stage.visible
@@ -180,7 +189,7 @@ func _ready() -> void:
 	main.show_title()
 	await get_tree().process_frame
 	print("  workers no escritório: %d" % main.office_view.workers.size())
-	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene and mood_ok and leaving_ok
+	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene and mood_ok and leaving_ok and map_ok
 	print("[%s] UI smoke" % ("OK" if ok else "FALHA"))
 	get_tree().quit(0 if ok else 1)
 

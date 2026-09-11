@@ -33,7 +33,13 @@ func _office_banner() -> PanelContainer:
 	v.add_child(top)
 	var nxt := Game.office.next_level()
 	if nxt.is_empty():
-		v.add_child(UIKit.muted("Você já está no maior escritório disponível.", 13))
+		var region_now: int = Game.office.region()
+		if region_now < Game.office.regions().size():
+			var next_region: Dictionary = Game.office.region_data(region_now + 1)
+			v.add_child(UIKit.label("Tamanho máximo nesta região. Próximo passo: mudar a sede para %s (%s · reputação %d) pelo mapa 🌎." % [
+				String(next_region.get("name", "")), UIKit.money(float(next_region.get("move_cost", 0))), int(next_region.get("rep_required", 0))], 13, UIKit.COLOR_ACCENT, true))
+		else:
+			v.add_child(UIKit.muted("Você já está no maior escritório disponível.", 13))
 		return card
 	if full:
 		v.add_child(UIKit.label("Escritório lotado. Amplie para contratar mais gente.", 14, UIKit.COLOR_RED, true))
@@ -41,7 +47,7 @@ func _office_banner() -> PanelContainer:
 	v.add_child(UIKit.muted("Próximo: %s · %d lugares · rep %d" % [nxt.name, int(nxt.capacity), int(nxt.rep_required)], 13))
 	var b := UIKit.button("🏗️ Ampliar por %s" % UIKit.money(float(nxt.upgrade_cost)), func():
 		if Game.office.upgrade():
-			popups().show_info("Mudança feita!", "A agência agora está em %s. Cabem %d pessoas. O aluguel passa a %s/mês." % [nxt.name, int(nxt.capacity), UIKit.money(float(nxt.rent) * Game.state.rent_modifier)]), full)
+			popups().show_info("Ampliação feita!", "O escritório agora é %s. Cabem %d pessoas. O aluguel passa a %s/mês." % [nxt.name, int(nxt.capacity), UIKit.money(float(nxt.rent) * Game.state.rent_modifier)]), full)
 	b.disabled = not check.ok
 	v.add_child(b)
 	if not check.ok:

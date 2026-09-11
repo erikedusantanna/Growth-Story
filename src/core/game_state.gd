@@ -15,6 +15,7 @@ var money: float = 5000.0
 var reputation: float = 5.0
 var office_level: int = 1
 var rent_modifier: float = 1.0
+var moving_until_day: int = -1         # semana de mudança de sede (produtividade reduzida, caixas)
 var employees: Array = []       # Employee
 var candidates: Array = []      # Employee
 var clients: Array = []         # Client
@@ -150,7 +151,7 @@ func to_dict() -> Dictionary:
 		"version": 1,
 		"seed": seed, "rng_state": str(rng.state), "agency_name": agency_name, "day": day,
 		"money": money, "reputation": reputation, "office_level": office_level,
-		"rent_modifier": rent_modifier,
+		"rent_modifier": rent_modifier, "moving_until_day": moving_until_day,
 		"employees": employees.map(func(e): return e.to_dict()),
 		"candidates": candidates.map(func(e): return e.to_dict()),
 		"clients": clients.map(func(c): return c.to_dict()),
@@ -182,6 +183,7 @@ static func from_dict(d: Dictionary) -> GameState:
 	s.reputation = float(d.get("reputation", 0))
 	s.office_level = int(d.get("office_level", 1))
 	s.rent_modifier = float(d.get("rent_modifier", 1.0))
+	s.moving_until_day = int(d.get("moving_until_day", -1))
 	s.employees = []
 	for e in d.get("employees", []):
 		s.employees.append(Employee.from_dict(e))

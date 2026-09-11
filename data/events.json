@@ -492,7 +492,7 @@
       "id": "aluguel_sobe",
       "title": "Aluguel subiu",
       "weight": 2,
-      "min_office_level": 2,
+      "min_office_level": 4,
       "text": "O proprietário do imóvel reajustou o aluguel. \"É o mercado\", ele disse.",
       "choices": [
         {

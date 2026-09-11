@@ -40,7 +40,7 @@
       "people": 0,
       "days": 1,
       "requires_rep": 40,
-      "requires_office": 3,
+      "requires_office": 7,
       "cooldown_days": 45,
       "effects": {
         "reputation": 2,
@@ -88,7 +88,7 @@
       "people": 3,
       "days": 5,
       "requires_rep": 55,
-      "requires_office": 3,
+      "requires_office": 7,
       "cooldown_days": 120,
       "effects": {
         "reputation": 6,
@@ -105,7 +105,7 @@
       "people": 2,
       "days": 4,
       "requires_rep": 70,
-      "requires_office": 3,
+      "requires_office": 7,
       "cooldown_days": 180,
       "effects": {
         "reputation": 8,

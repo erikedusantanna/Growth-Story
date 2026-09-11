@@ -125,7 +125,8 @@ func productivity(e: Employee) -> float:
 	var buffs: Dictionary = game.hr.buff_multipliers()
 	var furniture: Dictionary = game.office.furniture_effects()
 	return base * (0.85 + e.motivation / 100.0 * 0.55) * (1.0 - e.stress / 220.0) \
-		* float(buffs["productivity"]) * float(furniture["productivity"]) * game.departments.productivity_multiplier(e)
+		* float(buffs["productivity"]) * float(furniture["productivity"]) * game.departments.productivity_multiplier(e) \
+		* game.office.moving_multiplier()
 
 
 ## Moral (campo `motivation`) com teto dado pela mobília do escritório.

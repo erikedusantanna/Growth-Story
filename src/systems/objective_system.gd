@@ -35,6 +35,8 @@ func progress_value(obj: Dictionary) -> float:
 			return float(st.unlocked_services.size())
 		"office_level":
 			return float(st.office_level)
+		"region":
+			return float(game.office.region())
 		"reputation":
 			return st.reputation
 		"employees":

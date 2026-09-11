@@ -50,6 +50,7 @@ const LIGHT_KEYS := [
 	[19.0, Color("#3b3f7a"), Color("#b06a6a"), Color(0.25, 0.2, 0.45, 0.22), 1.0],
 	[20.0, Color("#141c30"), Color("#243559"), Color(0.10, 0.14, 0.32, 0.32), 1.0],
 ]
+const WALL_TINTS := {1: Color(1, 1, 1), 2: Color(0.86, 0.92, 1.0), 3: Color(1.0, 0.94, 0.86), 4: Color(0.78, 0.82, 0.96), 5: Color(0.82, 0.84, 0.9)}
 const STARS := [Vector2(6, 5), Vector2(14, 9), Vector2(20, 4), Vector2(29, 11), Vector2(38, 6), Vector2(10, 15), Vector2(41, 15)]
 ## Balões de pensamento por situação do personagem
 const BUBBLES_WORK := ["💡", "📊", "✍️", "📈", "🎯", "☕"]
@@ -425,10 +426,32 @@ func _draw_sky() -> void:
 			var cy := 5.0 + float(i) * 8.0
 			_draw_clipped(Rect2(glass.position + Vector2(cx, cy + 2), Vector2(11, 3)), cloud_col, sky)
 			_draw_clipped(Rect2(glass.position + Vector2(cx + 3, cy), Vector2(6, 2)), cloud_col, sky)
-		# morros ao fundo
-		for r in [Rect2(0, 21, 12, 4), Rect2(14, 19, 16, 4), Rect2(32, 22, 10, 4), Rect2(0, 24, 42, 10)]:
-			sky_layer.draw_rect(Rect2(glass.position + r.position, r.size), hill)
-		sky_layer.draw_rect(Rect2(glass.position + Vector2(0, 30), Vector2(42, 4)), hill_lo)
+		# ao fundo: morros no bairro, prédios cada vez mais altos nas outras regiões, mar no hub global
+		var region: int = Game.office.region() if Game.has_game() else 1
+		var far := Color("#9dbfda").lerp(Color("#1e2a3a"), night * 0.75)
+		var far_lo := Color("#86a9c6").lerp(Color("#141c28"), night * 0.75)
+		match region:
+			1:
+				for r in [Rect2(0, 21, 12, 4), Rect2(14, 19, 16, 4), Rect2(32, 22, 10, 4), Rect2(0, 24, 42, 10)]:
+					sky_layer.draw_rect(Rect2(glass.position + r.position, r.size), hill)
+				sky_layer.draw_rect(Rect2(glass.position + Vector2(0, 30), Vector2(42, 4)), hill_lo)
+			2:
+				for r in [Rect2(0, 22, 8, 12), Rect2(10, 18, 7, 16), Rect2(19, 24, 9, 10), Rect2(30, 20, 6, 14), Rect2(37, 25, 5, 9)]:
+					sky_layer.draw_rect(Rect2(glass.position + r.position, r.size), far)
+				sky_layer.draw_rect(Rect2(glass.position + Vector2(0, 30), Vector2(42, 4)), hill_lo)
+			3:
+				for r in [Rect2(0, 14, 6, 20), Rect2(7, 8, 8, 26), Rect2(17, 16, 6, 18), Rect2(25, 4, 7, 30), Rect2(34, 12, 8, 22)]:
+					sky_layer.draw_rect(Rect2(glass.position + r.position, r.size), far)
+					sky_layer.draw_rect(Rect2(glass.position + r.position + Vector2(r.size.x - 2, 0), Vector2(2, r.size.y)), far_lo)
+			4:
+				for r in [Rect2(0, 6, 7, 28), Rect2(9, 2, 9, 32), Rect2(20, 10, 6, 24), Rect2(28, 0, 8, 34), Rect2(37, 8, 5, 26)]:
+					sky_layer.draw_rect(Rect2(glass.position + r.position, r.size), far)
+					sky_layer.draw_rect(Rect2(glass.position + r.position + Vector2(r.size.x - 2, 0), Vector2(2, r.size.y)), far_lo)
+			_:
+				sky_layer.draw_rect(Rect2(glass.position + Vector2(0, 24), Vector2(42, 10)), Color("#3f8fd0").lerp(Color("#142a44"), night * 0.7))
+				for r in [Rect2(2, 4, 7, 20), Rect2(12, 0, 8, 24), Rect2(24, 8, 6, 16), Rect2(33, 2, 8, 22)]:
+					sky_layer.draw_rect(Rect2(glass.position + r.position, r.size), far)
+					sky_layer.draw_rect(Rect2(glass.position + r.position + Vector2(r.size.x - 2, 0), Vector2(2, r.size.y)), far_lo)
 
 
 func _draw_clipped(r: Rect2, color: Color, clip: Rect2) -> void:
@@ -476,7 +499,9 @@ func _tick_bubbles(delta: float) -> void:
 		return
 	var w: Worker = candidates[randi() % candidates.size()]
 	var pool: Array = BUBBLES_IDLE
-	if w.resting:
+	if Game.office.is_moving():
+		pool = ["📦", "🚚", "📦"]
+	elif w.resting:
 		pool = BUBBLES_REST
 	elif w.state == Worker.State.AT_DESK and w.on_project:
 		pool = BUBBLES_WORK
@@ -543,8 +568,9 @@ func _draw_world() -> void:
 		return
 	var w := _total_width()
 	var h := int(layout.get("height", 7))
+	var wall_tint: Color = WALL_TINTS.get(Game.office.region() if Game.has_game() else 1, Color.WHITE)
 	for x in w:
-		world.draw_texture(wall_tex, Vector2(x * TILE, 0))
+		world.draw_texture(wall_tex, Vector2(x * TILE, 0), wall_tint)
 		for y in range(WALL_ROWS, h):
 			world.draw_texture(floor_tex, Vector2(x * TILE, y * TILE))
 	world.draw_texture(pillar_tex, Vector2(0, 0))
@@ -580,6 +606,7 @@ func _sync_workers() -> void:
 				worker.state = Worker.State.AWAY
 				worker.visible = false
 		worker.sync(e, st.day)
+		worker.set_carrying_box(Game.office.is_moving())
 		index += 1
 	for id in workers.keys():
 		if not seen.has(id):

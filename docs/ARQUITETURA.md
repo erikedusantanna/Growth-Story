@@ -66,8 +66,10 @@ e `c.price_factor` desloca os limiares de estrelas (cliente que paga mais espera
 
 - A cada 15 dias, chance `0,15 + rep/160` de chegar um prospect, até 2 simultâneos abaixo de 20 de
   reputação e 3 acima. O tier máximo do prospect segue as faixas de reputação (GDD §27).
-- Custos mensais: salários + aluguel do escritório (0 / 2.500 / 8.000 / 20.000) + R$ 250 por pessoa em
-  ferramentas. Ampliações custam 8 mil / 45 mil / 150 mil e pedem reputação 8 / 25 / 45.
+- Custos mensais: salários + aluguel do escritório (por nível em `data/offices.json`: 0–2.000 no bairro, 4–5,2 mil no
+  centro, 10–14,5 mil na capital, 25–32,5 mil no distrito, 60–78 mil no hub global) + R$ 250 por pessoa em
+  ferramentas. Expansões dentro da região custam de 3 mil a 260 mil; mudanças de sede 40 mil / 150 mil / 450 mil /
+  1,2 mi com reputação 15 / 35 / 55 / 75.
 
 ## Régua de ritmo (GDD §53)
 
@@ -129,6 +131,21 @@ de reputação. Um jogador real tende a crescer mais devagar que o bot; a faixa 
 - **Eventos da agência** (`AgencyEventSystem`): abrem com reputação 40. Custam `cost` e `people` por `days`
   (as pessoas ficam com `busy_reason = "Em evento"` e saem pela porta). Ao terminar, aplicam `effects`:
   `reputation`, `prospects` (+`prospect_tier_bonus`), `candidates`, `money` (patrocínio), `morale`, `delay_days`.
+
+## World Map e regiões (`data/regions.json`, `data/offices.json`, `OfficeSystem`)
+
+- `state.office_level` é um índice **global** de 1 a 16 sobre `data/offices.json` (gerado por `tools/gen_layouts.py`:
+  cada entrada tem `region`, `region_level`, `capacity`, `rent`, `upgrade_cost` e o layout). Os limiares antigos
+  viraram índices globais: R2 começa no nível 4, R3 no 7, R4 no 11, R5 no 14 (`requires_office`, `min_office_level`,
+  `unlock_office` foram remapeados).
+- `OfficeSystem.region()`, `region_data(r)`, `next_level()` (só expansões dentro da região), `can_move(r)`/`move_to(r)`
+  (só a região seguinte; exige `rep_required` e `move_cost`; abre `first_level`; liga `state.moving_until_day` =
+  dia + `moving_days`), `is_moving()`/`moving_multiplier()` (×`moving_productivity` na produtividade).
+- `ClientSystem.max_tier()` = min(região, 1 + equipe/3). Objetivo `region_2` (tipo `region`).
+- `WorldMapScreen` (CanvasLayer 9, aberta pelo botão 🌎 do HUD): `assets/art/map/world.png` (270×640 em 2×) com
+  marcos posicionados por `map_pos` de cada região; região atual mostra ampliação, a seguinte a mudança de sede,
+  as demais o cadeado. Concorrentes das regiões alcançadas aparecem como prédio com bandeira (painel no bloco C).
+- `OfficeView`: parede com `WALL_TINTS[região]` e vista da janela por região (morros, prédios, torres, mar).
 
 ## Combinações (`data/services.json → match_table`)
 
