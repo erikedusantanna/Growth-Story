@@ -135,6 +135,7 @@ func _ready() -> void:
 	EventBus.day_passed.connect(func(_d): _sync_training())
 	EventBus.game_started.connect(func(): built_key = ""; refresh())
 	EventBus.office_feedback.connect(show_feedback)
+	EventBus.employee_left.connect(_on_employee_left)
 
 
 func _place_training_room() -> void:
@@ -599,6 +600,18 @@ func _sync_pets() -> void:
 		pet.setup(String(kind), area, st.seed + kind.hash())
 		scene_layer.add_child(pet)
 		pets[kind] = pet
+
+
+## Quem sai da agência atravessa o escritório com a caixa e some na porta (o nó se libera sozinho).
+func _on_employee_left(e: Employee, _reason: String) -> void:
+	var worker: Worker = workers.get(e.id)
+	if worker == null:
+		return
+	workers.erase(e.id)
+	if not is_visible_in_tree():
+		worker.queue_free()
+		return
+	worker.leave_for_good()
 
 
 ## Balão ("Café!") ou número flutuante ("+12 XP") sobre a cabeça do personagem.

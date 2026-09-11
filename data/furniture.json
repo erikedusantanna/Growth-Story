@@ -1,10 +1,10 @@
 {
-  "base_morale_max": 85,
+  "base_morale_max": 75,
   "items": [
     {"id": "plantas", "name": "Plantas no escritório", "desc": "Verde faz bem. Moral sobe um pouco todo dia.",
-     "cost": 800, "requires_office": 1, "effects": {"morale_daily": 0.15}, "sprite": "plant"},
+     "cost": 800, "requires_office": 1, "effects": {"morale_daily": 0.08}, "sprite": "plant"},
     {"id": "cadeiras", "name": "Cadeiras ergonômicas", "desc": "Coluna agradece. Teto de moral +10 e menos estresse.",
-     "cost": 4000, "requires_office": 2, "effects": {"morale_max": 10, "stress_rate": -0.1}, "visual": {"chair": "chair_ergo"}},
+     "cost": 4000, "requires_office": 2, "effects": {"morale_max": 5, "stress_rate": -0.1}, "visual": {"chair": "chair_ergo"}},
     {"id": "cafe_premium", "name": "Máquina de café premium", "desc": "Grão especial. +3 de Criatividade para todos, agora e para quem entrar.",
      "cost": 3500, "requires_office": 2, "effects": {"attr_bonus": {"creativity": 3}, "morale_once": 5}, "visual": {"coffee": "coffee_premium"}},
     {"id": "monitores", "name": "Monitores ultrawide", "desc": "+3 de Tecnologia para todos e 5% de produtividade.",
@@ -14,8 +14,8 @@
     {"id": "biblioteca", "name": "Biblioteca de marketing", "desc": "Livros que ninguém lê, mas +3 de Estratégia para todos.",
      "cost": 3000, "requires_office": 3, "effects": {"attr_bonus": {"strategy": 3}}, "sprite": "shelf"},
     {"id": "pingpong", "name": "Mesa de ping-pong", "desc": "Teto de moral +5 e moral diária, ao custo de 2% de produtividade.",
-     "cost": 5000, "requires_office": 3, "effects": {"morale_max": 5, "morale_daily": 0.2, "productivity": -0.02}, "sprite": "pingpong"},
+     "cost": 5000, "requires_office": 3, "effects": {"morale_max": 5, "morale_daily": 0.1, "productivity": -0.02}, "sprite": "pingpong"},
     {"id": "descompressao", "name": "Sala de descompressão", "desc": "Sofás, luz baixa e silêncio. Teto de moral +10 e 20% menos estresse.",
-     "cost": 12000, "requires_office": 4, "effects": {"morale_max": 10, "stress_rate": -0.2}, "sprite": "sofa"}
+     "cost": 12000, "requires_office": 4, "effects": {"morale_max": 5, "stress_rate": -0.2}, "sprite": "sofa"}
   ]
 }

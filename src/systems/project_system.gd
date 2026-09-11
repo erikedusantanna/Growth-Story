@@ -197,7 +197,7 @@ func compute_targets(p: Project) -> void:
 	if p.addresses_problem:
 		strategy += 15.0 if (c != null and c.diagnosed) else 7.0
 	var creativity: float = avg["creativity"] * 0.6 + max_creativity * 0.4
-	var execution: float = avg["management"] * 0.4 + avg["technology"] * 0.2 + avg["motivation"] * 0.4 \
+	var execution: float = avg["management"] * 0.4 + avg["technology"] * 0.2 + (avg["motivation"] + 20.0) * 0.4 \
 		- avg["stress"] * 0.15 + minf(10.0, avg["experience"] / 60.0)
 	if members.size() == 1 and p.effort_total > 40.0:
 		execution -= 10.0
@@ -584,7 +584,9 @@ func _apply_result(p: Project, result: Dictionary) -> void:
 			var weights: Dictionary = game.content.services.get(s, {}).get("weights", {})
 			for key in weights:
 				e.attrs[key] = clampf(e.attr(key) + float(weights[key]) * growth * st.rng.randf_range(0.5, 1.5), 1.0, 100.0)
-		game.employees.change_morale(e, 6.0 if stars >= 4 else (-8.0 if stars <= 2 else 1.0))
+		game.employees.change_morale(e, {5: 5.0, 4: 3.0, 3: 0.0, 2: -4.0, 1: -8.0}.get(stars, 0.0))
+		if stars == 5:
+			game.employees.good_news(e)
 		e.stress = clampf(e.stress - 8.0, 0.0, 100.0)
 	if c != null:
 		game.clients.on_project_result(c, result)

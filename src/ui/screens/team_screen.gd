@@ -109,6 +109,16 @@ func _employee_card(e: Employee) -> PanelContainer:
 	var morale_bar: ProgressBar = morale_row.get_child(1)
 	morale_bar.max_value = Game.office.morale_max()
 	v.add_child(morale_row)
+	var mood := Game.employees.mood_of(e, st.day)
+	var pressures: Array = Game.employees.morale_pressures(e)
+	if mood != "" or not pressures.is_empty():
+		var parts: Array = []
+		if mood != "":
+			parts.append(Game.employees.mood_label(mood))
+		if not pressures.is_empty():
+			parts.append("pesa: " + ", ".join(pressures.map(func(pr): return "%s (−%.2f/dia)" % [pr.text, float(pr.per_day)])))
+		var mood_color := UIKit.COLOR_RED if mood in ["burnout", "sad", "exhausted"] or not pressures.is_empty() else UIKit.COLOR_GREEN
+		v.add_child(UIKit.label(" · ".join(parts), 13, mood_color, true))
 	var meta := UIKit.hbox(14)
 	meta.add_child(UIKit.label("Teto de moral %d" % int(Game.office.morale_max()), 14, UIKit.COLOR_MUTED))
 	meta.add_child(UIKit.label("Estresse %d" % int(e.stress), 14, UIKit.COLOR_RED if e.stress > 70 else UIKit.COLOR_MUTED))
@@ -127,6 +137,14 @@ func _employee_card(e: Employee) -> PanelContainer:
 	actions.add_child(train)
 	actions.add_child(UIKit.button("🗺️ Jornada", func(): popups().show_journey(e)))
 	if not e.is_founder:
+		var raise_check := Game.employees.can_give_raise(e)
+		var raise_btn := UIKit.button("💰 Aumento +%d%%" % int(EmployeeSystem.RAISE_FRACTION * 100.0), func():
+			var r := Game.employees.raise_by_player(e)
+			if not r.ok:
+				popups().show_info("Aumento", r.reason))
+		raise_btn.disabled = not raise_check.ok
+		raise_btn.tooltip_text = raise_check.reason if not raise_check.ok else "Zera a pressão de salário defasado; moral +10"
+		actions.add_child(raise_btn)
 		actions.add_child(UIKit.button("👋 Demitir", func(): _confirm_fire(e)))
 	v.add_child(actions)
 	return card

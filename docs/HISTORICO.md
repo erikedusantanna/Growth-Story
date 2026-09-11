@@ -371,6 +371,15 @@ README.
 
 ---
 
+## 8b. Bloco B do plano de expansão (moral + humores) — feito nesta sessão
+
+- Moral: ponto de equilíbrio 55, teto base 75, pressões diárias (estresse, salário defasado, sem desafio,
+  escritório lotado, projeto atrasado), ganhos menores por estrela, mobília/pets com metade da moral diária;
+  produtividade e Execução recalibradas para o novo ponto de operação. Régua do `sim_test` com moral média.
+- Humores visíveis no personagem e na ficha; quem sai atravessa o escritório com a caixa.
+- Números finais ficaram em `docs/ARQUITETURA.md` (seção Moral). O restante do plano (mapa isométrico,
+  regiões, concorrentes reais, eventos/mobília por região, projetos complexos) segue em `docs/PLANO_WORLD_MAP.md`.
+
 ## 9. Checklist para retomar o projeto
 
 1. Ler este documento, depois `README.md` (tabela "O que já existe") e `docs/ARQUITETURA.md`;

@@ -1146,6 +1146,125 @@ def season_sheet(path, scale=3):
 
 
 
+# --- Humores dos personagens (icone 16x16 em 2 quadros, desenhado acima da cabeca) ---------------
+PAL.update({"steam": hx("#f4f4f6"), "steam_lo": hx("#c9cfd6"), "sweat": hx("#6fc3f5"), "sweat_hi": hx("#c9ecff"),
+            "note": hx("#8e6ce0"), "note_hi": hx("#c4b0ff"), "cloud": hx("#8f9aa5"), "cloud_lo": hx("#5f6b76"),
+            "rain": hx("#5fb8ff"), "spark": hx("#ffe066"), "spark_hi": hx("#fff6c0"),
+            "env": hx("#fffdf8"), "env_lo": hx("#c9cfd6"), "seal": hx("#d94a3d"),
+            "burst": hx("#ff5c4d"), "burst_hi": hx("#ffe066")})
+
+
+def _mood_frames(draw):
+    frames = []
+    for k in range(2):
+        c = canvas(16, 16)
+        draw(c, k)
+        outline(c)
+        frames.append(c)
+    return hstack(frames)
+
+
+def mood_burnout():
+    """Vapor saindo da cabeca."""
+    def d(c, k):
+        for i, (x, y) in enumerate(((3, 9), (8, 7), (12, 9))):
+            yy = y - (k if i != 1 else 1 - k)
+            rect(c, x, yy, 3, 4, "steam"); put(c, x + 1, yy - 1, "steam"); put(c, x + 1, yy + 3, "steam_lo")
+            put(c, x, yy + 1, "steam_lo")
+    return _mood_frames(d)
+
+
+def mood_exhausted():
+    """Gotas de suor caindo."""
+    def d(c, k):
+        for i, (x, y) in enumerate(((3, 3), (11, 6))):
+            yy = y + (k * 3 if i == 0 else (1 - k) * 3)
+            put(c, x + 1, yy, "sweat"); rect(c, x, yy + 1, 3, 3, "sweat"); put(c, x, yy + 1, "sweat_hi")
+    return _mood_frames(d)
+
+
+def mood_happy():
+    """Notas musicais subindo."""
+    def d(c, k):
+        for i, (x, y) in enumerate(((2, 6), (9, 3))):
+            yy = y - k + (i * k)
+            rect(c, x, yy + 5, 3, 3, "note"); put(c, x, yy + 5, "note_hi")
+            vline(c, x + 2, yy, yy + 5, "note"); hline(c, x + 2, x + 5, yy, "note")
+            if i == 1:
+                rect(c, x + 4, yy + 4, 3, 3, "note"); vline(c, x + 5, yy, yy + 4, "note")
+    return _mood_frames(d)
+
+
+def mood_sad():
+    """Nuvem cinza com chuva."""
+    def d(c, k):
+        rect(c, 3, 3, 10, 5, "cloud"); rect(c, 5, 1, 6, 3, "cloud"); rect(c, 3, 7, 10, 1, "cloud_lo")
+        put(c, 5, 2, "steam"); put(c, 6, 2, "steam")
+        for x in (4, 8, 12):
+            put(c, x, 10 + ((k + x // 4) % 2) * 2, "rain")
+    return _mood_frames(d)
+
+
+def mood_celebrating():
+    """Brilhos."""
+    def d(c, k):
+        pts = ((3, 4), (11, 2), (8, 10), (13, 11)) if k == 0 else ((2, 10), (12, 5), (6, 2), (9, 13))
+        for x, y in pts:
+            put(c, x, y, "spark_hi"); put(c, x - 1, y, "spark"); put(c, x + 1, y, "spark")
+            put(c, x, y - 1, "spark"); put(c, x, y + 1, "spark")
+    return _mood_frames(d)
+
+
+def mood_courted():
+    """Envelope (proposta recebida)."""
+    def d(c, k):
+        rect(c, 2, 4 + k, 12, 8, "env"); hline(c, 2, 13, 11 + k, "env_lo")
+        for i in range(6):
+            put(c, 2 + i, 4 + k + i, "env_lo"); put(c, 13 - i, 4 + k + i, "env_lo")
+        put(c, 7, 8 + k, "seal"); put(c, 8, 8 + k, "seal")
+    return _mood_frames(d)
+
+
+def mood_burst():
+    """Estouro do burnout (1 s)."""
+    def d(c, k):
+        r = 6 if k == 0 else 7
+        for dx, dy in ((r, 0), (-r, 0), (0, r), (0, -r), (r - 2, r - 2), (-(r - 2), r - 2), (r - 2, -(r - 2)), (-(r - 2), -(r - 2))):
+            put(c, 8 + dx, 8 + dy, "burst"); put(c, 8 + dx // 2, 8 + dy // 2, "burst_hi")
+        rect(c, 7, 7, 3, 3, "burst_hi")
+    return _mood_frames(d)
+
+
+def held_box():
+    """Caixa de mudanca carregada na frente do corpo."""
+    c = canvas(14, 11)
+    rect(c, 0, 1, 14, 10, "box"); rect(c, 0, 1, 14, 2, "box_hi"); rect(c, 0, 9, 14, 2, "box_lo")
+    vline(c, 6, 1, 10, "tape"); vline(c, 7, 1, 10, "tape")
+    outline(c)
+    return c
+
+
+MOOD_ART = {"burnout": mood_burnout, "exhausted": mood_exhausted, "happy": mood_happy, "sad": mood_sad,
+            "celebrating": mood_celebrating, "courted": mood_courted, "burst": mood_burst}
+
+
+def export_moods(root):
+    out = os.path.join(root, "assets", "art", "moods")
+    for name, fn in MOOD_ART.items():
+        write_png(os.path.join(out, f"{name}.png"), fn())
+    write_png(os.path.join(out, "box.png"), held_box())
+
+
+def mood_sheet(path, scale=4):
+    c = canvas(150, 40, "floor")
+    x = 4
+    for name in MOOD_ART:
+        blit(c, MOOD_ART[name](), x, 4); x += 36
+    blit(c, held_box(), 4, 26)
+    write_png(path, c, scale)
+
+
+
 def export_all(root):
     art = os.path.join(root, "assets", "art")
     write_png(os.path.join(art, "tiles", "floor_wood.png"), floor_tile())
@@ -1164,6 +1283,7 @@ def export_all(root):
     export_scenes(root)
     export_title(root)
     export_seasons(root)
+    export_moods(root)
 
 
 def furniture_sheet(path, scale=2):

@@ -80,9 +80,21 @@ de reputação. Um jogador real tende a crescer mais devagar que o bot; a faixa 
 
 ## Moral, RH, mobília e eventos da agência
 
-- **Moral** é o campo `motivation` do funcionário (0 até o teto). Teto base 85 (`data/furniture.json → base_morale_max`),
-  elevado por mobília. Toda alteração passa por `EmployeeSystem.change_morale`, que respeita o teto. Produtividade
-  = personalidade × (0,7 + moral × 0,6) × (1 − estresse/220) × buffs do RH × mobília.
+- **Moral** é o campo `motivation` do funcionário (0 até o teto). Teto base 75 (`data/furniture.json → base_morale_max`),
+  elevado por mobília. Toda alteração passa por `EmployeeSystem.change_morale`, que respeita o teto. Todo dia a moral
+  anda 1,5% da distância até o ponto de equilíbrio 55 (`MORALE_BASELINE`), soma a moral diária da mobília e dos pets
+  e subtrai as **pressões** (`morale_pressures`): estresse acima de 60 (−0,10/dia a cada 10 pontos), salário defasado
+  (12+ meses sem aumento, −0,10), sem desafio (15+ dias sem projeto, −0,10), escritório lotado (−0,10) e projeto
+  atrasado (−0,20). Entregas: 5★ +5, 4★ +3, 3★ 0, 2★ −4, 1★ −8; promoção +10. Pedido de demissão a partir de
+  lealdade < 25 e moral < 40. Produtividade = personalidade × (0,85 + moral × 0,55) × (1 − estresse/220) × buffs do RH
+  × mobília; a Execução do projeto usa (moral média + 20) × 0,4 — os dois foram recalibrados para valer no ponto 55 o
+  que valiam quando a moral vivia em 85.
+- **Humores** (`EmployeeSystem.mood_of(e, day)`): burnout > assediado (`last_offer_day` há ≤ 30 dias) > exausto
+  (estresse ≥ 75) > celebrando (`last_good_news_day` há ≤ 3 dias: promoção, prêmio, 5 estrelas) > desanimado
+  (moral ≤ 35) > feliz (moral ≥ 70). `Worker.set_mood()` mostra o ícone de 2 quadros (`assets/art/moods/`), pinta a
+  pele de vermelho no burnout (com estouro de 1 s), dá pulinhos no feliz/celebrando e reduz a velocidade de quem está
+  exausto, desanimado ou em burnout. `EventBus.employee_left` faz o `Worker` atravessar o escritório com a caixa
+  (`leave_for_good`) e se liberar na porta.
 - **RH** (`HRSystem`): fechado até contratar a analista (`hr_actions.json → hire`: custo único, `salary` mensal
   somado em `FinanceSystem.monthly_costs().hr`, exige escritório 3 e reputação 30). `state.hr_hired` liga o anexo
   do escritório (`offices.json → hr_room`: divisória, placa, mesa e analista fixa). Cada ação tem custo fixo

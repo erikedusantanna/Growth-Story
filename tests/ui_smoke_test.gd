@@ -127,6 +127,23 @@ func _ready() -> void:
 	print("  resultado de evento da agência com cena: %s" % agency_scene)
 	main.popups.close()
 	await _drain_popups(main)
+	# humores: estresse alto vira ícone no personagem; quem sai atravessa o escritório com a caixa
+	var founder: Employee = Game.state.employees[0]
+	founder.stress = 90.0
+	EventBus.state_changed.emit()
+	await get_tree().process_frame
+	var w0: Worker = main.office_view.workers.get(founder.id)
+	var mood_ok: bool = w0 != null and w0.mood == "exhausted" and w0.mood_sprite.visible
+	founder.stress = 0.0
+	var extra: Employee = Game.employees.generate_candidate("normal")
+	Game.state.candidates.append(extra)
+	Game.employees.hire(extra)
+	await get_tree().process_frame
+	var w1: Worker = main.office_view.workers.get(extra.id)
+	Game.employees.quit(extra, "teste")
+	await get_tree().process_frame
+	var leaving_ok: bool = w1 != null and is_instance_valid(w1) and w1.leaving_for_good and w1.carrying_box and not main.office_view.workers.has(extra.id)
+	print("  humor exausto no personagem: %s · saída pela porta com caixa: %s" % [mood_ok, leaving_ok])
 	main.popups.show_awards(Game.awards.evaluate_year(GameState.START_YEAR))
 	await get_tree().process_frame
 	var awards_scene: bool = main.popups.is_open() and main.event_stage.visible
@@ -163,7 +180,7 @@ func _ready() -> void:
 	main.show_title()
 	await get_tree().process_frame
 	print("  workers no escritório: %d" % main.office_view.workers.size())
-	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene
+	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene and mood_ok and leaving_ok
 	print("[%s] UI smoke" % ("OK" if ok else "FALHA"))
 	get_tree().quit(0 if ok else 1)
 

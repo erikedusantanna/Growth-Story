@@ -141,6 +141,35 @@ func _ready() -> void:
 	st.day = saved_day
 	EventBus.state_changed.emit()
 	await _frames(2)
+	# humores: um em burnout, um exausto, um feliz, um desanimado
+	var moods_backup: Array = st.employees.map(func(e): return [e.motivation, e.stress, e.busy_reason, e.busy_until])
+	var forced: Array = ["burnout", "exhausted", "sad", "happy"]
+	for i in mini(st.employees.size(), forced.size()):
+		var fe: Employee = st.employees[i]
+		fe.last_good_news_day = -99   # "celebrando" tem prioridade sobre desanimado/feliz
+		match forced[i]:
+			"burnout":
+				fe.busy_reason = "Burnout"
+				fe.busy_until = st.day + 5
+			"exhausted":
+				fe.stress = 90.0
+			"sad":
+				fe.stress = 0.0
+				fe.motivation = 20.0
+			"happy":
+				fe.stress = 0.0
+				fe.motivation = 74.0
+	EventBus.state_changed.emit()
+	await get_tree().create_timer(1.2).timeout
+	await _shot("07m_humores")
+	for i in st.employees.size():
+		var e: Employee = st.employees[i]
+		e.motivation = moods_backup[i][0]
+		e.stress = moods_backup[i][1]
+		e.busy_reason = moods_backup[i][2]
+		e.busy_until = moods_backup[i][3]
+	EventBus.state_changed.emit()
+	await _frames(2)
 	main.popups.show_people_picker(Game.agency_events.event_by_id("workshop"))
 	await _frames(2)
 	await _shot("07h_evento_pessoas")

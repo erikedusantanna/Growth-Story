@@ -4,7 +4,8 @@
 > hoje (custos, tiers, eventos, mobília, moral) e da referência visual enviada (mapa com
 > "Início" no Bairro Criativo e cinco marcos: Tier 1 Locais → Tier 5 Global). Nada aqui está
 > implementado; os números são ponto de partida para a régua da simulação, não valores finais.
-> Perguntas em aberto estão marcadas com **[decidir]**.
+> Decisões do usuário (11/09/2026) já incorporadas (§11); o que depende de ajuste por simulação
+> está marcado como **[ajustar]**.
 
 ---
 
@@ -19,7 +20,7 @@ Região 1  Bairro Criativo      → clientes Tier 1 (locais)          início do
 Região 2  Centro Regional      → clientes Tier 2 (regionais)       concorrente aparece
 Região 3  Capital              → clientes Tier 3 (nacionais)       concorrente aparece
 Região 4  Distrito das Marcas  → clientes Tier 4 (grandes marcas)  concorrente aparece
-Região 5  Hub Global           → clientes Tier 5 (globais)         [decidir] concorrente global?
+Região 5  Hub Global           → clientes Tier 5 (globais)         sem rival: projetos complexos (§6.5)
 ```
 
 Cada região é um "escritório" com **1 a 3 níveis de expansão** (mais mesas), em vez dos 4
@@ -59,11 +60,9 @@ uma linha "região por ano" e ser reajustada.
   a aparecer quando houver slot.
 - Aluguel novo entra no custo fixo do mês seguinte.
 - Semana de mudança: 7 dias com produtividade ×0,85 e balões de "📦" no escritório (dá vida e
-  cria um custo real além do dinheiro). **[decidir]** manter ou dispensar.
-- O escritório antigo **[decidir]**: (a) some, como hoje; ou (b) vira **filial** com um gerente
-  e 2–3 pessoas, que continua atendendo clientes daquele tier com receita passiva — casa com o
-  GDD §31 ("o jogador deixa de executar") e §32 (grupo de agências), mas é bem mais trabalho.
-  Recomendação: (a) agora, (b) como expansão futura.
+  cria um custo real além do dinheiro). **Decidido: manter.**
+- O escritório antigo **some** (só mudança de local). Filial fica como expansão futura
+  (GDD §31 "o jogador deixa de executar" e §32 grupo de agências).
 - Visual: cada região tem sua paleta de parede e o que se vê pela janela (bairro com casas →
   prédios → skyline → torres de vidro → cidade global à noite). A arte é gerada por código
   como hoje; são 5 fundos de janela e 5 tons de parede.
@@ -77,14 +76,11 @@ escritório e abas, como a tela inicial faz. Fechar volta ao estado anterior.
 
 ## 3. O World Map
 
-**[decidir] estilo:** a referência é isométrica e horizontal; o jogo é top-down 3/4 e vertical
-(540×960). Duas opções:
-
-1. **Mapa no traço do jogo** (recomendado): um "mapa ilustrado" top-down desenhado por código,
-   rolável na vertical, com a estrada de progresso subindo do Bairro Criativo (embaixo) até o
-   Hub Global (em cima, junto do mar/ilha como na referência). Coerente com o resto e barato.
-2. **Mapa isométrico** só nessa tela: mais fiel à imagem, mas exige um segundo estilo de arte e
-   mais trabalho. Não recomendo agora.
+**Decidido: mapa isométrico**, como a referência. Sem personagens no mapa, então o segundo estilo
+custa só o cenário (prédios, ruas, água e vegetação em losangos isométricos gerados por código em
+`tools/gen_art.py`). A tela é vertical (540×960) e rolável: a cidade sobe do Bairro Criativo
+(embaixo) até o Hub Global (em cima, junto do mar), e os concorrentes ficam espalhados pelos bairros
+que dominam.
 
 Elementos (a legenda da referência vale toda):
 
@@ -93,7 +89,7 @@ Elementos (a legenda da referência vale toda):
   ("R$ 150 mil · reputação 35").
 - **Tier de clientes** de cada região no cartão do marco ("Tier 3 · Nacionais · marcas
   conhecidas, atuação nacional").
-- **Concorrentes** desenhados como prédios com logo nas regiões 2, 3 e 4 (e talvez 5). Tocar
+- **Concorrentes** desenhados como prédios com logo nas regiões 2, 3 e 4 (não na 5). Tocar
   abre o painel do concorrente (§6).
 - **Conquistas especiais** (estrela): prêmios ganhos e marcos ("primeiro cliente tier 3")
   aparecem como estrelinhas no mapa.
@@ -172,8 +168,8 @@ carteira**.
   clients: gerados no tier da região (3 visíveis), staff: 2 pessoas nomeadas com atributos }
 ```
 
-Aparecem no mapa **quando o jogador chega à região** (fase 2, 3 e 4, como pedido; **[decidir]**
-se a Região 5 tem uma rival global). Força evolui devagar com o tempo e cai quando você tira
+Aparecem no mapa **quando o jogador chega à região** (fases 2, 3 e 4; a Região 5 não tem rival — lá a
+dificuldade vem de **projetos complexos**, §6.5). Força evolui devagar com o tempo e cai quando você tira
 clientes dela.
 
 ### 6.2 O que elas fazem (todo mês, por concorrente na sua região ou abaixo)
@@ -190,14 +186,14 @@ clientes dela.
 
 - Painel: nome, região, força, especialidade, 3 clientes (nome, tier, orçamento, "relação com a
   rival": sólida/morna/frágil) e 2 pessoas da equipe (cargo, atributos principais, salário).
-- **Proposta a um cliente dela — 1 por mês** (global, não por rival): usa a fórmula de proposta
-  atual com bônus por relação frágil e penalidade pela força da rival. Se aceitar: cliente entra
-  como ativo com relação 40 e **você perde reputação** (−2; "o mercado comenta a caça"). A rival
-  fica agressiva por 3 meses (dobra as tentativas contra você). Se recusar: cooldown do mês gasto.
+- **Proposta a um cliente dela**: usa a fórmula de proposta atual com bônus por relação frágil e
+  penalidade pela força da rival. Se aceitar: cliente entra como ativo com relação 40 e **você
+  perde 5 de reputação** ("o mercado comenta a caça"). A rival fica agressiva por 3 meses (dobra as
+  tentativas contra você). Se recusar, a investida foi gasta mesmo assim.
 - **Contratar uma pessoa dela**: bônus de assinatura de 2 salários + salário 10% acima; chance
-  pela lealdade dela à rival. Se aceitar: entra na equipe e **você perde reputação** (−2, como
-  na proposta ao cliente). Também respeita o limite de 1 investida por mês? **[decidir]**
-  (recomendo 1 proposta a cliente + 1 contratação por mês, separadas).
+  pela lealdade dela à rival. Se aceitar: entra na equipe e **você perde 3 de reputação**.
+- **Limite decidido: 1 investida a cada 3 meses** (cliente ou funcionário; cooldown único de 90
+  dias). O painel mostra "próxima investida em N dias".
 - Prêmio "Agência do Ano" passa a comparar você com as rivais reais (força × resultados), em
   vez da régua fixa de hoje.
 
@@ -206,6 +202,14 @@ clientes dela.
 Reputação é o que libera mudar de região (§4), então "roubar" tem custo real: cada investida
 bem-sucedida atrasa a próxima mudança. É o equilíbrio entre crescer rápido por conquista e
 crescer limpo por resultado.
+
+### 6.5 Região 5: projetos complexos em vez de rival
+
+No Hub Global a dificuldade vem do trabalho: clientes Tier 5 trazem **projetos complexos** — 2 a 3
+briefings encadeados (fases), equipe mínima de 4 pessoas com pelo menos 2 especialidades
+diferentes, prazo apertado por fase e **checkpoints** em que o cliente avalia e pode cortar escopo
+(parte do pagamento some) ou exigir refação (mais esforço). Química da equipe e departamentos pesam
+mais nesses projetos. **[ajustar]** números pela simulação.
 
 ---
 
@@ -297,16 +301,12 @@ concorrentes: "assediado", "saindo"), depois **A**, **C**, **D**.
 
 ---
 
-## 11. Perguntas para fechar antes de codar
+## 11. Decisões fechadas (11/09/2026)
 
-1. **Regiões**: são 5, começando no Bairro Criativo com clientes Tier 1, como na tabela do §2? A
-   referência mostra "Início" e cinco marcos; li como 5 regiões (o Início é o seu escritório
-   dentro da Região 1).
-2. **Estilo do mapa**: no traço do jogo, vertical (recomendado) ou isométrico como a referência?
-3. **Escritório antigo** ao mudar: some (simples) ou vira filial (grande, fica para depois)?
-4. **Concorrente na Região 5**: sim ou só nas regiões 2–4?
-5. **Reputação nas investidas**: −2 por cliente ou funcionário tirado de rival está bom? E o
-   limite: 1 proposta a cliente + 1 contratação por mês, ou 1 investida no total?
-6. **Semana de mudança** com produtividade reduzida: manter?
-7. **Números de moral** do §7.2: começo por eles e ajusto pela simulação, ou você quer mexer
-   antes?
+1. 5 regiões; o jogo começa na Região 1 (Bairro Criativo) com clientes Tier 1.
+2. Mapa **isométrico**, como a referência, sem personagens.
+3. Ao mudar de sede o escritório antigo some; filial só no futuro.
+4. Sem concorrente na Região 5; lá entram projetos complexos.
+5. Reputação: **−5** por cliente tirado de rival, **−3** por funcionário; **1 investida a cada 3 meses**.
+6. Semana de mudança com produtividade reduzida: sim.
+7. Números de moral (§7.2): sem resposta do usuário; a IA começa pelos propostos e ajusta pela simulação.
