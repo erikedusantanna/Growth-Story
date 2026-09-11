@@ -31,6 +31,19 @@ var static_pose := false   # sala de treinamento: fica parado na pose escolhida
 var sitting := false
 var morale := -1.0         # barra de moral sobre a cabeça (-1 = não mostra)
 var facing: int = Dir.FRONT
+var mood := ""             # humor visível (EmployeeSystem.mood_of): ícone animado sobre a cabeça
+var mood_sprite: Sprite2D
+var box_sprite: Sprite2D   # caixa carregada (saindo da agência / mudança de sede)
+var carrying_box := false
+var leaving_for_good := false
+var speed_mult := 1.0
+var _mood_timer := 0.0
+var _burst_left := 0.0     # estouro de burnout (1 s)
+var _bounce_t := 0.0
+var _skin_color := Color.WHITE
+
+const MOOD_OFFSET := Vector2(-8, -78)
+const SLOW_MOODS := ["exhausted", "sad", "burnout"]
 
 
 func _ready() -> void:
@@ -42,8 +55,61 @@ func _ready() -> void:
 		s.offset = SPRITE_OFFSET
 		add_child(s)
 		layers[name] = s
+	box_sprite = Sprite2D.new()
+	box_sprite.texture = preload("res://assets/art/moods/box.png")
+	box_sprite.centered = false
+	box_sprite.position = Vector2(-7, -30)
+	box_sprite.visible = false
+	add_child(box_sprite)
+	mood_sprite = Sprite2D.new()
+	mood_sprite.centered = false
+	mood_sprite.hframes = 2
+	mood_sprite.position = MOOD_OFFSET
+	mood_sprite.visible = false
+	add_child(mood_sprite)
 	position = desk_pos
 	wait_time = rng.randf_range(3.0, 8.0)
+
+
+## Troca o humor visível: ícone animado, pele vermelha no burnout, ritmo mais lento quando cansado.
+func set_mood(new_mood: String) -> void:
+	if new_mood == mood:
+		return
+	if new_mood == "burnout" and mood != "burnout":
+		_burst_left = 1.0
+	mood = new_mood
+	speed_mult = 0.7 if mood in SLOW_MOODS else 1.0
+	if mood != "" and mood != "leaving" and ResourceLoader.exists("res://assets/art/moods/%s.png" % mood):
+		mood_sprite.texture = load("res://assets/art/moods/%s.png" % mood)
+		mood_sprite.visible = true
+	else:
+		mood_sprite.visible = false
+	_apply_skin()
+
+
+func _apply_skin() -> void:
+	if layers.is_empty():
+		return
+	layers["skin"].modulate = _skin_color.lerp(Color("#e05d5d"), 0.65) if mood == "burnout" else _skin_color
+
+
+func set_carrying_box(on: bool) -> void:
+	carrying_box = on
+	box_sprite.visible = on
+
+
+## Pediu demissão ou foi levado por um concorrente: vai até a porta com a caixa e some de vez.
+func leave_for_good() -> void:
+	if static_pose:
+		queue_free()
+		return
+	leaving_for_good = true
+	set_mood("leaving")
+	set_carrying_box(true)
+	visible = true
+	training = false
+	target = door_pos
+	state = State.LEAVING
 
 
 func setup(e: Employee, desk: Vector2, spot_list: Array, seed: int) -> void:
@@ -66,7 +132,8 @@ func apply_look(e: Employee) -> void:
 	layers["skin"].texture = load("res://assets/art/characters/skin.png")
 	layers["legs"].texture = load("res://assets/art/characters/legs.png")
 	layers["shirt"].texture = load("res://assets/art/characters/shirt.png")
-	layers["skin"].modulate = Color(e.skin)
+	_skin_color = Color(e.skin)
+	_apply_skin()
 	layers["hair"].modulate = Color(e.hair_color)
 	layers["shirt"].modulate = Color(e.color)
 
@@ -79,8 +146,9 @@ func sync(e: Employee, day: int) -> void:
 	apply_look(e)
 	if not static_pose:
 		morale = e.motivation
+		set_mood(Game.employees.mood_of(e, day))
 		queue_redraw()
-	if static_pose:
+	if static_pose or leaving_for_good:
 		return
 	if training and not was_training and state != State.AWAY and state != State.LEAVING:
 		# vai até a porta e sai do escritório
@@ -95,6 +163,7 @@ func sync(e: Employee, day: int) -> void:
 
 func _process(delta: float) -> void:
 	var frame := Frame.IDLE
+	_animate_mood(delta)
 	if static_pose:
 		_apply_frame(Frame.SIT if sitting else Frame.IDLE)
 		return
@@ -106,13 +175,16 @@ func _process(delta: float) -> void:
 			if dir.length() < 1.5:
 				position = target
 				if state == State.LEAVING:
+					if leaving_for_good:
+						queue_free()
+						return
 					visible = false
 					state = State.AWAY
 				else:
 					state = State.AT_DESK
 					wait_time = rng.randf_range(8.0, 20.0)
 			else:
-				position += dir.normalized() * WALK_SPEED * delta
+				position += dir.normalized() * WALK_SPEED * speed_mult * delta
 				_face(dir)
 				frame_timer += delta
 				if frame_timer >= FRAME_TIME:
@@ -136,7 +208,7 @@ func _process(delta: float) -> void:
 				state = State.AT_DESK if target == desk_pos else State.AT_SPOT
 				wait_time = rng.randf_range(3.0, 7.0) if state == State.AT_SPOT else rng.randf_range(8.0, 20.0)
 			else:
-				position += dir.normalized() * WALK_SPEED * delta
+				position += dir.normalized() * WALK_SPEED * speed_mult * delta
 				_face(dir)
 				frame_timer += delta
 				if frame_timer >= FRAME_TIME:
@@ -144,6 +216,28 @@ func _process(delta: float) -> void:
 					walk_frame = 1 - walk_frame
 				frame = Frame.WALK_A if walk_frame == 0 else Frame.WALK_B
 	_apply_frame(frame)
+
+
+## Ícone do humor alterna entre 2 quadros; feliz dá pulinhos; estouro do burnout dura 1 s.
+func _animate_mood(delta: float) -> void:
+	_mood_timer += delta
+	if _burst_left > 0.0:
+		_burst_left -= delta
+		if mood_sprite.texture == null or not mood_sprite.visible or _burst_left > 0.0:
+			var burst: Texture2D = load("res://assets/art/moods/burst.png")
+			mood_sprite.texture = burst
+			mood_sprite.visible = true
+		if _burst_left <= 0.0 and mood == "burnout":
+			mood_sprite.texture = load("res://assets/art/moods/burnout.png")
+	if mood_sprite.visible:
+		mood_sprite.frame = int(_mood_timer / 0.35) % 2
+	var bounce := 0.0
+	if mood == "happy" or mood == "celebrating":
+		_bounce_t += delta
+		bounce = absf(sin(_bounce_t * 6.0)) * 3.0
+	for s in layers.values():
+		s.offset.y = SPRITE_OFFSET.y - bounce
+	box_sprite.position.y = -30.0 - bounce
 
 
 ## Escolhe a direção pela componente dominante do movimento.

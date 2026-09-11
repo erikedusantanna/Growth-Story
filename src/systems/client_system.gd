@@ -26,19 +26,12 @@ func setup(g) -> void:
 
 ## Tier máximo dos prospects: reputação abre portas, mas o tamanho da equipe limita
 ## (um cliente tier 3 exige estrutura; sem isso o projeto atrasa e vira 1 estrela).
+## Tier máximo dos prospects: a região da sede abre o tier (reputação é o que permite mudar de
+## região), e o tamanho da equipe limita (um cliente tier 3 exige estrutura).
 func max_tier() -> int:
-	var rep: float = game.state.reputation
-	var by_rep := 1
-	if rep >= 80.0:
-		by_rep = 5
-	elif rep >= 60.0:
-		by_rep = 4
-	elif rep >= 40.0:
-		by_rep = 3
-	elif rep >= 20.0:
-		by_rep = 2
+	var by_region: int = game.office.region()
 	var by_team: int = 1 + game.state.employees.size() / 3
-	return clampi(mini(by_rep, by_team), 1, 5)
+	return clampi(mini(by_region, by_team), 1, 5)
 
 
 func segment_name(c: Client) -> String:

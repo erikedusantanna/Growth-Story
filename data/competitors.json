@@ -1,6 +1,24 @@
 {
-  "agencies": ["Vértice Digital", "Bumerangue Ads", "Estúdio Rival", "Alcance Comunicação", "Prisma Criativo", "Norte Performance"],
+  "comment": "Agências concorrentes do World Map (bloco C). Cada uma domina uma região (2–4); a Região 5 não tem rival. strength = força/reputação delas (0–100); aggression = chance base por mês de investir contra você (funcionário ou cliente).",
   "min_day": 60,
   "steal_after_idle_days": 22,
-  "steal_chance_per_day": 0.05
+  "steal_chance_per_day": 0.05,
+  "raid_cooldown_days": 90,
+  "rep_cost_client": 5,
+  "rep_cost_employee": 3,
+  "aggressive_days": 90,
+  "agencies": [
+    {"id": "vertice", "name": "Vértice Digital", "region": 2, "logo": "navy", "specialty": "paid_traffic", "strength": 35, "aggression": 0.35,
+     "desc": "Agência de performance que cresceu com tráfego pago para o comércio regional."},
+    {"id": "bumerangue", "name": "Bumerangue Ads", "region": 3, "logo": "brick", "specialty": "social_media", "strength": 55, "aggression": 0.45,
+     "desc": "Fábrica de conteúdo na capital: barulhenta, rápida e agressiva nas propostas."},
+    {"id": "prisma", "name": "Prisma Criativo", "region": 4, "logo": "glass", "specialty": "branding", "strength": 75, "aggression": 0.5,
+     "desc": "Boutique de branding premiada, queridinha das grandes marcas."},
+    {"id": "alcance", "name": "Alcance Comunicação", "region": 0, "logo": "brick", "specialty": "content", "strength": 40, "aggression": 0.0,
+     "desc": "Só aparece fechando prospects esquecidos."},
+    {"id": "norte", "name": "Norte Performance", "region": 0, "logo": "navy", "specialty": "seo", "strength": 45, "aggression": 0.0,
+     "desc": "Só aparece fechando prospects esquecidos."},
+    {"id": "estudio", "name": "Estúdio Rival", "region": 0, "logo": "glass", "specialty": "design", "strength": 30, "aggression": 0.0,
+     "desc": "Só aparece fechando prospects esquecidos."}
+  ]
 }

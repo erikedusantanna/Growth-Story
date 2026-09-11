@@ -18,6 +18,7 @@ var career: Array = []
 var colors: Array = []
 var courses: Array = []
 var offices: Array = []
+var regions: Dictionary = {}          # World Map (data/regions.json)
 var feed: Dictionary = {}
 var objectives: Array = []
 var hr: Dictionary = {}
@@ -58,6 +59,7 @@ func load_all() -> void:
 
 	courses = _load_json("res://data/training.json").get("courses", [])
 	offices = _load_json("res://data/offices.json").get("offices", [])
+	regions = _load_json("res://data/regions.json")
 	feed = _load_json("res://data/feed.json")
 	objectives = _load_json("res://data/objectives.json").get("objectives", [])
 	hr = _load_json("res://data/hr_actions.json")

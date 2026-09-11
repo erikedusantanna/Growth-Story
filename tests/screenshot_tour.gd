@@ -32,7 +32,7 @@ func _ready() -> void:
 	Game.manual_time = true
 	# prepara um estado interessante: 3 pessoas, cliente ativo, projeto rodando
 	var st: GameState = Game.state
-	st.office_level = 2
+	st.office_level = 4
 	st.money = 50000.0
 	for i in 2:
 		Game.employees.hire(Game.employees.generate_candidate("high"))
@@ -81,7 +81,7 @@ func _ready() -> void:
 	main.show_screen("unlocks")
 	await _frames(2)
 	await _shot("07_unlocks")
-	st.office_level = 3
+	st.office_level = 7
 	st.reputation = 45.0
 	st.money = 120000.0
 	Game.office.buy(Game.office.furniture_by_id("plantas"))
@@ -139,6 +139,35 @@ func _ready() -> void:
 	await _frames(2)
 	await _shot("07l_escritorio_junina")
 	st.day = saved_day
+	EventBus.state_changed.emit()
+	await _frames(2)
+	# humores: um em burnout, um exausto, um feliz, um desanimado
+	var moods_backup: Array = st.employees.map(func(e): return [e.motivation, e.stress, e.busy_reason, e.busy_until])
+	var forced: Array = ["burnout", "exhausted", "sad", "happy"]
+	for i in mini(st.employees.size(), forced.size()):
+		var fe: Employee = st.employees[i]
+		fe.last_good_news_day = -99   # "celebrando" tem prioridade sobre desanimado/feliz
+		match forced[i]:
+			"burnout":
+				fe.busy_reason = "Burnout"
+				fe.busy_until = st.day + 5
+			"exhausted":
+				fe.stress = 90.0
+			"sad":
+				fe.stress = 0.0
+				fe.motivation = 20.0
+			"happy":
+				fe.stress = 0.0
+				fe.motivation = 74.0
+	EventBus.state_changed.emit()
+	await get_tree().create_timer(1.2).timeout
+	await _shot("07m_humores")
+	for i in st.employees.size():
+		var e: Employee = st.employees[i]
+		e.motivation = moods_backup[i][0]
+		e.stress = moods_backup[i][1]
+		e.busy_reason = moods_backup[i][2]
+		e.busy_until = moods_backup[i][3]
 	EventBus.state_changed.emit()
 	await _frames(2)
 	main.popups.show_people_picker(Game.agency_events.event_by_id("workshop"))
@@ -208,7 +237,7 @@ func _ready() -> void:
 	main.show_screen("unlocks")
 	await _frames(2)
 	await _shot("12_concorrencia")
-	st.office_level = 4
+	st.office_level = 11
 	st.money = 200000.0
 	st.employees[0].career_level = 5
 	Game.departments.assign(st.employees[0], "criacao")
@@ -218,6 +247,28 @@ func _ready() -> void:
 	main.show_screen("team")
 	await _frames(3)
 	await _shot("13_departamentos")
+	# mapa e sede na Capital (região 3) com a semana de mudança
+	st.money = 500000.0
+	st.reputation = 60.0
+	main.show_world_map()
+	await _frames(3)
+	await _shot("14_mapa")
+	main.world_map.close()
+	Game.office.move_to(2)
+	Game.office.move_to(3)
+	main.show_screen("clients")
+	await _frames(3)
+	await get_tree().create_timer(0.8).timeout
+	await _shot("14b_escritorio_capital_mudanca")
+	main.show_world_map()
+	await _frames(3)
+	await _shot("14c_mapa_capital")
+	main.world_map.close()
+	if not Game.competitors.active_rivals().is_empty():
+		main.popups.show_rival(String(Game.competitors.active_rivals()[0].id))
+		await _frames(2)
+		await _shot("14d_concorrente")
+		main.popups.close()
 	print("screenshots em %s" % ProjectSettings.globalize_path(out_dir))
 	get_tree().quit(0)
 

@@ -1146,6 +1146,517 @@ def season_sheet(path, scale=3):
 
 
 
+# --- Humores dos personagens (icone 16x16 em 2 quadros, desenhado acima da cabeca) ---------------
+PAL.update({"steam": hx("#f4f4f6"), "steam_lo": hx("#c9cfd6"), "sweat": hx("#6fc3f5"), "sweat_hi": hx("#c9ecff"),
+            "note": hx("#8e6ce0"), "note_hi": hx("#c4b0ff"), "cloud": hx("#8f9aa5"), "cloud_lo": hx("#5f6b76"),
+            "rain": hx("#5fb8ff"), "spark": hx("#ffe066"), "spark_hi": hx("#fff6c0"),
+            "env": hx("#fffdf8"), "env_lo": hx("#c9cfd6"), "seal": hx("#d94a3d"),
+            "burst": hx("#ff5c4d"), "burst_hi": hx("#ffe066")})
+
+
+def _mood_frames(draw):
+    frames = []
+    for k in range(2):
+        c = canvas(16, 16)
+        draw(c, k)
+        outline(c)
+        frames.append(c)
+    return hstack(frames)
+
+
+def mood_burnout():
+    """Vapor saindo da cabeca."""
+    def d(c, k):
+        for i, (x, y) in enumerate(((3, 9), (8, 7), (12, 9))):
+            yy = y - (k if i != 1 else 1 - k)
+            rect(c, x, yy, 3, 4, "steam"); put(c, x + 1, yy - 1, "steam"); put(c, x + 1, yy + 3, "steam_lo")
+            put(c, x, yy + 1, "steam_lo")
+    return _mood_frames(d)
+
+
+def mood_exhausted():
+    """Gotas de suor caindo."""
+    def d(c, k):
+        for i, (x, y) in enumerate(((3, 3), (11, 6))):
+            yy = y + (k * 3 if i == 0 else (1 - k) * 3)
+            put(c, x + 1, yy, "sweat"); rect(c, x, yy + 1, 3, 3, "sweat"); put(c, x, yy + 1, "sweat_hi")
+    return _mood_frames(d)
+
+
+def mood_happy():
+    """Notas musicais subindo."""
+    def d(c, k):
+        for i, (x, y) in enumerate(((2, 6), (9, 3))):
+            yy = y - k + (i * k)
+            rect(c, x, yy + 5, 3, 3, "note"); put(c, x, yy + 5, "note_hi")
+            vline(c, x + 2, yy, yy + 5, "note"); hline(c, x + 2, x + 5, yy, "note")
+            if i == 1:
+                rect(c, x + 4, yy + 4, 3, 3, "note"); vline(c, x + 5, yy, yy + 4, "note")
+    return _mood_frames(d)
+
+
+def mood_sad():
+    """Nuvem cinza com chuva."""
+    def d(c, k):
+        rect(c, 3, 3, 10, 5, "cloud"); rect(c, 5, 1, 6, 3, "cloud"); rect(c, 3, 7, 10, 1, "cloud_lo")
+        put(c, 5, 2, "steam"); put(c, 6, 2, "steam")
+        for x in (4, 8, 12):
+            put(c, x, 10 + ((k + x // 4) % 2) * 2, "rain")
+    return _mood_frames(d)
+
+
+def mood_celebrating():
+    """Brilhos."""
+    def d(c, k):
+        pts = ((3, 4), (11, 2), (8, 10), (13, 11)) if k == 0 else ((2, 10), (12, 5), (6, 2), (9, 13))
+        for x, y in pts:
+            put(c, x, y, "spark_hi"); put(c, x - 1, y, "spark"); put(c, x + 1, y, "spark")
+            put(c, x, y - 1, "spark"); put(c, x, y + 1, "spark")
+    return _mood_frames(d)
+
+
+def mood_courted():
+    """Envelope (proposta recebida)."""
+    def d(c, k):
+        rect(c, 2, 4 + k, 12, 8, "env"); hline(c, 2, 13, 11 + k, "env_lo")
+        for i in range(6):
+            put(c, 2 + i, 4 + k + i, "env_lo"); put(c, 13 - i, 4 + k + i, "env_lo")
+        put(c, 7, 8 + k, "seal"); put(c, 8, 8 + k, "seal")
+    return _mood_frames(d)
+
+
+def mood_burst():
+    """Estouro do burnout (1 s)."""
+    def d(c, k):
+        r = 6 if k == 0 else 7
+        for dx, dy in ((r, 0), (-r, 0), (0, r), (0, -r), (r - 2, r - 2), (-(r - 2), r - 2), (r - 2, -(r - 2)), (-(r - 2), -(r - 2))):
+            put(c, 8 + dx, 8 + dy, "burst"); put(c, 8 + dx // 2, 8 + dy // 2, "burst_hi")
+        rect(c, 7, 7, 3, 3, "burst_hi")
+    return _mood_frames(d)
+
+
+def held_box():
+    """Caixa de mudanca carregada na frente do corpo."""
+    c = canvas(14, 11)
+    rect(c, 0, 1, 14, 10, "box"); rect(c, 0, 1, 14, 2, "box_hi"); rect(c, 0, 9, 14, 2, "box_lo")
+    vline(c, 6, 1, 10, "tape"); vline(c, 7, 1, 10, "tape")
+    outline(c)
+    return c
+
+
+MOOD_ART = {"burnout": mood_burnout, "exhausted": mood_exhausted, "happy": mood_happy, "sad": mood_sad,
+            "celebrating": mood_celebrating, "courted": mood_courted, "burst": mood_burst}
+
+
+def export_moods(root):
+    out = os.path.join(root, "assets", "art", "moods")
+    for name, fn in MOOD_ART.items():
+        write_png(os.path.join(out, f"{name}.png"), fn())
+    write_png(os.path.join(out, "box.png"), held_box())
+
+
+def mood_sheet(path, scale=4):
+    c = canvas(150, 40, "floor")
+    x = 4
+    for name in MOOD_ART:
+        blit(c, MOOD_ART[name](), x, 4); x += 36
+    blit(c, held_box(), 4, 26)
+    write_png(path, c, scale)
+
+
+
+# --- World Map isometrico (270x640 em 1x, exibido em 2x) ------------------------------------------
+MAP_W, MAP_H = 270, 640
+PAL.update({
+    "g_sub": hx("#8fcf6e"), "g_sub_lo": hx("#78b85c"), "g_park": hx("#6fbf62"), "g_park_lo": hx("#5aa64f"),
+    "g_urb": hx("#b7bcc4"), "g_urb_lo": hx("#a2a8b1"), "g_dist": hx("#9ea6b3"), "g_dist_lo": hx("#8a93a1"),
+    "g_glob": hx("#c8cfd8"), "g_glob_lo": hx("#b3bbc6"), "sand": hx("#efd9a0"), "sand_lo": hx("#d9c085"),
+    "sea": hx("#3f8fd0"), "sea_hi": hx("#6fb3e6"), "sea_lo": hx("#2f6fa8"), "foam2": hx("#cfe9f7"),
+    "iso_road": hx("#4e5561"), "iso_road_lo": hx("#3d434d"), "iso_lane": hx("#e4d27a"), "path": hx("#f7f1e0"), "path_lo": hx("#d9d0b8"),
+    "h_wall": hx("#f1e3c8"), "h_wall_lo": hx("#cfbf9d"), "h_roof_r": hx("#c95c48"), "h_roof_r_lo": hx("#9a4234"),
+    "h_roof_b": hx("#4a7fb8"), "h_roof_b_lo": hx("#345f8f"), "h_roof_g": hx("#5fa35a"), "h_roof_g_lo": hx("#437a40"),
+    "b_gray": hx("#c3c8d1"), "b_gray_l": hx("#a9afba"), "b_gray_r": hx("#8e95a1"), "b_beige": hx("#e2cfae"), "b_beige_l": hx("#c6b391"), "b_beige_r": hx("#a99676"),
+    "b_brick": hx("#c8735a"), "b_brick_l": hx("#a85a44"), "b_brick_r": hx("#874536"), "b_glass": hx("#8fc6ec"), "b_glass_l": hx("#5f9fd0"), "b_glass_r": hx("#3f7fb0"),
+    "b_navy": hx("#3e5f8f"), "b_navy_l": hx("#2f4a70"), "b_navy_r": hx("#233858"), "b_white": hx("#eef1f5"), "b_white_l": hx("#c9d0da"), "b_white_r": hx("#a6b0bd"),
+    "b_win": hx("#f5e8a8"), "b_win_d": hx("#2c3a4e"), "iso_tree": hx("#4f9a4a"), "iso_tree_hi": hx("#7fc56a"), "iso_tree_lo": hx("#2f6b33"), "iso_trunk": hx("#7a4a25"),
+    "light_w": hx("#fbfbfb"), "light_r": hx("#e04a3c"), "pin": hx("#3cc36a"), "gold2": hx("#f2c744"),
+})
+ISO_TW, ISO_TH = 16, 8   # tile isometrico em 1x (losango 16x8)
+
+
+def fill_poly(c, pts, ch):
+    """Preenche um poligono convexo (scanline) sem contorno."""
+    h, w = len(c), len(c[0])
+    ys = [p[1] for p in pts]
+    for y in range(max(0, int(min(ys))), min(h - 1, int(max(ys))) + 1):
+        xs = []
+        n = len(pts)
+        for i in range(n):
+            (x0, y0), (x1, y1) = pts[i], pts[(i + 1) % n]
+            if y0 == y1:
+                continue
+            if (y >= min(y0, y1)) and (y < max(y0, y1)):
+                xs.append(x0 + (y - y0) * (x1 - x0) / (y1 - y0))
+        if len(xs) >= 2:
+            xs.sort()
+            for x in range(max(0, int(round(xs[0]))), min(w - 1, int(round(xs[-1]))) + 1):
+                c[y][x] = ch
+
+
+def iso_pt(i, j, ox, oy):
+    return (ox + (i - j) * (ISO_TW // 2), oy + (i + j) * (ISO_TH // 2))
+
+
+def iso_tile(c, i, j, ox, oy, ch, edge=None):
+    x, y = iso_pt(i, j, ox, oy)
+    pts = [(x, y), (x + 8, y + 4), (x, y + 8), (x - 8, y + 4)]
+    fill_poly(c, pts, ch)
+    if edge:
+        for (x0, y0), (x1, y1) in ((pts[3], pts[2]), (pts[2], pts[1])):
+            steps = max(abs(x1 - x0), abs(y1 - y0))
+            for t in range(steps + 1):
+                put(c, int(round(x0 + (x1 - x0) * t / steps)), int(round(y0 + (y1 - y0) * t / steps)), edge)
+
+
+def iso_box(c, i, j, a, b, h, ox, oy, top, left, right, win=None, win_rows=None):
+    """Caixa isometrica com base a x b tiles a partir do tile (i, j) e altura h px."""
+    p0 = iso_pt(i, j, ox, oy)            # norte
+    p1 = iso_pt(i + a, j, ox, oy)        # leste
+    p2 = iso_pt(i + a, j + b, ox, oy)    # sul
+    p3 = iso_pt(i, j + b, ox, oy)        # oeste
+    up = lambda p: (p[0], p[1] - h)
+    fill_poly(c, [up(p3), up(p2), p2, p3], left)
+    fill_poly(c, [up(p2), up(p1), p1, p2], right)
+    fill_poly(c, [up(p0), up(p1), up(p2), up(p3)], top)
+    if win and h >= 10:
+        rows = win_rows or max(1, (h - 6) // 7)
+        for r in range(rows):
+            yy = p2[1] - h + 5 + r * 7
+            # face esquerda (de p3 a p2): x cresce, y cresce 1 a cada 2 px
+            for k in range(2, a * 8 + b * 8 - 2, 5):
+                if k < b * 8:
+                    x = p3[0] + k; y = yy + k // 2
+                    if k % 5 == 2:
+                        rect(c, x, y, 2, 3, win)
+            for k in range(2, a * 8 - 2, 5):
+                x = p2[0] + k; y = yy + (b * 8) // 2 - k // 2
+                rect(c, x, y, 2, 3, win)
+
+
+def iso_tree(c, x, y, size=5):
+    rect(c, x - 1, y - 2, 2, 3, "iso_trunk")
+    fill_poly(c, [(x, y - size * 2 - 2), (x + size, y - size), (x, y - 2), (x - size, y - size)], "iso_tree")
+    fill_poly(c, [(x, y - size * 2 - 2), (x + size // 2, y - size - 1), (x, y - size), (x - size // 2, y - size - 1)], "iso_tree_hi")
+    put(c, x - size + 1, y - size, "iso_tree_lo"); put(c, x + 1, y - 3, "iso_tree_lo")
+
+
+def _band_of(y):
+    """Faixa da regiao pela altura no mapa (1 embaixo ... 5 em cima)."""
+    if y >= 500: return 1
+    if y >= 380: return 2
+    if y >= 250: return 3
+    if y >= 130: return 4
+    return 5
+
+
+def world_map(regions_pos):
+    """regions_pos: lista de (x, y) dos marcos das 5 regioes em 1x, de baixo para cima."""
+    import random
+    rng = random.Random(7)
+    c = canvas(MAP_W, MAP_H, "sea")
+    ox, oy = MAP_W // 2 + 40, -40
+    ground = {1: ("g_sub", "g_sub_lo"), 2: ("g_park", "g_park_lo"), 3: ("g_urb", "g_urb_lo"), 4: ("g_dist", "g_dist_lo"), 5: ("g_glob", "g_glob_lo")}
+    # terreno: losangos por faixa; o topo vira mar com praia e uma ilha
+    tiles = {}
+    for i in range(-70, 100):
+        for j in range(-70, 140):
+            x, y = iso_pt(i, j, ox, oy)
+            if y < -8 or y > MAP_H + 8 or x < -8 or x > MAP_W + 8:
+                continue
+            band = _band_of(y + 4)
+            sea = (y < 96 and x > 60 + (96 - y) * 2) or (y < 40)
+            island = (x - 215) ** 2 / 900.0 + (y - 60) ** 2 / 300.0 < 1.0
+            if island:
+                tiles[(i, j)] = "sand" if (x - 215) ** 2 / 900.0 + (y - 60) ** 2 / 300.0 > 0.55 else "g_park"
+            elif sea:
+                tiles[(i, j)] = "sea_hi" if (i + j) % 7 == 0 else "sea"
+            else:
+                g, glo = ground[band]
+                tiles[(i, j)] = glo if (i * 7 + j * 3) % 11 == 0 else g
+    # estrada de progresso: tiles proximos da polilinha entre os marcos
+    def near_path(x, y):
+        best = 1e9
+        for (x0, y0), (x1, y1) in zip(regions_pos, regions_pos[1:]):
+            dx, dy = x1 - x0, y1 - y0
+            t = max(0.0, min(1.0, ((x - x0) * dx + (y - y0) * dy) / float(dx * dx + dy * dy)))
+            px, py = x0 + dx * t, y0 + dy * t
+            best = min(best, ((x - px) ** 2 + ((y - py) * 2) ** 2) ** 0.5)
+        return best
+    for (i, j), ch in list(tiles.items()):
+        x, y = iso_pt(i, j, ox, oy)
+        if ch.startswith("sea") or ch == "sand":
+            continue
+        d = near_path(x, y + 4)
+        if d < 9:
+            tiles[(i, j)] = "iso_road"
+        elif d < 13 and (i + j) % 2 == 0:
+            tiles[(i, j)] = "path"
+    # ruas secundarias em grade
+    for (i, j), ch in list(tiles.items()):
+        if ch in ("sea", "sea_hi", "sand", "iso_road", "path"):
+            continue
+        x, y = iso_pt(i, j, ox, oy)
+        band = _band_of(y + 4)
+        if band >= 2 and (i % 9 == 0 or j % 9 == 0):
+            tiles[(i, j)] = "iso_road_lo"
+    for (i, j) in sorted(tiles, key=lambda t: (t[0] + t[1], t[0])):
+        ch = tiles[(i, j)]
+        iso_tile(c, i, j, ox, oy, ch, edge=None)
+    # ondas
+    for (i, j), ch in tiles.items():
+        if ch == "sea" and (i * 3 + j * 5) % 13 == 0:
+            x, y = iso_pt(i, j, ox, oy)
+            hline(c, x - 3, x + 3, y + 4, "foam2")
+    # predios por faixa (ordenados por profundidade i+j)
+    boxes = []
+    for (i, j), ch in tiles.items():
+        if ch not in ("g_sub", "g_sub_lo", "g_park", "g_park_lo", "g_urb", "g_urb_lo", "g_dist", "g_dist_lo", "g_glob", "g_glob_lo"):
+            continue
+        x, y = iso_pt(i, j, ox, oy)
+        if near_path(x, y + 4) < 20 or (i % 9 in (0, 8)) or (j % 9 in (0, 8)):
+            continue
+        band = _band_of(y + 4)
+        if x < 12 or x > MAP_W - 12:
+            continue
+        r = rng.random()
+        if band == 1:
+            if r < 0.16:
+                roof = rng.choice([("h_roof_r", "h_roof_r_lo"), ("h_roof_b", "h_roof_b_lo"), ("h_roof_g", "h_roof_g_lo")])
+                boxes.append((i + j, ("house", i, j, roof)))
+            elif r < 0.30:
+                boxes.append((i + j, ("tree", i, j)))
+        elif band == 2:
+            if r < 0.14:
+                boxes.append((i + j, ("box", i, j, 1, 1, rng.randint(10, 18), rng.choice(["b_beige", "b_brick", "b_gray"]))))
+            elif r < 0.24:
+                boxes.append((i + j, ("tree", i, j)))
+        elif band == 3:
+            if r < 0.15:
+                boxes.append((i + j, ("box", i, j, 1, 1, rng.randint(16, 30), rng.choice(["b_gray", "b_beige", "b_glass"]))))
+            elif r < 0.20:
+                boxes.append((i + j, ("tree", i, j)))
+        elif band == 4:
+            if r < 0.16:
+                boxes.append((i + j, ("box", i, j, 1, 1, rng.randint(26, 46), rng.choice(["b_glass", "b_navy", "b_gray"]))))
+        else:
+            if r < 0.15:
+                boxes.append((i + j, ("box", i, j, 1, 1, rng.randint(34, 58), rng.choice(["b_glass", "b_white", "b_navy"]))))
+    faces = {"b_gray": ("b_gray", "b_gray_l", "b_gray_r"), "b_beige": ("b_beige", "b_beige_l", "b_beige_r"), "b_brick": ("b_brick", "b_brick_l", "b_brick_r"),
+             "b_glass": ("b_glass", "b_glass_l", "b_glass_r"), "b_navy": ("b_navy", "b_navy_l", "b_navy_r"), "b_white": ("b_white", "b_white_l", "b_white_r")}
+    for _, item in sorted(boxes, key=lambda t: t[0]):
+        kind = item[0]
+        if kind == "tree":
+            x, y = iso_pt(item[1], item[2], ox, oy)
+            iso_tree(c, x, y + 6, 4)
+        elif kind == "house":
+            _, i, j, roof = item
+            iso_box(c, i, j, 1, 1, 7, ox, oy, roof[0], "h_wall", "h_wall_lo")
+            x, y = iso_pt(i, j, ox, oy)
+            put(c, x + 3, y - 2, "b_win_d"); put(c, x - 5, y - 1, "b_win_d")
+        else:
+            _, i, j, a, b, h, col = item
+            top, left, right = faces[col]
+            iso_box(c, i, j, a, b, h, ox, oy, top, left, right, win="b_win" if col in ("b_gray", "b_beige", "b_brick") else "b_win_d")
+    # farol na ilha
+    fx, fy = 232, 52
+    rect(c, fx - 3, fy - 22, 6, 22, "light_w")
+    for yy in range(fy - 20, fy, 6):
+        rect(c, fx - 3, yy, 6, 3, "light_r")
+    rect(c, fx - 4, fy - 26, 8, 4, "b_navy"); rect(c, fx - 2, fy - 25, 4, 2, "b_win")
+    outline_region(c, 0, 0, MAP_W, MAP_H)
+    return c
+
+
+def outline_region(c, x0, y0, w, h):
+    """Contorno escuro so em volta dos predios (pixels nao-terreno) — mantem o mapa legivel em 2x."""
+    ground = {"g_sub", "g_sub_lo", "g_park", "g_park_lo", "g_urb", "g_urb_lo", "g_dist", "g_dist_lo", "g_glob", "g_glob_lo",
+              "sand", "sea", "sea_hi", "foam2", "iso_road", "iso_road_lo", "iso_lane", "path", "path_lo", None}
+    src = [row[:] for row in c]
+    for y in range(y0 + 1, y0 + h - 1):
+        for x in range(x0 + 1, x0 + w - 1):
+            if src[y][x] in ground:
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    if src[y + dy][x + dx] not in ground:
+                        c[y][x] = "o"
+                        break
+
+
+def map_pin():
+    """Pino verde do escritorio (16x22)."""
+    c = canvas(16, 22)
+    fill_poly(c, [(8, 1), (14, 7), (8, 20), (2, 7)], "pin")
+    rect(c, 3, 3, 10, 8, "pin"); rect(c, 5, 4, 6, 6, "mug"); rect(c, 6, 5, 4, 4, "pin")
+    outline(c)
+    return c
+
+
+def map_lock():
+    c = canvas(14, 16)
+    rect(c, 2, 7, 10, 8, "metal_lo"); rect(c, 3, 8, 8, 6, "metal"); rect(c, 6, 10, 2, 3, "o")
+    rect(c, 4, 2, 6, 6, "metal_lo"); rect(c, 5, 3, 4, 5, None)
+    for x in (4, 9):
+        rect(c, x, 2, 1, 6, "metal_lo")
+    rect(c, 5, 2, 4, 1, "metal_lo")
+    outline(c)
+    return c
+
+
+def map_star():
+    c = canvas(12, 12)
+    fill_poly(c, [(6, 0), (8, 4), (12, 4), (9, 7), (10, 12), (6, 9), (2, 12), (3, 7), (0, 4), (4, 4)], "gold2")
+    outline(c)
+    return c
+
+
+def rival_hq(color="b_brick"):
+    """Sede de agencia concorrente (predio isometrico 2x2 com bandeira), 40x56."""
+    faces = {"b_brick": ("b_brick", "b_brick_l", "b_brick_r"), "b_navy": ("b_navy", "b_navy_l", "b_navy_r"), "b_glass": ("b_glass", "b_glass_l", "b_glass_r")}
+    c = canvas(40, 56)
+    top, left, right = faces[color]
+    iso_box(c, 0, 0, 2, 2, 30, 20, 22, top, left, right, win="b_win")
+    rect(c, 19, 2, 2, 22, "metal_lo"); rect(c, 21, 3, 10, 6, "light_r"); rect(c, 22, 4, 8, 4, "gold2")
+    outline(c)
+    return c
+
+
+def export_map(root, regions_pos):
+    out = os.path.join(root, "assets", "art", "map")
+    write_png(os.path.join(out, "world.png"), world_map(regions_pos))
+    write_png(os.path.join(out, "pin.png"), map_pin())
+    write_png(os.path.join(out, "lock.png"), map_lock())
+    write_png(os.path.join(out, "star.png"), map_star())
+    for col in ("b_brick", "b_navy", "b_glass"):
+        write_png(os.path.join(out, f"rival_{col[2:]}.png"), rival_hq(col))
+
+
+def _regions_pos(root):
+    import json
+    with open(os.path.join(root, "data", "regions.json"), encoding="utf-8") as fh:
+        return [tuple(r["map_pos"]) for r in json.load(fh)["regions"]]
+
+
+
+# --- Mobilia das regioes (bloco D) ---------------------------------------------------------
+PAL.update({"steel": hx("#8d97a5"), "steel_hi": hx("#c2cad4"), "steel_lo": hx("#5b6470"), "mat": hx("#3f7fb0"), "mat_hi": hx("#6fa6d6"),
+            "deck": hx("#c98a4b"), "deck_lo": hx("#9a6332"), "rail": hx("#d9dee6"), "led": hx("#5be36a"), "led_r": hx("#ff5c4d"),
+            "tile_w": hx("#f2f2f2"), "tile_g": hx("#dfe6ea"), "counter": hx("#e8dcc4"), "counter_lo": hx("#c6b89b")})
+
+
+def reception():
+    """Balcao de recepcao com sofa pequeno e tablet (48x40)."""
+    c = canvas(48, 40)
+    rect(c, 2, 14, 30, 18, "wood"); rect(c, 2, 14, 30, 3, "wood_hi"); rect(c, 2, 29, 30, 3, "wood_lo")
+    rect(c, 6, 18, 22, 8, "wood_lo"); draw_text = None
+    rect(c, 10, 8, 8, 6, "frame"); rect(c, 11, 9, 6, 4, "screen")
+    rect(c, 34, 20, 13, 12, "red"); rect(c, 34, 18, 13, 3, "red_hi"); rect(c, 34, 30, 13, 2, "red_lo"); rect(c, 33, 22, 2, 8, "red_lo"); rect(c, 46, 22, 2, 8, "red_lo")
+    rect(c, 4, 32, 26, 6, "shadow"); rect(c, 34, 32, 13, 4, "shadow")
+    outline(c)
+    return c
+
+
+def glass_room():
+    """Sala de reuniao envidracada com mesa e telao (64x48)."""
+    c = canvas(64, 48)
+    rect(c, 0, 0, 64, 40, "glass"); rect(c, 0, 0, 64, 40, None)
+    rect(c, 0, 0, 2, 40, "metal"); rect(c, 62, 0, 2, 40, "metal"); rect(c, 0, 0, 64, 2, "metal"); rect(c, 31, 0, 2, 40, "metal")
+    for x in range(3, 62, 1):
+        for y in range(3, 12):
+            if (x + y) % 5 == 0:
+                put(c, x, y, "glass_hi")
+    rect(c, 4, 4, 20, 12, "frame"); rect(c, 5, 5, 18, 10, "screen"); rect(c, 7, 8, 8, 2, "screen_hi"); rect(c, 7, 11, 12, 1, "screen_lo")
+    rect(c, 12, 22, 40, 12, "wood"); rect(c, 12, 22, 40, 2, "wood_hi"); rect(c, 12, 32, 40, 2, "wood_lo")
+    for x in (10, 26, 42):
+        rect(c, x, 36, 8, 4, "metal_lo"); rect(c, x + 1, 33, 6, 3, "red")
+    rect(c, 2, 40, 60, 6, "shadow")
+    outline(c)
+    return c
+
+
+def studio():
+    """Estudio: microfone de pedestal, painel acustico e luz ON AIR (32x48)."""
+    c = canvas(32, 48)
+    rect(c, 0, 4, 32, 26, "foam"); 
+    for y in range(6, 30, 6):
+        for x in range(2, 30, 6):
+            rect(c, x, y, 3, 3, "foam_hi")
+    rect(c, 8, 0, 16, 6, "onair_lo"); rect(c, 10, 1, 12, 4, "onair")
+    rect(c, 14, 20, 4, 20, "metal_lo"); rect(c, 10, 40, 12, 3, "metal")
+    rect(c, 12, 12, 8, 10, "metal"); rect(c, 13, 13, 6, 8, "metal_hi"); rect(c, 14, 14, 4, 2, "metal_lo")
+    rect(c, 6, 43, 20, 4, "shadow")
+    outline(c)
+    return c
+
+
+def kitchen():
+    """Cozinha: bancada com fogao, pia e geladeira (64x44)."""
+    c = canvas(64, 44)
+    rect(c, 0, 12, 40, 22, "counter"); rect(c, 0, 12, 40, 3, "tile_w"); rect(c, 0, 31, 40, 3, "counter_lo")
+    rect(c, 4, 16, 14, 8, "metal"); 
+    for x, y in ((6, 18), (12, 18), (6, 21), (12, 21)):
+        rect(c, x, y, 3, 2, "frame")
+    rect(c, 22, 16, 14, 8, "metal_hi"); rect(c, 24, 18, 10, 4, "glass"); rect(c, 28, 12, 2, 5, "metal_lo")
+    rect(c, 44, 2, 18, 32, "tile_g"); rect(c, 44, 2, 18, 2, "tile_w"); rect(c, 44, 16, 18, 1, "metal_lo"); rect(c, 58, 6, 2, 8, "metal_lo"); rect(c, 58, 19, 2, 8, "metal_lo")
+    rect(c, 2, 34, 36, 6, "shadow"); rect(c, 44, 34, 18, 6, "shadow")
+    outline(c)
+    return c
+
+
+def gym():
+    """Academia: esteira, halteres e colchonete (56x44)."""
+    c = canvas(56, 44)
+    rect(c, 2, 26, 30, 8, "steel"); rect(c, 2, 26, 30, 2, "steel_hi"); rect(c, 2, 32, 30, 2, "steel_lo")
+    rect(c, 26, 6, 4, 22, "steel_lo"); rect(c, 18, 4, 14, 6, "frame"); rect(c, 20, 5, 10, 3, "screen")
+    rect(c, 36, 20, 18, 12, "mat"); rect(c, 36, 20, 18, 2, "mat_hi")
+    for x in (38, 46):
+        rect(c, x, 14, 3, 6, "steel_lo"); rect(c, x + 3, 16, 4, 2, "steel"); rect(c, x + 7, 14, 3, 6, "steel_lo")
+    rect(c, 4, 34, 28, 6, "shadow"); rect(c, 36, 32, 18, 6, "shadow")
+    outline(c)
+    return c
+
+
+def server_rack():
+    """War room: rack de servidores com leds e telao de dashboards (48x56)."""
+    c = canvas(48, 56)
+    rect(c, 2, 8, 20, 44, "steel_lo"); rect(c, 2, 8, 20, 2, "steel")
+    for y in range(12, 50, 6):
+        rect(c, 4, y, 16, 4, "steel"); put(c, 18, y + 1, "led" if (y // 6) % 3 else "led_r"); put(c, 16, y + 1, "led")
+    rect(c, 26, 4, 20, 26, "frame"); rect(c, 27, 5, 18, 24, "screen_lo")
+    for i, h in enumerate((6, 10, 8, 14, 11, 16)):
+        rect(c, 28 + i * 3, 27 - h, 2, h, "screen_hi" if i % 2 else "gold")
+    rect(c, 34, 30, 4, 6, "metal_lo"); rect(c, 30, 36, 12, 2, "metal_lo")
+    rect(c, 4, 52, 18, 3, "shadow"); rect(c, 28, 38, 16, 3, "shadow")
+    outline(c)
+    return c
+
+
+def terrace():
+    """Terraco: deck de madeira com guarda-corpo, espreguicadeira e plantas (64x40)."""
+    c = canvas(64, 40)
+    rect(c, 0, 14, 64, 20, "deck")
+    for y in range(16, 34, 4):
+        hline(c, 0, 63, y, "deck_lo")
+    rect(c, 0, 4, 64, 2, "rail"); 
+    for x in range(2, 64, 8):
+        rect(c, x, 4, 2, 10, "rail")
+    rect(c, 10, 20, 22, 8, "red"); rect(c, 10, 18, 8, 4, "red_hi"); rect(c, 10, 28, 22, 2, "red_lo"); rect(c, 12, 30, 2, 3, "metal_lo"); rect(c, 28, 30, 2, 3, "metal_lo")
+    for x in (40, 52):
+        rect(c, x, 22, 8, 8, "pot"); rect(c, x, 22, 8, 2, "pot_hi"); rect(c, x + 1, 14, 6, 8, "leaf"); rect(c, x + 2, 12, 4, 3, "leaf_hi"); put(c, x + 1, 20, "leaf_lo")
+    rect(c, 2, 34, 60, 5, "shadow")
+    outline(c)
+    return c
+
+
+
 def export_all(root):
     art = os.path.join(root, "assets", "art")
     write_png(os.path.join(art, "tiles", "floor_wood.png"), floor_tile())
@@ -1158,12 +1669,16 @@ def export_all(root):
                      ("shelf", shelf), ("window", window), ("whiteboard", whiteboard), ("goals_board", goals_board),
                      ("door", door), ("pingpong", pingpong), ("partition", partition_tile),
                      ("partition_top", partition_cap), ("hr_sign", hr_sign), ("projector", projector_screen),
-                     ("meeting_table", meeting_table), ("dog", dog), ("cat", cat)):
+                     ("meeting_table", meeting_table), ("dog", dog), ("cat", cat),
+                     ("reception", reception), ("glass_room", glass_room), ("studio", studio), ("kitchen", kitchen),
+                     ("gym", gym), ("server_rack", server_rack), ("terrace", terrace)):
         write_png(os.path.join(art, "furniture", f"{name}.png"), fn())
     export_characters(os.path.join(art, "characters"))
     export_scenes(root)
     export_title(root)
     export_seasons(root)
+    export_moods(root)
+    export_map(root, _regions_pos(root))
 
 
 def furniture_sheet(path, scale=2):

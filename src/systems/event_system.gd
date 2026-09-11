@@ -30,7 +30,7 @@ func on_day() -> void:
 
 func trigger(ev: Dictionary) -> void:
 	var st: GameState = game.state
-	var targets := {}
+	var targets: Dictionary = (ev.get("targets", {}) as Dictionary).duplicate()
 	var text: String = ev.get("text", "")
 	if text.contains("{best_employee}"):
 		var best: Employee = game.employees.best_employee()
@@ -79,6 +79,8 @@ func _eligible(ev: Dictionary) -> bool:
 	if st.cases < int(ev.get("min_cases", 0)):
 		return false
 	if st.office_level < int(ev.get("min_office_level", 0)):
+		return false
+	if game.office.region() < int(ev.get("min_region", 1)) or game.office.region() > int(ev.get("max_region", 99)):
 		return false
 	if ev.has("min_avg_stress"):
 		var total := 0.0
@@ -193,5 +195,10 @@ func _apply_effect(effect: Dictionary, targets: Dictionary, title: String = "Eve
 			game.clients.spawn_prospect(int(effect.get("tier_bonus", 0)))
 		"rent_mod":
 			st.rent_modifier += value
+		"client_budget_mult":
+			if target_client != null:
+				target_client.budget = roundf(target_client.budget * value / 100.0) * 100.0
+		"rival_strength", "client_retention", "lose_client_target":
+			game.competitors.apply_rival_effect(effect, target_client)
 		_:
 			push_warning("Efeito de evento desconhecido: %s" % type)

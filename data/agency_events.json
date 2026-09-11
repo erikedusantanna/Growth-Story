@@ -16,7 +16,8 @@
         "reputation": 3,
         "prospects": 1
       },
-      "scene": "auditorium"
+      "scene": "auditorium",
+      "requires_region": 1
     },
     {
       "id": "feira_carreiras",
@@ -30,7 +31,8 @@
       "effects": {
         "candidates": 3
       },
-      "scene": "booth"
+      "scene": "booth",
+      "requires_region": 2
     },
     {
       "id": "meetup",
@@ -40,7 +42,7 @@
       "people": 0,
       "days": 1,
       "requires_rep": 40,
-      "requires_office": 3,
+      "requires_office": 7,
       "cooldown_days": 45,
       "effects": {
         "reputation": 2,
@@ -48,7 +50,8 @@
         "morale": 5,
         "delay_days": 1
       },
-      "scene": "meetup"
+      "scene": "meetup",
+      "requires_region": 1
     },
     {
       "id": "workshop",
@@ -63,7 +66,8 @@
         "reputation": 2,
         "prospects": 2
       },
-      "scene": "auditorium"
+      "scene": "auditorium",
+      "requires_region": 2
     },
     {
       "id": "podcast",
@@ -78,7 +82,8 @@
         "reputation": 4,
         "prospects": 1
       },
-      "scene": "studio"
+      "scene": "studio",
+      "requires_region": 3
     },
     {
       "id": "congresso",
@@ -88,14 +93,15 @@
       "people": 3,
       "days": 5,
       "requires_rep": 55,
-      "requires_office": 3,
+      "requires_office": 7,
       "cooldown_days": 120,
       "effects": {
         "reputation": 6,
         "prospects": 2,
         "prospect_tier_bonus": 1
       },
-      "scene": "booth"
+      "scene": "booth",
+      "requires_region": 3
     },
     {
       "id": "palco_principal",
@@ -105,7 +111,7 @@
       "people": 2,
       "days": 4,
       "requires_rep": 70,
-      "requires_office": 3,
+      "requires_office": 7,
       "cooldown_days": 180,
       "effects": {
         "reputation": 8,
@@ -114,7 +120,25 @@
         "money": 30000,
         "candidates": 2
       },
-      "scene": "stage"
+      "scene": "stage",
+      "requires_region": 4
+    },
+    {
+      "id": "feira_internacional",
+      "name": "Feira internacional",
+      "desc": "Estande na maior feira de marketing do mundo. Três pessoas, seis dias, o mundo passando na frente.",
+      "cost": 60000,
+      "people": 3,
+      "days": 6,
+      "requires_rep": 75,
+      "requires_region": 5,
+      "cooldown_days": 180,
+      "effects": {
+        "reputation": 8,
+        "prospects": 2,
+        "candidates": 1
+      },
+      "scene": "booth"
     }
   ]
 }

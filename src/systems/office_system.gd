@@ -20,11 +20,82 @@ func level_data(level: int) -> Dictionary:
 	return offices[clampi(level - 1, 0, offices.size() - 1)]
 
 
+## Próxima expansão dentro da região atual ({} se a região já está no nível máximo).
 func next_level() -> Dictionary:
 	var offices: Array = game.content.offices
 	if game.state.office_level >= offices.size():
 		return {}
-	return offices[game.state.office_level]
+	var nxt: Dictionary = offices[game.state.office_level]
+	if int(nxt.get("region", 1)) != region():
+		return {}
+	return nxt
+
+
+# --- Regiões (World Map) -------------------------------------------------------------
+
+func regions() -> Array:
+	return game.content.regions.get("regions", [])
+
+
+func region_data(r: int) -> Dictionary:
+	for rd in regions():
+		if int(rd.get("region", 0)) == r:
+			return rd
+	return {}
+
+
+## Região atual (1 = Bairro Criativo … 5 = Hub Global).
+func region() -> int:
+	return int(current().get("region", 1))
+
+
+func region_level() -> int:
+	return int(current().get("region_level", 1))
+
+
+func is_region_maxed() -> bool:
+	return next_level().is_empty()
+
+
+func can_move(r: int) -> Dictionary:
+	var rd := region_data(r)
+	if rd.is_empty():
+		return {"ok": false, "reason": "Região desconhecida."}
+	if r <= region():
+		return {"ok": false, "reason": "A agência já passou por aqui."}
+	if r != region() + 1:
+		return {"ok": false, "reason": "Primeiro mude para %s." % String(region_data(region() + 1).get("name", "a próxima região"))}
+	if game.state.reputation < float(rd.get("rep_required", 0)):
+		return {"ok": false, "reason": "Precisa de %d de reputação." % int(rd["rep_required"])}
+	if game.state.money < float(rd.get("move_cost", 0)):
+		return {"ok": false, "reason": "Caixa insuficiente (%s)." % FinanceSystem.format_money(float(rd["move_cost"]))}
+	return {"ok": true, "reason": ""}
+
+
+## Mudança de sede: paga, abre o nível 1 da região nova e começa a semana de mudança.
+func move_to(r: int) -> Dictionary:
+	var check := can_move(r)
+	if not check.ok:
+		return check
+	var rd := region_data(r)
+	var st: GameState = game.state
+	game.finance.add_money(-float(rd.get("move_cost", 0)), "Mudança de sede: %s" % String(rd.get("name", "")), "expense")
+	st.office_level = int(rd.get("first_level", st.office_level + 1))
+	st.moving_until_day = st.day + int(game.content.regions.get("moving_days", 7))
+	game.competitors.ensure_rivals()
+	var office := current()
+	game.add_log("🌎 A agência mudou de sede: %s (%s). Cabem %d pessoas; clientes tier %d passam a aparecer. Semana de mudança: produtividade reduzida." % [
+		String(rd.get("name", "")), String(office.get("name", "")), int(office.get("capacity", 0)), int(rd.get("tier", r))], "unlock")
+	EventBus.state_changed.emit()
+	return {"ok": true, "reason": ""}
+
+
+func is_moving() -> bool:
+	return game.state != null and game.state.day < game.state.moving_until_day
+
+
+func moving_multiplier() -> float:
+	return float(game.content.regions.get("moving_productivity", 0.85)) if is_moving() else 1.0
 
 
 func capacity() -> int:
@@ -119,6 +190,8 @@ func morale_max() -> float:
 func can_upgrade() -> Dictionary:
 	var nxt := next_level()
 	if nxt.is_empty():
+		if region() < regions().size():
+			return {"ok": false, "reason": "Este escritório está no tamanho máximo da região. Mude de sede pelo mapa 🌎."}
 		return {"ok": false, "reason": "Você já está no maior escritório disponível."}
 	if game.state.reputation < float(nxt.get("rep_required", 0)):
 		return {"ok": false, "reason": "Precisa de %d de reputação." % int(nxt["rep_required"])}
@@ -132,8 +205,8 @@ func upgrade() -> bool:
 	if not check.ok:
 		return false
 	var nxt := next_level()
-	game.finance.add_money(-float(nxt.get("upgrade_cost", 0)), "Mudança para %s" % nxt["name"], "expense")
+	game.finance.add_money(-float(nxt.get("upgrade_cost", 0)), "Ampliação: %s" % nxt["name"], "expense")
 	game.state.office_level += 1
-	game.add_log("A agência se mudou: %s. Cabem %d pessoas." % [nxt["name"], int(nxt["capacity"])], "unlock")
+	game.add_log("O escritório foi ampliado: %s. Cabem %d pessoas." % [nxt["name"], int(nxt["capacity"])], "unlock")
 	EventBus.state_changed.emit()
 	return true

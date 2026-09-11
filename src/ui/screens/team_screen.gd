@@ -33,7 +33,13 @@ func _office_banner() -> PanelContainer:
 	v.add_child(top)
 	var nxt := Game.office.next_level()
 	if nxt.is_empty():
-		v.add_child(UIKit.muted("Você já está no maior escritório disponível.", 13))
+		var region_now: int = Game.office.region()
+		if region_now < Game.office.regions().size():
+			var next_region: Dictionary = Game.office.region_data(region_now + 1)
+			v.add_child(UIKit.label("Tamanho máximo nesta região. Próximo passo: mudar a sede para %s (%s · reputação %d) pelo mapa 🌎." % [
+				String(next_region.get("name", "")), UIKit.money(float(next_region.get("move_cost", 0))), int(next_region.get("rep_required", 0))], 13, UIKit.COLOR_ACCENT, true))
+		else:
+			v.add_child(UIKit.muted("Você já está no maior escritório disponível.", 13))
 		return card
 	if full:
 		v.add_child(UIKit.label("Escritório lotado. Amplie para contratar mais gente.", 14, UIKit.COLOR_RED, true))
@@ -41,7 +47,7 @@ func _office_banner() -> PanelContainer:
 	v.add_child(UIKit.muted("Próximo: %s · %d lugares · rep %d" % [nxt.name, int(nxt.capacity), int(nxt.rep_required)], 13))
 	var b := UIKit.button("🏗️ Ampliar por %s" % UIKit.money(float(nxt.upgrade_cost)), func():
 		if Game.office.upgrade():
-			popups().show_info("Mudança feita!", "A agência agora está em %s. Cabem %d pessoas. O aluguel passa a %s/mês." % [nxt.name, int(nxt.capacity), UIKit.money(float(nxt.rent) * Game.state.rent_modifier)]), full)
+			popups().show_info("Ampliação feita!", "O escritório agora é %s. Cabem %d pessoas. O aluguel passa a %s/mês." % [nxt.name, int(nxt.capacity), UIKit.money(float(nxt.rent) * Game.state.rent_modifier)]), full)
 	b.disabled = not check.ok
 	v.add_child(b)
 	if not check.ok:
@@ -109,6 +115,16 @@ func _employee_card(e: Employee) -> PanelContainer:
 	var morale_bar: ProgressBar = morale_row.get_child(1)
 	morale_bar.max_value = Game.office.morale_max()
 	v.add_child(morale_row)
+	var mood := Game.employees.mood_of(e, st.day)
+	var pressures: Array = Game.employees.morale_pressures(e)
+	if mood != "" or not pressures.is_empty():
+		var parts: Array = []
+		if mood != "":
+			parts.append(Game.employees.mood_label(mood))
+		if not pressures.is_empty():
+			parts.append("pesa: " + ", ".join(pressures.map(func(pr): return "%s (−%.2f/dia)" % [pr.text, float(pr.per_day)])))
+		var mood_color := UIKit.COLOR_RED if mood in ["burnout", "sad", "exhausted"] or not pressures.is_empty() else UIKit.COLOR_GREEN
+		v.add_child(UIKit.label(" · ".join(parts), 13, mood_color, true))
 	var meta := UIKit.hbox(14)
 	meta.add_child(UIKit.label("Teto de moral %d" % int(Game.office.morale_max()), 14, UIKit.COLOR_MUTED))
 	meta.add_child(UIKit.label("Estresse %d" % int(e.stress), 14, UIKit.COLOR_RED if e.stress > 70 else UIKit.COLOR_MUTED))
@@ -127,6 +143,14 @@ func _employee_card(e: Employee) -> PanelContainer:
 	actions.add_child(train)
 	actions.add_child(UIKit.button("🗺️ Jornada", func(): popups().show_journey(e)))
 	if not e.is_founder:
+		var raise_check := Game.employees.can_give_raise(e)
+		var raise_btn := UIKit.button("💰 Aumento +%d%%" % int(EmployeeSystem.RAISE_FRACTION * 100.0), func():
+			var r := Game.employees.raise_by_player(e)
+			if not r.ok:
+				popups().show_info("Aumento", r.reason))
+		raise_btn.disabled = not raise_check.ok
+		raise_btn.tooltip_text = raise_check.reason if not raise_check.ok else "Zera a pressão de salário defasado; moral +10"
+		actions.add_child(raise_btn)
 		actions.add_child(UIKit.button("👋 Demitir", func(): _confirm_fire(e)))
 	v.add_child(actions)
 	return card

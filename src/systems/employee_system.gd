@@ -27,7 +27,7 @@ func create_founder(founder_name: String) -> Employee:
 		e.attrs[key] = 42.0
 	e.attrs["communication"] = 52.0
 	e.attrs["strategy"] = 48.0
-	e.motivation = 85.0
+	e.motivation = 70.0
 	e.loyalty = 100.0
 	e.potential = 5
 	e.salary = 0.0
@@ -73,7 +73,7 @@ func generate_candidate(quality: String = "normal") -> Employee:
 		e.attrs[key] = clampf(v, 5.0, 100.0)
 
 	e.potential = clampi(rng.randi_range(1, 5), int(pers.get("potential_min", 1)), 5)
-	e.motivation = rng.randf_range(55.0, 85.0)
+	e.motivation = rng.randf_range(45.0, 75.0)
 	e.loyalty = float(pers.get("loyalty_base", rng.randf_range(40.0, 75.0)))
 	e.age = rng.randi_range(19, 45)
 	e.color = content.colors[rng.randi_range(0, content.colors.size() - 1)]
@@ -124,8 +124,9 @@ func productivity(e: Employee) -> float:
 	var base := float(pers.get("productivity", 1.0))
 	var buffs: Dictionary = game.hr.buff_multipliers()
 	var furniture: Dictionary = game.office.furniture_effects()
-	return base * (0.7 + e.motivation / 100.0 * 0.6) * (1.0 - e.stress / 220.0) \
-		* float(buffs["productivity"]) * float(furniture["productivity"]) * game.departments.productivity_multiplier(e)
+	return base * (0.85 + e.motivation / 100.0 * 0.55) * (1.0 - e.stress / 220.0) \
+		* float(buffs["productivity"]) * float(furniture["productivity"]) * game.departments.productivity_multiplier(e) \
+		* game.office.moving_multiplier()
 
 
 ## Moral (campo `motivation`) com teto dado pela mobília do escritório.
@@ -295,7 +296,8 @@ func promote(e: Employee) -> void:
 	if not e.is_founder:
 		e.salary = roundf(e.salary * (new_mult / maxf(old_mult, 0.1)) / 50.0) * 50.0
 	e.experience = maxf(e.experience, float(career[e.career_level]["xp"]))
-	e.motivation = clampf(e.motivation + 12.0, 0.0, 100.0)
+	change_morale(e, 10.0)
+	good_news(e)
 	e.loyalty = clampf(e.loyalty + 8.0, 0.0, 100.0)
 	for key in Employee.ATTRS:
 		e.attrs[key] = clampf(e.attr(key) + 1.0, 1.0, 100.0)
@@ -310,7 +312,32 @@ func promote(e: Employee) -> void:
 func give_raise(e: Employee, fraction: float) -> void:
 	e.salary = roundf(e.salary * (1.0 + fraction) / 50.0) * 50.0
 	e.months_since_raise = 0
-	e.motivation = clampf(e.motivation + 10.0, 0.0, 100.0)
+	change_morale(e, 10.0)
+	e.loyalty = clampf(e.loyalty + 5.0, 0.0, 100.0)
+	add_journey(e, "Recebeu aumento de %d%% (salário %s)" % [int(roundf(fraction * 100.0)), FinanceSystem.format_money(e.salary)])
+
+
+## Aumento dado pelo jogador (aba Equipe): 10% no salário, moral +10, lealdade +5, zera "salário defasado".
+const RAISE_FRACTION := 0.10
+
+
+func can_give_raise(e: Employee) -> Dictionary:
+	if e.is_founder:
+		return {"ok": false, "reason": "O fundador não recebe salário."}
+	if e.months_since_raise < 3:
+		return {"ok": false, "reason": "Recebeu aumento há menos de 3 meses."}
+	return {"ok": true, "reason": ""}
+
+
+func raise_by_player(e: Employee) -> Dictionary:
+	var check := can_give_raise(e)
+	if not check.ok:
+		return check
+	give_raise(e, RAISE_FRACTION)
+	EventBus.office_feedback.emit(e.id, "+%d%% 💰" % int(RAISE_FRACTION * 100.0), "good")
+	game.add_log("%s recebeu aumento de %d%%." % [e.name, int(RAISE_FRACTION * 100.0)], "promo")
+	EventBus.state_changed.emit()
+	return check
 
 
 func best_employee() -> Employee:
@@ -337,6 +364,74 @@ func quit(e: Employee, reason: String) -> void:
 
 # --- Ticks ---------------------------------------------------------------------
 
+## Moral: ponto de equilíbrio, pressões diárias e humores visíveis.
+const MORALE_BASELINE := 55.0        # a moral tende para cá (1,5% da distância por dia)
+const MORALE_DRIFT := 0.015
+const IDLE_DAYS_LIMIT := 15          # dias sem projeto até pesar "sem desafio"
+const RAISE_MONTHS_LIMIT := 12       # meses sem aumento até pesar "salário defasado"
+const PRESSURE_STRESS_PER_10 := 0.10 # por dia, a cada 10 pontos de estresse acima de 60
+const PRESSURE_RAISE := 0.10
+const PRESSURE_IDLE := 0.10
+const PRESSURE_CROWDED := 0.10
+const PRESSURE_LATE := 0.20
+const MOOD_INFO := {
+	"burnout": {"icon": "🔥", "name": "Em burnout"},
+	"leaving": {"icon": "🚪", "name": "Saindo"},
+	"courted": {"icon": "💼", "name": "Assediado(a) por concorrente"},
+	"exhausted": {"icon": "💦", "name": "Exausto(a)"},
+	"celebrating": {"icon": "✨", "name": "Celebrando"},
+	"sad": {"icon": "🌧️", "name": "Desanimado(a)"},
+	"happy": {"icon": "🎵", "name": "Feliz"},
+}
+
+
+## Pressões que puxam a moral para baixo hoje: [{id, text, per_day}].
+func morale_pressures(e: Employee) -> Array:
+	var st: GameState = game.state
+	var out: Array = []
+	if e.stress > 60.0:
+		out.append({"id": "stress", "text": "estresse alto", "per_day": (e.stress - 60.0) / 10.0 * PRESSURE_STRESS_PER_10})
+	if not e.is_founder and e.months_since_raise >= RAISE_MONTHS_LIMIT:
+		out.append({"id": "raise", "text": "salário defasado", "per_day": PRESSURE_RAISE})
+	if e.idle_days >= IDLE_DAYS_LIMIT:
+		out.append({"id": "idle", "text": "sem desafio", "per_day": PRESSURE_IDLE})
+	if st.employees.size() >= game.office.capacity():
+		out.append({"id": "crowded", "text": "escritório lotado", "per_day": PRESSURE_CROWDED})
+	if e.project_id != -1:
+		var p: Project = st.project_by_id(e.project_id)
+		if p != null and p.kind == Project.Kind.PROJECT and p.days_elapsed > p.deadline_days:
+			out.append({"id": "late", "text": "projeto atrasado", "per_day": PRESSURE_LATE})
+	return out
+
+
+## Estado de humor visível no escritório e na ficha ("" = neutro). Prioridade: do mais grave ao mais leve.
+func mood_of(e: Employee, day: int) -> String:
+	if e.busy_until >= day and e.busy_reason == "Burnout":
+		return "burnout"
+	if e.last_offer_day >= 0 and day - e.last_offer_day <= 30:
+		return "courted"
+	if e.stress >= 75.0:
+		return "exhausted"
+	if day - e.last_good_news_day <= 3:
+		return "celebrating"
+	if e.motivation <= 35.0:
+		return "sad"
+	if e.motivation >= 70.0:
+		return "happy"
+	return ""
+
+
+func mood_label(mood: String) -> String:
+	var info: Dictionary = MOOD_INFO.get(mood, {})
+	if info.is_empty():
+		return ""
+	return "%s %s" % [info.icon, info.name]
+
+
+func good_news(e: Employee) -> void:
+	e.last_good_news_day = game.state.day
+
+
 func on_day() -> void:
 	var st: GameState = game.state
 	var stress_mult: float = float(game.hr.buff_multipliers()["stress_rate"]) * float(game.office.furniture_effects()["stress_rate"])
@@ -346,10 +441,15 @@ func on_day() -> void:
 		var pers: Dictionary = game.content.personalities.get(e.personality, {})
 		if e.project_id != -1:
 			e.stress = clampf(e.stress + 0.7 * float(pers.get("stress_rate", 1.0)) * stress_mult, 0.0, 100.0)
+			e.idle_days = 0
 		else:
 			e.stress = clampf(e.stress - 1.5, 0.0, 100.0)
-		# moral tende lentamente para 65, ganha o extra da mobília e respeita o teto
-		e.motivation = clampf(e.motivation + (65.0 - e.motivation) * 0.01 + morale_daily, 0.0, cap)
+			e.idle_days = e.idle_days + 1 if e.busy_until < st.day else 0
+		# moral tende para o ponto de equilíbrio, ganha o extra da mobília, perde as pressões e respeita o teto
+		var delta: float = (MORALE_BASELINE - e.motivation) * MORALE_DRIFT + morale_daily
+		for pr in morale_pressures(e):
+			delta -= float(pr.per_day)
+		e.motivation = clampf(e.motivation + delta, 0.0, cap)
 		if e.training_id != "" and e.busy_until < st.day:
 			_finish_training(e)
 		elif e.busy_reason != "" and e.training_id == "" and e.busy_until < st.day:
@@ -380,7 +480,7 @@ func on_month() -> void:
 		e.loyalty = clampf(e.loyalty + (0.5 if e.motivation >= 40.0 else -2.5), 0.0, 100.0)
 		if e.personality == "leal":
 			continue
-		if e.loyalty < 25.0 and e.motivation < 35.0 and st.rng.randf() < 0.25:
+		if e.loyalty < 25.0 and e.motivation < 40.0 and st.rng.randf() < 0.25:
 			leaving.append(e)
 	for e in leaving:
 		quit(e, "pediu demissão")

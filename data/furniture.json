@@ -1,21 +1,206 @@
 {
-  "base_morale_max": 85,
-  "items": [
-    {"id": "plantas", "name": "Plantas no escritório", "desc": "Verde faz bem. Moral sobe um pouco todo dia.",
-     "cost": 800, "requires_office": 1, "effects": {"morale_daily": 0.15}, "sprite": "plant"},
-    {"id": "cadeiras", "name": "Cadeiras ergonômicas", "desc": "Coluna agradece. Teto de moral +10 e menos estresse.",
-     "cost": 4000, "requires_office": 2, "effects": {"morale_max": 10, "stress_rate": -0.1}, "visual": {"chair": "chair_ergo"}},
-    {"id": "cafe_premium", "name": "Máquina de café premium", "desc": "Grão especial. +3 de Criatividade para todos, agora e para quem entrar.",
-     "cost": 3500, "requires_office": 2, "effects": {"attr_bonus": {"creativity": 3}, "morale_once": 5}, "visual": {"coffee": "coffee_premium"}},
-    {"id": "monitores", "name": "Monitores ultrawide", "desc": "+3 de Tecnologia para todos e 5% de produtividade.",
-     "cost": 6000, "requires_office": 2, "effects": {"attr_bonus": {"technology": 3}, "productivity": 0.05}, "visual": {"desk": "desk_wide"}},
-    {"id": "quadro_metas", "name": "Quadro de metas", "desc": "Todo mundo sabe o que importa. +2 de Gestão para todos.",
-     "cost": 1500, "requires_office": 1, "effects": {"attr_bonus": {"management": 2}}, "wall_sprite": "goals_board"},
-    {"id": "biblioteca", "name": "Biblioteca de marketing", "desc": "Livros que ninguém lê, mas +3 de Estratégia para todos.",
-     "cost": 3000, "requires_office": 3, "effects": {"attr_bonus": {"strategy": 3}}, "sprite": "shelf"},
-    {"id": "pingpong", "name": "Mesa de ping-pong", "desc": "Teto de moral +5 e moral diária, ao custo de 2% de produtividade.",
-     "cost": 5000, "requires_office": 3, "effects": {"morale_max": 5, "morale_daily": 0.2, "productivity": -0.02}, "sprite": "pingpong"},
-    {"id": "descompressao", "name": "Sala de descompressão", "desc": "Sofás, luz baixa e silêncio. Teto de moral +10 e 20% menos estresse.",
-     "cost": 12000, "requires_office": 4, "effects": {"morale_max": 10, "stress_rate": -0.2}, "sprite": "sofa"}
-  ]
+ "base_morale_max": 75,
+ "items": [
+  {
+   "id": "plantas",
+   "name": "Plantas no escritório",
+   "desc": "Verde faz bem. Moral sobe um pouco todo dia.",
+   "cost": 800,
+   "requires_office": 1,
+   "effects": {
+    "morale_daily": 0.08
+   },
+   "sprite": "plant"
+  },
+  {
+   "id": "cadeiras",
+   "name": "Cadeiras ergonômicas",
+   "desc": "Coluna agradece. Teto de moral +10 e menos estresse.",
+   "cost": 4000,
+   "requires_office": 4,
+   "effects": {
+    "morale_max": 5,
+    "stress_rate": -0.1
+   },
+   "visual": {
+    "chair": "chair_ergo"
+   }
+  },
+  {
+   "id": "cafe_premium",
+   "name": "Máquina de café premium",
+   "desc": "Grão especial. +3 de Criatividade para todos, agora e para quem entrar.",
+   "cost": 3500,
+   "requires_office": 4,
+   "effects": {
+    "attr_bonus": {
+     "creativity": 3
+    },
+    "morale_once": 5
+   },
+   "visual": {
+    "coffee": "coffee_premium"
+   }
+  },
+  {
+   "id": "monitores",
+   "name": "Monitores ultrawide",
+   "desc": "+3 de Tecnologia para todos e 5% de produtividade.",
+   "cost": 6000,
+   "requires_office": 4,
+   "effects": {
+    "attr_bonus": {
+     "technology": 3
+    },
+    "productivity": 0.05
+   },
+   "visual": {
+    "desk": "desk_wide"
+   }
+  },
+  {
+   "id": "quadro_metas",
+   "name": "Quadro de metas",
+   "desc": "Todo mundo sabe o que importa. +2 de Gestão para todos.",
+   "cost": 1500,
+   "requires_office": 1,
+   "effects": {
+    "attr_bonus": {
+     "management": 2
+    }
+   },
+   "wall_sprite": "goals_board"
+  },
+  {
+   "id": "biblioteca",
+   "name": "Biblioteca de marketing",
+   "desc": "Livros que ninguém lê, mas +3 de Estratégia para todos.",
+   "cost": 3000,
+   "requires_office": 7,
+   "effects": {
+    "attr_bonus": {
+     "strategy": 3
+    }
+   },
+   "sprite": "shelf"
+  },
+  {
+   "id": "pingpong",
+   "name": "Mesa de ping-pong",
+   "desc": "Teto de moral +5 e moral diária, ao custo de 2% de produtividade.",
+   "cost": 5000,
+   "requires_office": 7,
+   "effects": {
+    "morale_max": 5,
+    "morale_daily": 0.1,
+    "productivity": -0.02
+   },
+   "sprite": "pingpong"
+  },
+  {
+   "id": "descompressao",
+   "name": "Sala de descompressão",
+   "desc": "Sofás, luz baixa e silêncio. Teto de moral +10 e 20% menos estresse.",
+   "cost": 12000,
+   "requires_office": 11,
+   "effects": {
+    "morale_max": 5,
+    "stress_rate": -0.2
+   },
+   "sprite": "sofa"
+  },
+  {
+   "id": "recepcao",
+   "name": "Recepção com sofá",
+   "desc": "Primeira impressão conta: +2 de Comunicação para todos e teto de moral +3.",
+   "cost": 5000,
+   "requires_office": 4,
+   "effects": {
+    "attr_bonus": {
+     "communication": 2
+    },
+    "morale_max": 3
+   },
+   "sprite": "reception"
+  },
+  {
+   "id": "sala_vidro",
+   "name": "Sala de reunião envidraçada",
+   "desc": "Reuniões que rendem: +3 de Estratégia para todos e +3% de produtividade.",
+   "cost": 9000,
+   "requires_office": 7,
+   "effects": {
+    "attr_bonus": {
+     "strategy": 3
+    },
+    "productivity": 0.03
+   },
+   "sprite": "glass_room"
+  },
+  {
+   "id": "estudio",
+   "name": "Estúdio de gravação",
+   "desc": "Podcast e vídeo em casa: +3 de Criatividade para todos e +0,05 de moral por dia.",
+   "cost": 12000,
+   "requires_office": 8,
+   "effects": {
+    "attr_bonus": {
+     "creativity": 3
+    },
+    "morale_daily": 0.05
+   },
+   "sprite": "studio"
+  },
+  {
+   "id": "cozinha",
+   "name": "Cozinha completa",
+   "desc": "Almoço de verdade: teto de moral +5 e +0,08 de moral por dia.",
+   "cost": 15000,
+   "requires_office": 11,
+   "effects": {
+    "morale_max": 5,
+    "morale_daily": 0.08
+   },
+   "sprite": "kitchen"
+  },
+  {
+   "id": "academia",
+   "name": "Academia",
+   "desc": "Treino antes do daily: estresse −15% e teto de moral +5.",
+   "cost": 20000,
+   "requires_office": 12,
+   "effects": {
+    "stress_rate": -0.15,
+    "morale_max": 5
+   },
+   "sprite": "gym"
+  },
+  {
+   "id": "war_room",
+   "name": "War room de dados",
+   "desc": "Telões e dashboards: +4 de Estratégia e +4 de Tecnologia para todos, +5% de produtividade.",
+   "cost": 40000,
+   "requires_office": 14,
+   "effects": {
+    "attr_bonus": {
+     "strategy": 4,
+     "technology": 4
+    },
+    "productivity": 0.05
+   },
+   "sprite": "server_rack"
+  },
+  {
+   "id": "terraco",
+   "name": "Terraço",
+   "desc": "Vista para a cidade global: teto de moral +10 e +0,1 de moral por dia.",
+   "cost": 60000,
+   "requires_office": 15,
+   "effects": {
+    "morale_max": 10,
+    "morale_daily": 0.1
+   },
+   "sprite": "terrace"
+  }
+ ]
 }

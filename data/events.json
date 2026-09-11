@@ -108,12 +108,13 @@
             }
           ]
         }
-      ]
+      ],
+      "min_region": 2
     },
     {
       "id": "proposta_concorrente",
       "title": "Proposta da concorrência",
-      "weight": 4,
+      "weight": 2,
       "min_employees": 2,
       "min_day": 120,
       "text": "{best_employee} recebeu uma oferta de uma agência concorrente.",
@@ -151,7 +152,8 @@
             }
           ]
         }
-      ]
+      ],
+      "min_region": 2
     },
     {
       "id": "cliente_ameaca",
@@ -241,7 +243,8 @@
           ]
         }
       ],
-      "scene": "stage"
+      "scene": "stage",
+      "min_region": 2
     },
     {
       "id": "aquisicao",
@@ -302,7 +305,8 @@
           ]
         }
       ],
-      "scene": "boardroom"
+      "scene": "boardroom",
+      "min_region": 3
     },
     {
       "id": "logo_maior",
@@ -492,7 +496,7 @@
       "id": "aluguel_sobe",
       "title": "Aluguel subiu",
       "weight": 2,
-      "min_office_level": 2,
+      "min_office_level": 4,
       "text": "O proprietário do imóvel reajustou o aluguel. \"É o mercado\", ele disse.",
       "choices": [
         {
@@ -517,7 +521,8 @@
             }
           ]
         }
-      ]
+      ],
+      "min_region": 2
     },
     {
       "id": "mercenario_aumento",
@@ -624,7 +629,8 @@
           ]
         }
       ],
-      "scene": "press"
+      "scene": "press",
+      "min_region": 2
     },
     {
       "id": "cliente_gigante",
@@ -651,7 +657,8 @@
           "effects": []
         }
       ],
-      "scene": "boardroom"
+      "scene": "boardroom",
+      "min_region": 3
     },
     {
       "id": "parceria",
@@ -677,7 +684,8 @@
           "label": "Recusar",
           "effects": []
         }
-      ]
+      ],
+      "min_region": 2
     },
     {
       "id": "so_mais_uma_coisinha",
@@ -776,7 +784,8 @@
           "effects": []
         }
       ],
-      "scene": "booth"
+      "scene": "booth",
+      "min_region": 2
     },
     {
       "id": "cliente_internacional",
@@ -817,7 +826,8 @@
           ]
         }
       ],
-      "scene": "boardroom"
+      "scene": "boardroom",
+      "min_region": 4
     },
     {
       "id": "boom_ia_generativa",
@@ -873,7 +883,8 @@
             }
           ]
         }
-      ]
+      ],
+      "min_region": 3
     },
     {
       "id": "premio_internacional",
@@ -915,7 +926,8 @@
           ]
         }
       ],
-      "scene": "stage"
+      "scene": "stage",
+      "min_region": 4
     },
     {
       "id": "concorrente_cresce",
@@ -957,7 +969,8 @@
             }
           ]
         }
-      ]
+      ],
+      "min_region": 2
     },
     {
       "id": "investidor_de_peso",
@@ -1000,7 +1013,8 @@
           ]
         }
       ],
-      "scene": "boardroom"
+      "scene": "boardroom",
+      "min_region": 4
     },
     {
       "id": "reuniao_desnecessaria",
@@ -1029,6 +1043,362 @@
             {
               "type": "motivation",
               "value": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vizinho_logo",
+      "title": "O vizinho quer um logo",
+      "weight": 3,
+      "min_region": 1,
+      "max_region": 1,
+      "min_day": 20,
+      "cooldown_days": 150,
+      "text": "O dono da padaria da esquina pediu \"um loguinho rápido, coisa simples\". De graça, claro.",
+      "choices": [
+        {
+          "label": "Fazer de graça (boa vizinhança)",
+          "effects": [
+            {
+              "type": "reputation",
+              "value": 2
+            },
+            {
+              "type": "stress_all",
+              "value": 4
+            }
+          ]
+        },
+        {
+          "label": "Cobrar um preço simbólico (R$ 800)",
+          "effects": [
+            {
+              "type": "money",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "label": "Recusar com educação",
+          "effects": [
+            {
+              "type": "log",
+              "text": "A padaria seguiu com o logo feito no Paint."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "feira_de_rua",
+      "title": "Feira de rua do bairro",
+      "weight": 3,
+      "min_region": 1,
+      "max_region": 2,
+      "min_day": 40,
+      "cooldown_days": 180,
+      "text": "A associação do bairro organiza uma feira de rua e procura patrocinadores.",
+      "choices": [
+        {
+          "label": "Patrocinar (R$ 1.500)",
+          "effects": [
+            {
+              "type": "money",
+              "value": -1500
+            },
+            {
+              "type": "reputation",
+              "value": 2
+            },
+            {
+              "type": "spawn_prospect"
+            }
+          ]
+        },
+        {
+          "label": "Só passar lá",
+          "effects": [
+            {
+              "type": "motivation",
+              "value": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edital_prefeitura",
+      "title": "Prefeitura abre edital",
+      "weight": 3,
+      "min_region": 2,
+      "max_region": 3,
+      "cooldown_days": 240,
+      "text": "A prefeitura abriu edital para a campanha de turismo regional. Concorrência pública: muita papelada, mas vitrine garantida.",
+      "choices": [
+        {
+          "label": "Participar (R$ 3.000 em documentação)",
+          "effects": [
+            {
+              "type": "money",
+              "value": -3000
+            },
+            {
+              "type": "reputation",
+              "value": 3
+            },
+            {
+              "type": "spawn_prospect",
+              "tier_bonus": 0
+            }
+          ]
+        },
+        {
+          "label": "Deixar passar",
+          "effects": []
+        }
+      ]
+    },
+    {
+      "id": "radio_local",
+      "title": "Rádio quer uma entrevista",
+      "weight": 3,
+      "min_region": 2,
+      "max_region": 3,
+      "cooldown_days": 150,
+      "text": "A rádio regional convidou {best_employee} para falar sobre marketing para pequenos negócios, ao vivo, amanhã cedo.",
+      "choices": [
+        {
+          "label": "Ir (um dia fora dos projetos)",
+          "effects": [
+            {
+              "type": "project_delay",
+              "days": 1
+            },
+            {
+              "type": "reputation",
+              "value": 2
+            },
+            {
+              "type": "spawn_prospect"
+            }
+          ]
+        },
+        {
+          "label": "Recusar",
+          "effects": []
+        }
+      ]
+    },
+    {
+      "id": "greve_transporte",
+      "title": "Greve de transporte",
+      "weight": 3,
+      "min_region": 3,
+      "cooldown_days": 200,
+      "text": "Greve de ônibus e metrô na capital. Metade da equipe não consegue chegar.",
+      "choices": [
+        {
+          "label": "Home office esta semana (projetos atrasam)",
+          "effects": [
+            {
+              "type": "project_delay",
+              "days": 2
+            }
+          ]
+        },
+        {
+          "label": "Táxi para todo mundo (R$ 2.500)",
+          "effects": [
+            {
+              "type": "money",
+              "value": -2500
+            },
+            {
+              "type": "motivation",
+              "value": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "evento_do_setor",
+      "title": "O maior evento do setor é aqui",
+      "weight": 2,
+      "min_region": 3,
+      "cooldown_days": 300,
+      "text": "O congresso de marketing do ano acontece na cidade. Ingressos caros, contatos valiosos.",
+      "choices": [
+        {
+          "label": "Mandar a equipe (R$ 4.000)",
+          "effects": [
+            {
+              "type": "money",
+              "value": -4000
+            },
+            {
+              "type": "reputation",
+              "value": 3
+            },
+            {
+              "type": "spawn_candidate",
+              "quality": "high"
+            },
+            {
+              "type": "attr_all",
+              "attr": "strategy",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "label": "Ficar trabalhando",
+          "effects": [
+            {
+              "type": "project_boost",
+              "indicator": "execution",
+              "value": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "headhunter",
+      "title": "Headhunter assedia a equipe",
+      "weight": 3,
+      "min_region": 4,
+      "min_employees": 4,
+      "cooldown_days": 200,
+      "text": "Uma consultoria de recrutamento ligou para metade da equipe na mesma semana. As grandes marcas pagam bem.",
+      "choices": [
+        {
+          "label": "Bônus de retenção para todos (R$ 8.000)",
+          "effects": [
+            {
+              "type": "money",
+              "value": -8000
+            },
+            {
+              "type": "motivation",
+              "value": 8
+            }
+          ]
+        },
+        {
+          "label": "Confiar na cultura",
+          "effects": [
+            {
+              "type": "stress_all",
+              "value": 6
+            },
+            {
+              "type": "motivation",
+              "value": -6
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fusao_clientes",
+      "title": "Dois clientes viraram um",
+      "weight": 2,
+      "min_region": 4,
+      "min_active_clients": 2,
+      "cooldown_days": 300,
+      "text": "{random_client} foi comprado por um grupo maior. O contrato precisa ser renegociado.",
+      "choices": [
+        {
+          "label": "Renegociar com o grupo",
+          "effects": [
+            {
+              "type": "client_relationship",
+              "value": 12
+            },
+            {
+              "type": "reputation",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "label": "Cobrar rescisão e seguir",
+          "effects": [
+            {
+              "type": "money",
+              "value": 6000
+            },
+            {
+              "type": "client_relationship",
+              "value": -15
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fuso_horario",
+      "title": "Reunião às 3 da manhã",
+      "weight": 3,
+      "min_region": 5,
+      "min_active_clients": 1,
+      "cooldown_days": 120,
+      "text": "{random_client} tem sede em outro continente e quer a apresentação da campanha às 3h, horário deles.",
+      "choices": [
+        {
+          "label": "Aceitar o horário",
+          "effects": [
+            {
+              "type": "stress_all",
+              "value": 8
+            },
+            {
+              "type": "client_relationship",
+              "value": 15
+            }
+          ]
+        },
+        {
+          "label": "Pedir para remarcar",
+          "effects": [
+            {
+              "type": "client_relationship",
+              "value": -8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cambio",
+      "title": "O câmbio mexeu",
+      "weight": 3,
+      "min_region": 5,
+      "cooldown_days": 150,
+      "text": "Metade dos contratos globais é em dólar e o câmbio disparou esta semana.",
+      "choices": [
+        {
+          "label": "Travar o câmbio (R$ 3.000 de taxa)",
+          "effects": [
+            {
+              "type": "money",
+              "value": -3000
+            }
+          ]
+        },
+        {
+          "label": "Surfar a alta",
+          "effects": [
+            {
+              "type": "money",
+              "value": 12000
+            },
+            {
+              "type": "log",
+              "text": "Desta vez o câmbio jogou a favor. Nem sempre vai."
             }
           ]
         }

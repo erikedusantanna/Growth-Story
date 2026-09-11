@@ -25,6 +25,17 @@ func add(delta: float) -> void:
 	EventBus.reputation_changed.emit(st.reputation, real_delta)
 
 
+## Penalidade exata (sem o amortecimento de quem é desconhecido): usada nas investidas contra rivais.
+func penalize(amount: float, reason: String = "") -> void:
+	var st: GameState = game.state
+	var before := st.reputation
+	st.reputation = clampf(st.reputation - amount, 0.0, 100.0)
+	var real_delta := st.reputation - before
+	if absf(real_delta) >= 0.5:
+		game.add_log("%d reputação%s" % [int(roundf(real_delta)), (" (%s)" % reason) if reason != "" else ""], "rep")
+	EventBus.reputation_changed.emit(st.reputation, real_delta)
+
+
 func tier_name() -> String:
 	var rep: float = game.state.reputation
 	if rep < 20.0:

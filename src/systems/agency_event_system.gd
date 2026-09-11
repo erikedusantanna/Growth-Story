@@ -45,6 +45,8 @@ func can_run(ev: Dictionary, people: Array) -> Dictionary:
 		return {"ok": false, "reason": "Precisa de %d de reputação." % int(ev["requires_rep"])}
 	if st.office_level < int(ev.get("requires_office", 1)):
 		return {"ok": false, "reason": "Precisa de um escritório maior."}
+	if game.office.region() < int(ev.get("requires_region", 1)):
+		return {"ok": false, "reason": "Só a partir de %s." % String(game.office.region_data(int(ev.get("requires_region", 1))).get("name", "outra região"))}
 	if is_running(ev):
 		return {"ok": false, "reason": "Já está acontecendo."}
 	if cooldown_left(ev) > 0:

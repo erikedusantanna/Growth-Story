@@ -158,12 +158,14 @@ func _apply_win(r: Dictionary) -> void:
 				var e: Employee = st.employee_by_id(int(id))
 				if e != null:
 					game.employees.change_morale(e, 10.0)
+					game.employees.good_news(e)
 					game.employees.add_journey(e, "Campanha do Ano: %s" % String(r.get("title", "")))
 		"professional":
 			for id in r.people:
 				var e: Employee = st.employee_by_id(int(id))
 				if e != null:
 					game.employees.change_morale(e, 15.0)
+					game.employees.good_news(e)
 					e.loyalty = clampf(e.loyalty + 10.0, 0.0, 100.0)
 					game.employees.add_journey(e, "Profissional do Ano nos Prêmios do Marketing")
 

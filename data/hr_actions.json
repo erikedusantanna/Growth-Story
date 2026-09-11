@@ -1,5 +1,5 @@
 {
-  "hire": {"name": "Analista de RH", "cost": 12000, "salary": 3000, "requires_office": 3, "requires_rep": 30, "desc": "Contrata uma analista de RH em tempo integral. Ela ganha uma sala própria no escritório e libera as ações de RH."},
+  "hire": {"name": "Analista de RH", "cost": 12000, "salary": 3000, "requires_office": 7, "requires_rep": 30, "desc": "Contrata uma analista de RH em tempo integral. Ela ganha uma sala própria no escritório e libera as ações de RH."},
   "actions": [
     {"id": "pizza", "name": "Noite de pizza", "desc": "Depois do expediente, pizza para todo mundo.", "cost": 600, "cost_per_employee": 80, "morale": 8, "cooldown_days": 15},
     {"id": "happy_hour", "name": "Happy hour", "desc": "Bar do lado, conta da agência.", "cost": 400, "cost_per_employee": 60, "morale": 6, "stress": -10, "cooldown_days": 20},
@@ -7,8 +7,8 @@
     {"id": "energetico", "name": "Energético com paçoca", "desc": "Sprint de 10 dias com combustível duvidoso.", "cost": 800, "cost_per_employee": 100, "morale": -10, "buff": {"productivity": 1.3, "days": 10}, "cooldown_days": 30},
     {"id": "festa", "name": "Festa na firma", "desc": "DJ, comida e uma segunda-feira difícil.", "cost": 3000, "cost_per_employee": 300, "morale": 25, "delay_days": 2, "cooldown_days": 60},
     {"id": "bem_estar", "name": "Programa de bem-estar", "desc": "Yoga, terapia e pausas. Um mês de estresse mais leve.", "cost": 500, "cost_per_employee": 200, "buff": {"stress_rate": 0.6, "days": 30}, "cooldown_days": 45, "requires_rep": 40},
-    {"id": "retiro", "name": "Retiro da equipe", "desc": "Três dias fora da cidade. Volta todo mundo mais unido.", "cost": 8000, "cost_per_employee": 500, "morale": 35, "loyalty": 10, "delay_days": 4, "cooldown_days": 180, "requires_rep": 45, "requires_office": 3},
-    {"id": "pet_dog", "name": "Pet friendly: cachorro", "desc": "A agência adota um cachorro. Ele passa a morar no escritório e alegra o dia de todo mundo.", "cost": 2500, "morale": 10, "morale_daily": 0.1, "pet": "dog", "once": true},
-    {"id": "pet_cat", "name": "Pet friendly: gato", "desc": "Depois do cachorro, um gato. Mais caro, mais independente e igualmente permanente.", "cost": 6000, "morale": 12, "morale_daily": 0.1, "pet": "cat", "once": true, "requires_pet": "dog"}
+    {"id": "retiro", "name": "Retiro da equipe", "desc": "Três dias fora da cidade. Volta todo mundo mais unido.", "cost": 8000, "cost_per_employee": 500, "morale": 35, "loyalty": 10, "delay_days": 4, "cooldown_days": 180, "requires_rep": 45, "requires_office": 7},
+    {"id": "pet_dog", "name": "Pet friendly: cachorro", "desc": "A agência adota um cachorro. Ele passa a morar no escritório e alegra o dia de todo mundo.", "cost": 2500, "morale": 10, "morale_daily": 0.05, "pet": "dog", "once": true},
+    {"id": "pet_cat", "name": "Pet friendly: gato", "desc": "Depois do cachorro, um gato. Mais caro, mais independente e igualmente permanente.", "cost": 6000, "morale": 12, "morale_daily": 0.05, "pet": "cat", "once": true, "requires_pet": "dog"}
   ]
 }

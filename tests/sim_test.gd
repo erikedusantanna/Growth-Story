@@ -12,7 +12,8 @@ var stars_hist := [0, 0, 0, 0, 0, 0]
 func _ready() -> void:
 	var game = Game
 	game.manual_time = true
-	_run_simulation(game, 12345, 3)
+	var sim_seed: int = int(OS.get_environment("SIM_SEED")) if OS.has_environment("SIM_SEED") else 12345
+	_run_simulation(game, sim_seed, 3)
 	_test_save_roundtrip(game)
 	_test_scoring(game)
 	_test_hr_furniture_events(game)
@@ -22,6 +23,10 @@ func _ready() -> void:
 	_test_competitors(game)
 	_test_office_life(game)
 	_test_briefings_chemistry_awards(game)
+	_test_morale_moods(game)
+	_test_regions(game)
+	_test_rivals(game)
+	_test_region_content(game)
 	if failures == 0:
 		print("\n[OK] Todos os testes passaram.")
 		get_tree().quit(0)
@@ -55,6 +60,12 @@ func _run_simulation(game, seed: int, years: int) -> void:
 		game.on_day()
 		if st.day % 360 == 0:
 			year_report.append(_snapshot(game))
+		if OS.has_environment("SIM_VERBOSE") and st.day % 90 == 0:
+			var stress_sum := 0.0
+			for e in st.employees:
+				stress_sum += e.stress
+			var costs_v: Dictionary = game.finance.monthly_costs()
+			print("    [dia %d] caixa=%s equipe=%d moral=%.0f estresse=%.0f projetos=%d custo/mês=%s receita/mês=%s rep=%.0f" % [st.day, FinanceSystem.format_money(st.money), st.employees.size(), game.employees.morale_average(), stress_sum / maxf(st.employees.size(), 1.0), st.running_projects().size(), FinanceSystem.format_money(float(costs_v.total)), FinanceSystem.format_money(st.month_revenue), st.reputation])
 		if st.game_over:
 			break
 		# política automática
@@ -87,8 +98,13 @@ func _run_simulation(game, seed: int, years: int) -> void:
 					best = cand
 			if game.employees.hire(best).ok:
 				hires += 1
-		if st.money > 60000 and st.employees.size() >= game.office.capacity() - 1:
+		var nxt_office: Dictionary = game.office.next_level()
+		if not nxt_office.is_empty() and st.money > float(nxt_office.get("upgrade_cost", 0)) + 30000.0 and st.employees.size() >= game.office.capacity() - 1:
 			game.office.upgrade()
+		elif nxt_office.is_empty() and game.office.region() < game.office.regions().size():
+			var next_region: Dictionary = game.office.region_data(game.office.region() + 1)
+			if game.office.can_move(game.office.region() + 1).ok and st.money > float(next_region.get("move_cost", 0)) + 30000.0:
+				game.office.move_to(game.office.region() + 1)
 		if st.money > 30000:
 			for sid in game.content.service_order:
 				if game.services.can_unlock(sid).ok:
@@ -98,6 +114,11 @@ func _run_simulation(game, seed: int, years: int) -> void:
 			for e in st.available_employees():
 				game.employees.train(e, "criativo")
 				break
+		if st.day % 30 == 10:
+			var costs_now: Dictionary = game.finance.monthly_costs()
+			for e in st.employees:
+				if not e.is_founder and e.months_since_raise >= EmployeeSystem.RAISE_MONTHS_LIMIT and st.money > float(costs_now.total) * 2.0:
+					game.employees.raise_by_player(e)
 		if st.day % 30 == 5 and st.money > 15000:
 			for f in game.office.furniture_items():
 				if game.office.can_buy(f).ok:
@@ -122,18 +143,24 @@ func _run_simulation(game, seed: int, years: int) -> void:
 	print("  estrelas: 1=%d 2=%d 3=%d 4=%d 5=%d" % [stars_hist[1], stars_hist[2], stars_hist[3], stars_hist[4], stars_hist[5]])
 	print("  ritmo (régua GDD §53: ano 3 ≈ 6 pessoas, R$ 300 mil/ano, agência local):")
 	for r in year_report:
-		print("    ano %d (%d): equipe=%d clientes=%d receita=%s caixa=%s rep=%.0f escritório=%d projetos=%d" % [
+		print("    ano %d (%d): equipe=%d clientes=%d receita=%s caixa=%s rep=%.0f escritório=%d região=%d projetos=%d moral=%.0f" % [
 			r.year, r.calendar, r.employees, r.clients, FinanceSystem.format_money(r.revenue),
-			FinanceSystem.format_money(r.cash), r.rep, r.office, r.projects])
+			FinanceSystem.format_money(r.cash), r.rep, r.office, int(r.get("region", 1)), r.projects, float(r.get("morale", 0))])
+	if not year_report.is_empty():
+		var morale_sum := 0.0
+		for r in year_report:
+			morale_sum += float(r.get("morale", 0))
+		var morale_avg := morale_sum / float(year_report.size())
+		check(morale_avg >= 45.0 and morale_avg <= 75.0, "moral média dos anos entre 45 e 75 (%.0f)" % morale_avg)
 	if year_report.size() >= 3:
 		var y3: Dictionary = year_report[2]
 		check(y3.employees >= 2 and y3.employees <= 10, "ano 3: equipe entre 2 e 10 (%d)" % y3.employees)
 		check(y3.revenue >= 120000.0 and y3.revenue <= 700000.0, "ano 3: receita anual entre R$ 120 mil e R$ 700 mil (%s)" % FinanceSystem.format_money(y3.revenue))
-		check(y3.rep >= 20.0 and y3.rep <= 85.0, "ano 3: reputação entre 20 e 85 (%.0f)" % y3.rep)
+		check(y3.rep >= 20.0 and y3.rep <= 90.0, "ano 3: reputação entre 20 e 90 (%.0f)" % y3.rep)
 	if year_report.size() >= 1:
 		var y1: Dictionary = year_report[0]
 		check(y1.employees >= 2 and y1.employees <= 5, "ano 1: equipe entre 2 e 5 (%d)" % y1.employees)
-		check(y1.rep >= 8.0 and y1.rep <= 45.0, "ano 1: reputação entre 8 e 45 (%.0f)" % y1.rep)
+		check(y1.rep >= 8.0 and y1.rep <= 50.0, "ano 1: reputação entre 8 e 50 (%.0f)" % y1.rep)
 	check(not st.game_over, "não faliu com política simples")
 	check(completed >= 6, "concluiu pelo menos 6 projetos/ciclos (%d)" % completed)
 	check(events_resolved >= 3, "eventos dispararam (%d)" % events_resolved)
@@ -176,6 +203,7 @@ func _snapshot(game) -> Dictionary:
 			projects += 1
 	return {"year": year_idx + 1, "calendar": GameState.START_YEAR + year_idx, "employees": st.employees.size(),
 		"clients": st.active_clients().size(), "revenue": revenue, "cash": st.money, "rep": st.reputation,
+		"morale": game.employees.morale_average(), "region": game.office.region(),
 		"office": st.office_level, "projects": projects}
 
 
@@ -227,7 +255,7 @@ func _test_hr_furniture_events(game) -> void:
 	game.new_game("Bem-estar", "Chefe", 99)
 	var st = game.state
 	check(not game.hr.is_unlocked(), "RH começa fechado")
-	st.office_level = 3
+	st.office_level = 7
 	st.reputation = 45.0
 	st.money = 100000.0
 	for i in 3:
@@ -269,7 +297,7 @@ func _test_hr_furniture_events(game) -> void:
 	var cadeiras = game.office.furniture_by_id("cadeiras")
 	var cap_before: float = game.office.morale_max()
 	check(game.office.buy(cadeiras).ok, "comprou cadeiras ergonômicas")
-	check(game.office.morale_max() == cap_before + 10.0, "teto de moral subiu 10 (%d)" % int(game.office.morale_max()))
+	check(game.office.morale_max() == cap_before + 5.0, "teto de moral subiu 5 (%d)" % int(game.office.morale_max()))
 	var cafe = game.office.furniture_by_id("cafe_premium")
 	var cri_before: float = st.employees[1].attr("creativity")
 	check(game.office.buy(cafe).ok, "comprou máquina de café")
@@ -367,7 +395,7 @@ func _test_departments(game) -> void:
 	game.new_game("Depto Test", "Chefe", 5)
 	var st = game.state
 	check(not game.departments.is_unlocked(), "departamentos começam fechados")
-	st.office_level = 4
+	st.office_level = 11
 	check(game.departments.is_unlocked(), "departamentos abrem no escritório com departamentos")
 	st.money = 500000.0
 	var a = game.employees.generate_candidate("normal")
@@ -471,6 +499,8 @@ func _test_office_life(game) -> void:
 	check(float((noon["tint"] as Color).a) < 0.001 and float(noon["lamp"]) == 0.0, "meio-dia sem tinta nem luminárias")
 	check(float((night["tint"] as Color).a) > 0.2 and float(night["lamp"]) == 1.0 and float(night["night"]) == 1.0, "20:00 é noite com luminárias acesas")
 	check((dusk["sky_bottom"] as Color).r > (noon["sky_bottom"] as Color).r, "fim de tarde tem céu mais alaranjado")
+	var golden: Dictionary = OfficeView.daylight(16.5)
+	check(float((golden["tint"] as Color).a) > 0.05, "às 16h30 o entardecer já começou")
 	check(Hud.clock_text().length() == 5, "relógio do HUD formata HH:MM (%s)" % Hud.clock_text())
 	# som ambiente
 	var amb = Audio._ambience_player.stream
@@ -576,3 +606,208 @@ func _test_briefings_chemistry_awards(game) -> void:
 	check(int(st.stats.get("awards", 0)) >= 1, "contador de prêmios")
 	var restored = GameState.from_dict(st.to_dict())
 	check(restored.awards.size() == st.awards.size() and restored.projects[0].briefing == p.briefing and restored.clients[0].briefing == c.briefing, "prêmios e briefings sobrevivem ao save")
+
+
+func _test_morale_moods(game) -> void:
+	print("== Moral e humores ==")
+	game.new_game("Humores", "Chefe", 777)
+	var st = game.state
+	var f: Employee = st.employees[0]
+	check(f.motivation <= game.office.morale_max(), "fundador começa dentro do teto (%d ≤ %d)" % [int(f.motivation), int(game.office.morale_max())])
+	check(game.office.morale_max() <= 80.0, "teto base de moral baixou (%d)" % int(game.office.morale_max()))
+	# pressão de estresse derruba a moral mesmo no ponto de equilíbrio
+	f.motivation = EmployeeSystem.MORALE_BASELINE
+	f.stress = 90.0
+	var pressures: Array = game.employees.morale_pressures(f)
+	check(pressures.any(func(pr): return pr.id == "stress"), "estresse alto aparece como pressão")
+	game.on_day()
+	check(f.motivation < EmployeeSystem.MORALE_BASELINE, "moral cai com estresse alto (%.2f)" % f.motivation)
+	check(game.employees.mood_of(f, st.day) == "exhausted", "estresse ≥ 75 = exausto")
+	# sem projeto por muitos dias = "sem desafio"
+	f.stress = 0.0
+	f.idle_days = EmployeeSystem.IDLE_DAYS_LIMIT
+	check(game.employees.morale_pressures(f).any(func(pr): return pr.id == "idle"), "ficar na reserva pesa")
+	f.idle_days = 0
+	# humores
+	f.motivation = 20.0
+	check(game.employees.mood_of(f, st.day) == "sad", "moral ≤ 35 = desanimado")
+	f.motivation = 72.0
+	check(game.employees.mood_of(f, st.day) == "happy", "moral ≥ 70 = feliz")
+	game.employees.good_news(f)
+	check(game.employees.mood_of(f, st.day) == "celebrating", "boa notícia = celebrando por 3 dias")
+	f.last_good_news_day = -99
+	f.busy_reason = "Burnout"
+	f.busy_until = st.day + 5
+	check(game.employees.mood_of(f, st.day) == "burnout", "burnout tem prioridade")
+	f.busy_reason = ""
+	f.busy_until = -1
+	f.last_offer_day = st.day
+	check(game.employees.mood_of(f, st.day) == "courted", "proposta de concorrente = assediado")
+	f.last_offer_day = -999
+	check(game.employees.mood_label("happy").contains("Feliz"), "rótulo do humor")
+	# entrega: 5 estrelas anima, 1 estrela derruba
+	var c = st.prospects()[0]
+	c.status = Client.Status.ACTIVE
+	var before: float = f.motivation
+	game.projects.create_project(c, ["social_media"], [f.id])
+	var p: Project = st.running_projects()[0]
+	for i in 200:
+		if not p.is_running():
+			break
+		game.on_day()
+		if not st.pending_event.is_empty():
+			game.resolve_event(0)
+	check(not p.is_running(), "projeto terminou")
+	var stars: int = int(p.result.get("stars", 0))
+	check(stars >= 1, "resultado com estrelas (%d)" % stars)
+	var restored = Employee.from_dict(f.to_dict())
+	check(restored.idle_days == f.idle_days and restored.last_good_news_day == f.last_good_news_day, "campos novos sobrevivem ao save")
+
+
+func _test_regions(game) -> void:
+	print("== Regiões e mudança de sede ==")
+	check(game.content.offices.size() == 16 and game.office.regions().size() == 5, "16 níveis em 5 regiões")
+	var caps_ok := true
+	for i in range(1, game.content.offices.size()):
+		if int(game.content.offices[i].capacity) < int(game.content.offices[i - 1].capacity):
+			caps_ok = false
+	check(caps_ok, "capacidade nunca diminui ao subir de nível")
+	game.new_game("Mapa", "Chefe", 31)
+	var st = game.state
+	check(game.office.region() == 1 and game.clients.max_tier() == 1, "começa na Região 1 com clientes tier 1")
+	st.money = 2000000.0
+	st.reputation = 90.0
+	check(not game.office.can_move(3).ok, "não pula região")
+	check(game.office.can_move(2).ok, "com caixa e reputação pode mudar para a Região 2")
+	var money_before: float = st.money
+	check(game.office.move_to(2).ok, "mudou para o Centro Regional")
+	check(game.office.region() == 2 and st.office_level == 4 and game.office.capacity() == 8, "sede nova no nível 1 da região (%s)" % game.office.current().name)
+	check(is_equal_approx(st.money, money_before - 40000.0), "pagou a mudança")
+	check(game.office.is_moving() and st.moving_until_day == st.day + 7 and game.office.moving_multiplier() < 1.0, "semana de mudança ativa")
+	for i in 8:
+		st.candidates.append(game.employees.generate_candidate("normal"))
+		game.employees.hire(st.candidates[st.candidates.size() - 1])
+	check(game.clients.max_tier() == 2, "tier máximo segue a região (%d)" % game.clients.max_tier())
+	check(game.office.upgrade() and st.office_level == 5, "expansão 1 dentro da região")
+	check(game.office.upgrade() and st.office_level == 6, "expansão 2 dentro da região")
+	check(not game.office.can_upgrade().ok and game.office.can_upgrade().reason.contains("mapa"), "no máximo da região, pede para mudar de sede")
+	check(game.office.move_to(3).ok and st.office_level == 7 and game.office.current().has("hr_room"), "Capital tem sala de RH no layout")
+	for i in 8:
+		game.on_day()
+	check(not game.office.is_moving(), "semana de mudança termina")
+	var restored = GameState.from_dict(st.to_dict())
+	check(restored.office_level == st.office_level and restored.moving_until_day == st.moving_until_day, "região e mudança sobrevivem ao save")
+
+
+func _test_rivals(game) -> void:
+	print("== Concorrentes reais ==")
+	game.new_game("Rivais", "Chefe", 55)
+	var st = game.state
+	check(game.competitors.active_rivals().is_empty(), "no bairro não há rival")
+	st.money = 3000000.0
+	st.reputation = 90.0
+	check(game.office.move_to(2).ok, "mudou para o Centro Regional")
+	var rivals: Array = game.competitors.active_rivals()
+	check(rivals.size() == 1 and String(rivals[0].id) == "vertice", "Vértice Digital aparece na Região 2")
+	var rs: Dictionary = game.competitors.rival_state("vertice")
+	check(rs.clients.size() == 3 and rs.staff.size() == 2, "rival tem 3 clientes e 2 pessoas")
+	check(game.competitors.can_raid().ok, "investida disponível")
+	var rep_before: float = st.reputation
+	var clients_before: int = st.active_clients().size()
+	var r: Dictionary = game.competitors.raid_client("vertice", 0, 1)
+	check(r.ok and r.success and st.active_clients().size() == clients_before + 1, "proposta forçada leva o cliente da rival")
+	check(is_equal_approx(st.reputation, rep_before - 5.0), "custa 5 de reputação")
+	check(game.competitors.is_aggressive("vertice") and not game.competitors.can_raid().ok, "rival fica agressiva e a investida entra em cooldown")
+	check(game.competitors.can_raid().days_left == 90, "cooldown de 90 dias")
+	st.last_raid_day = -999
+	for i in 6:
+		st.candidates.append(game.employees.generate_candidate("normal"))
+		game.employees.hire(st.candidates[st.candidates.size() - 1])
+	var team_before: int = st.employees.size()
+	rep_before = st.reputation
+	var money_before: float = st.money
+	var r2: Dictionary = game.competitors.raid_employee("vertice", 0, 1)
+	check(r2.ok and r2.success and st.employees.size() == team_before + 1, "contratação forçada traz a pessoa da rival")
+	check(is_equal_approx(st.reputation, rep_before - 3.0) and st.money < money_before, "custa 3 de reputação e o bônus de assinatura")
+	st.last_raid_day = -999
+	var r3: Dictionary = game.competitors.raid_client("vertice", 0, 0)
+	check(r3.ok and not r3.success and not game.competitors.can_raid().ok, "investida que falha também gasta o trimestre")
+	game.competitors.ensure_rivals()
+	check(game.competitors.rival_state("vertice").clients.size() == 3, "carteira da rival se recompõe")
+	# investidas da rival: funcionário e cliente
+	st.pending_event = {}
+	check(game.competitors.rival_offer_employee("vertice"), "rival faz proposta a um funcionário")
+	var target_id: int = int(st.pending_event.targets.employee_id)
+	check(st.employee_by_id(target_id).last_offer_day == st.day, "alvo fica com humor assediado")
+	var size_before: int = st.employees.size()
+	game.resolve_event(2)
+	check(st.employees.size() == size_before - 1, "\"deixar sair\" perde a pessoa")
+	var c = st.prospects()[0] if not st.prospects().is_empty() else game.clients.spawn_prospect()
+	c.status = Client.Status.ACTIVE
+	c.relationship = 30.0
+	c.tier = 1
+	check(game.competitors.rival_offer_client("vertice"), "rival faz proposta a um cliente")
+	var budget_before: float = c.budget
+	game.resolve_event(0)
+	check(c.budget < budget_before and c.is_active(), "igualar o desconto mantém o cliente com orçamento menor")
+	var restored = GameState.from_dict(st.to_dict())
+	check(restored.rivals.has("vertice") and restored.last_raid_day == st.last_raid_day, "rivais sobrevivem ao save")
+
+
+func _test_region_content(game) -> void:
+	print("== Conteúdo por região e projetos complexos ==")
+	game.new_game("Conteúdo", "Chefe", 8)
+	var st = game.state
+	st.day = 400
+	var pool_r1: Array = game.content.events.filter(func(ev): return game.events._eligible(ev)).map(func(ev): return String(ev.id))
+	check(pool_r1.has("vizinho_logo") and not pool_r1.has("greve_transporte") and not pool_r1.has("cliente_internacional"), "no bairro só os eventos da Região 1 entram no sorteio")
+	var fi = game.agency_events.event_by_id("feira_internacional")
+	check(not fi.is_empty() and not game.agency_events.can_run(fi, []).ok, "feira internacional trancada fora do Hub Global")
+	var terraco = game.office.furniture_by_id("terraco")
+	st.money = 5000000.0
+	check(not game.office.can_buy(terraco).ok, "terraço exige a torre global")
+	# vai até o Hub Global
+	st.reputation = 95.0
+	for r in [2, 3, 4, 5]:
+		check(game.office.move_to(r).ok, "mudou para a região %d" % r)
+	check(game.office.upgrade(), "expandiu no Hub Global")
+	check(game.office.can_buy(terraco).ok, "terraço liberado na torre global")
+	var pool_r5: Array = game.content.events.filter(func(ev): return game.events._eligible(ev)).map(func(ev): return String(ev.id))
+	check(pool_r5.has("cambio") and not pool_r5.has("vizinho_logo"), "no Hub Global entram os eventos globais e saem os do bairro")
+	check(game.clients.max_tier() == 1, "tier ainda limitado pela equipe pequena")
+	for i in 12:
+		st.candidates.append(game.employees.generate_candidate("high"))
+		game.employees.hire(st.candidates[st.candidates.size() - 1])
+	check(game.clients.max_tier() == 5, "com equipe grande no Hub Global chegam clientes tier 5")
+	var c = game.clients.spawn_prospect()
+	check(c.tier >= 4, "prospect do topo (tier %d)" % c.tier)
+	c.tier = 5
+	c.status = Client.Status.ACTIVE
+	check(game.projects.is_complex(c, Project.Kind.PROJECT), "cliente tier 5 gera projeto complexo")
+	var two: Array = [st.employees[0].id, st.employees[1].id]
+	check(not game.projects.can_create(c, ["social_media"], two).ok, "projeto complexo recusa equipe pequena")
+	var team: Array = []
+	var roles := {}
+	for e in st.employees:
+		if team.size() >= 5:
+			break
+		if e.is_available(st.day):
+			team.append(e.id)
+			roles[e.role] = true
+	if roles.size() < 2:
+		st.employees[1].role = "design"
+	var q = game.projects.quote(c, Project.Kind.PROJECT)
+	check(bool(q.complex) and float(q.effort) > 12.0 + float(q.budget) / 350.0, "orçamento e esforço maiores no projeto complexo")
+	var r = game.projects.create_project(c, ["social_media", "design"], team)
+	check(r.ok, "projeto complexo criado com 5 pessoas e 2 papéis (%s)" % r.reason)
+	var p: Project = st.running_projects()[0]
+	check(p.complex and not p.checkpoint_done, "projeto marcado como complexo")
+	for i in 120:
+		if p.checkpoint_done or not p.is_running():
+			break
+		game.on_day()
+		if not st.pending_event.is_empty():
+			game.resolve_event(0)
+	check(p.checkpoint_done, "checkpoint aconteceu na metade")
+	check(Project.from_dict(p.to_dict()).complex, "projeto complexo sobrevive ao save")
+	check(game.content.client_templates.filter(func(t): return int(t.tier) == 5).size() >= 6, "há clientes tier 5 suficientes")

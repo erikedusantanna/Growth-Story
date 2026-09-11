@@ -47,6 +47,9 @@ func _ready() -> void:
 		bv.add_child(UIKit.label(Game.projects.briefing_desc(briefing, client), 14, UIKit.COLOR_TEXT, true))
 		var keys: Array = (briefing.get("key_services", []) as Array).map(func(s): return Game.content.service_name(s))
 		bv.add_child(UIKit.label("Serviços-chave: %s (+%d cada, até +%d)" % [", ".join(keys), int(ProjectSystem.BONUS_KEY_SERVICE), int(ProjectSystem.BONUS_KEY_SERVICE_MAX)], 13, UIKit.COLOR_PURPLE, true))
+	if Game.projects.is_complex(client, Project.Kind.PROJECT):
+		bv.add_child(UIKit.label("🧩 Projeto complexo (tier %d): equipe mínima de %d pessoas com %d especialidades; orçamento ×%.1f e esforço ×%.1f; na metade o cliente avalia e nota abaixo de 50 vira refação (+%d%% de trabalho)." % [
+			ProjectSystem.COMPLEX_TIER, ProjectSystem.COMPLEX_MIN_TEAM, ProjectSystem.COMPLEX_MIN_ROLES, ProjectSystem.COMPLEX_BUDGET_MULT, ProjectSystem.COMPLEX_EFFORT_MULT, int(ProjectSystem.COMPLEX_REWORK * 100)], 13, UIKit.COLOR_PURPLE, true))
 	if client.diagnosed:
 		bv.add_child(UIKit.label("Problema real: %s" % Game.clients.problem_name(client), 15, UIKit.COLOR_ACCENT, true))
 		var sol: Array = Game.content.problem_solutions.get(client.problem, []).map(func(s): return Game.content.service_name(s))

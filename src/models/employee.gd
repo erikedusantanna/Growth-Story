@@ -39,6 +39,9 @@ var busy_reason: String = ""
 var months_since_raise: int = 0
 var journey: Array = []                # [{day, text}] história do colaborador na agência
 var department: String = ""            # id do departamento (data/departments.json), "" = nenhum
+var idle_days: int = 0                 # dias seguidos sem projeto (pressão "sem desafio")
+var last_good_news_day: int = -99      # promoção, prêmio ou 5 estrelas (estado "celebrando" por 3 dias)
+var last_offer_day: int = -999         # última proposta de concorrente (estado "assediado" por 30 dias)
 
 
 func attr(key: String) -> float:
@@ -94,6 +97,7 @@ func to_dict() -> Dictionary:
 		"project_id": project_id, "training_id": training_id, "busy_until": busy_until,
 		"busy_reason": busy_reason, "months_since_raise": months_since_raise,
 		"journey": journey.duplicate(true), "department": department,
+		"idle_days": idle_days, "last_good_news_day": last_good_news_day, "last_offer_day": last_offer_day,
 	}
 
 
@@ -129,4 +133,7 @@ static func from_dict(d: Dictionary) -> Employee:
 	e.months_since_raise = int(d.get("months_since_raise", 0))
 	e.journey = Array(d.get("journey", []))
 	e.department = String(d.get("department", ""))
+	e.idle_days = int(d.get("idle_days", 0))
+	e.last_good_news_day = int(d.get("last_good_news_day", -99))
+	e.last_offer_day = int(d.get("last_offer_day", -999))
 	return e

@@ -15,6 +15,7 @@ var popups: Popups
 var event_stage: EventStage
 var title_screen: TitleScreen
 var tutorial: TutorialOverlay
+var world_map: WorldMapScreen
 var current_screen := "clients"
 
 
@@ -96,6 +97,11 @@ func _ready() -> void:
 	add_child(stage_layer)
 	event_stage = EventStage.new()
 	stage_layer.add_child(event_stage)
+	var map_layer := CanvasLayer.new()
+	map_layer.layer = 9   # cobre escritório e abas; fica abaixo dos modais
+	add_child(map_layer)
+	world_map = WorldMapScreen.new()
+	map_layer.add_child(world_map)
 	var guide_layer := CanvasLayer.new()
 	guide_layer.layer = 12   # acima dos modais: destaca botões dentro deles também
 	add_child(guide_layer)
@@ -142,7 +148,14 @@ func below_office_y() -> float:
 	return office_view.global_position.y + office_view.size.y + 10.0
 
 
+func show_world_map() -> void:
+	if Game.has_game():
+		world_map.open()
+
+
 func show_title() -> void:
+	if world_map.visible:
+		world_map.close()
 	if Game.has_game():
 		Game.state.paused = true
 	Audio.stop_ambience()

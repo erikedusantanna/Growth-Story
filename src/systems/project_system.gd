@@ -8,6 +8,13 @@ const RETAINER_CYCLE_DAYS := 30
 const PAYMENT_MULT := [0.0, 0.6, 0.85, 1.0, 1.1, 1.25]
 const STAR_THRESHOLDS := [35.0, 50.0, 65.0, 82.0]
 const MICRO_EVENT_CHANCE := 0.05
+## Projetos complexos (clientes tier 5, Região 5): equipe mínima, mais esforço e checkpoint na metade.
+const COMPLEX_TIER := 5
+const COMPLEX_MIN_TEAM := 4
+const COMPLEX_MIN_ROLES := 2
+const COMPLEX_EFFORT_MULT := 1.4
+const COMPLEX_BUDGET_MULT := 1.5
+const COMPLEX_REWORK := 0.25
 
 var game
 
@@ -24,12 +31,33 @@ func quote(c: Client, kind: int) -> Dictionary:
 		budget = c.budget
 	else:
 		budget = c.budget * (1.2 + 0.3 * c.maturity) * float(briefing_for(c).get("budget_mult", 1.0))
+	var complex := is_complex(c, kind)
+	if complex:
+		budget *= COMPLEX_BUDGET_MULT
 	budget = roundf(budget / 100.0) * 100.0
 	var deadline := RETAINER_CYCLE_DAYS if kind == Project.Kind.RETAINER else clampi(18 + int(budget / 800.0), 24, 60)
 	if kind != Project.Kind.RETAINER:
 		deadline = maxi(12, int(roundf(float(deadline) * float(briefing_for(c).get("deadline_mult", 1.0)))))
 	var effort := 12.0 + budget / 350.0
-	return {"budget": budget, "deadline": deadline, "effort": effort}
+	if complex:
+		effort *= COMPLEX_EFFORT_MULT
+	return {"budget": budget, "deadline": deadline, "effort": effort, "complex": complex}
+
+
+func is_complex(c: Client, kind: int) -> bool:
+	return c.tier >= COMPLEX_TIER and kind == Project.Kind.PROJECT
+
+
+## Equipe mínima do projeto complexo: 4 pessoas e 2 papéis diferentes.
+func complex_team_check(team_ids: Array) -> Dictionary:
+	var roles := {}
+	for id in team_ids:
+		var e: Employee = game.state.employee_by_id(id)
+		if e != null:
+			roles[e.role] = true
+	if team_ids.size() < COMPLEX_MIN_TEAM or roles.size() < COMPLEX_MIN_ROLES:
+		return {"ok": false, "reason": "Projeto complexo (tier %d): equipe mínima de %d pessoas com %d especialidades diferentes." % [COMPLEX_TIER, COMPLEX_MIN_TEAM, COMPLEX_MIN_ROLES]}
+	return {"ok": true, "reason": ""}
 
 
 # --- Briefings -----------------------------------------------------------------------
@@ -84,7 +112,7 @@ func key_services_in(p: Project) -> Array:
 	return p.services.filter(func(sid): return keys.has(sid))
 
 
-func can_create(c: Client, services: Array, team_ids: Array) -> Dictionary:
+func can_create(c: Client, services: Array, team_ids: Array, kind: int = Project.Kind.PROJECT) -> Dictionary:
 	var st: GameState = game.state
 	if not c.is_active():
 		return {"ok": false, "reason": "O cliente ainda não fechou contrato."}
@@ -101,11 +129,15 @@ func can_create(c: Client, services: Array, team_ids: Array) -> Dictionary:
 		var e: Employee = st.employee_by_id(id)
 		if e == null or not e.is_available(st.day):
 			return {"ok": false, "reason": "Alguém da equipe não está disponível."}
+	if is_complex(c, kind):
+		var cc := complex_team_check(team_ids)
+		if not cc.ok:
+			return cc
 	return {"ok": true, "reason": ""}
 
 
 func create_project(c: Client, services: Array, team_ids: Array, kind: int = Project.Kind.PROJECT) -> Dictionary:
-	var check := can_create(c, services, team_ids)
+	var check := can_create(c, services, team_ids, kind)
 	if not check.ok:
 		return check
 	var st: GameState = game.state
@@ -128,6 +160,7 @@ func create_project(c: Client, services: Array, team_ids: Array, kind: int = Pro
 	if kind == Project.Kind.PROJECT:
 		p.briefing = String(briefing_for(c).get("id", ""))
 		p.title = _title_for(c, services, kind, briefing_of(p))
+	p.complex = bool(q.get("complex", false))
 	for id in team_ids:
 		st.employee_by_id(id).project_id = p.id
 	compute_targets(p)
@@ -197,7 +230,7 @@ func compute_targets(p: Project) -> void:
 	if p.addresses_problem:
 		strategy += 15.0 if (c != null and c.diagnosed) else 7.0
 	var creativity: float = avg["creativity"] * 0.6 + max_creativity * 0.4
-	var execution: float = avg["management"] * 0.4 + avg["technology"] * 0.2 + avg["motivation"] * 0.4 \
+	var execution: float = avg["management"] * 0.4 + avg["technology"] * 0.2 + (avg["motivation"] + 20.0) * 0.4 \
 		- avg["stress"] * 0.15 + minf(10.0, avg["experience"] / 60.0)
 	if members.size() == 1 and p.effort_total > 40.0:
 		execution -= 10.0
@@ -252,6 +285,8 @@ func on_day() -> void:
 		compute_targets(p)
 		p.effort_done += daily_output(p)
 		game.chemistry.apply_daily(team_members(p))
+		if p.complex and not p.checkpoint_done and p.progress() >= 0.5:
+			_checkpoint(p)
 		for key in Project.INDICATORS:
 			var goal: float = clampf(p.targets[key] + p.boosts[key], 0.0, 100.0)
 			p.indicators[key] = lerpf(p.indicators[key], goal, 0.12) + st.rng.randf_range(-1.5, 1.5)
@@ -263,6 +298,23 @@ func on_day() -> void:
 				_finish_cycle(p)
 		elif p.effort_done >= p.effort_total or p.team.is_empty() and p.days_elapsed > p.deadline_days + 15:
 			complete(p)
+
+
+## Checkpoint do projeto complexo: o cliente avalia na metade; nota abaixo de 50 vira refação.
+func _checkpoint(p: Project) -> void:
+	var c: Client = game.state.client_by_id(p.client_id)
+	p.checkpoint_done = true
+	var r := _score(p, c, false)
+	var client_name: String = c.name if c != null else "O cliente"
+	if float(r.score) < 50.0:
+		p.effort_total *= 1.0 + COMPLEX_REWORK
+		for e in team_members(p):
+			game.employees.change_morale(e, -3.0)
+			EventBus.office_feedback.emit(e.id, "refação…", "bad")
+		game.add_log("🧩 Checkpoint de %s: %s pediu refação (nota parcial %d). +%d%% de trabalho." % [p.title, client_name, int(r.score), int(COMPLEX_REWORK * 100)], "warn")
+	else:
+		p.boosts["execution"] += 3.0
+		game.add_log("🧩 Checkpoint de %s aprovado por %s (nota parcial %d). Equipe ganha fôlego." % [p.title, client_name, int(r.score)], "project")
 
 
 func _micro_mult(p: Project) -> float:
@@ -584,7 +636,9 @@ func _apply_result(p: Project, result: Dictionary) -> void:
 			var weights: Dictionary = game.content.services.get(s, {}).get("weights", {})
 			for key in weights:
 				e.attrs[key] = clampf(e.attr(key) + float(weights[key]) * growth * st.rng.randf_range(0.5, 1.5), 1.0, 100.0)
-		game.employees.change_morale(e, 6.0 if stars >= 4 else (-8.0 if stars <= 2 else 1.0))
+		game.employees.change_morale(e, {5: 5.0, 4: 3.0, 3: 0.0, 2: -4.0, 1: -8.0}.get(stars, 0.0))
+		if stars == 5:
+			game.employees.good_news(e)
 		e.stress = clampf(e.stress - 8.0, 0.0, 100.0)
 	if c != null:
 		game.clients.on_project_result(c, result)

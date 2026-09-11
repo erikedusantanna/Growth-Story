@@ -15,6 +15,7 @@ var money: float = 5000.0
 var reputation: float = 5.0
 var office_level: int = 1
 var rent_modifier: float = 1.0
+var moving_until_day: int = -1         # semana de mudança de sede (produtividade reduzida, caixas)
 var employees: Array = []       # Employee
 var candidates: Array = []      # Employee
 var clients: Array = []         # Client
@@ -39,6 +40,8 @@ var pets: Array = []                    # ["dog", "cat"] pets permanentes do esc
 var agency_events: Array = []           # [{id, ends_day, people:[ids]}] eventos em andamento
 var agency_events_last: Dictionary = {} # id -> último dia
 var awards: Array = []                  # [{year, category, status, title, detail}] Prêmios do Marketing
+var rivals: Dictionary = {}             # id -> {strength, aggressive_until, clients, staff, wins, losses}
+var last_raid_day: int = -999           # última investida contra uma rival (cooldown de 90 dias)
 var pending_event: Dictionary = {}
 var cases: int = 0
 var speed: int = 1
@@ -150,7 +153,7 @@ func to_dict() -> Dictionary:
 		"version": 1,
 		"seed": seed, "rng_state": str(rng.state), "agency_name": agency_name, "day": day,
 		"money": money, "reputation": reputation, "office_level": office_level,
-		"rent_modifier": rent_modifier,
+		"rent_modifier": rent_modifier, "moving_until_day": moving_until_day,
 		"employees": employees.map(func(e): return e.to_dict()),
 		"candidates": candidates.map(func(e): return e.to_dict()),
 		"clients": clients.map(func(c): return c.to_dict()),
@@ -164,7 +167,7 @@ func to_dict() -> Dictionary:
 		"furniture": furniture.duplicate(), "buffs": buffs.duplicate(true), "hr_last_used": hr_last_used.duplicate(),
 		"hr_hired": hr_hired, "pets": pets.duplicate(),
 		"agency_events": agency_events.duplicate(true), "agency_events_last": agency_events_last.duplicate(),
-		"awards": awards.duplicate(true),
+		"awards": awards.duplicate(true), "rivals": rivals.duplicate(true), "last_raid_day": last_raid_day,
 		"pending_event": pending_event.duplicate(true), "cases": cases,
 		"speed": speed, "game_over": game_over, "stats": stats.duplicate(),
 	}
@@ -182,6 +185,7 @@ static func from_dict(d: Dictionary) -> GameState:
 	s.reputation = float(d.get("reputation", 0))
 	s.office_level = int(d.get("office_level", 1))
 	s.rent_modifier = float(d.get("rent_modifier", 1.0))
+	s.moving_until_day = int(d.get("moving_until_day", -1))
 	s.employees = []
 	for e in d.get("employees", []):
 		s.employees.append(Employee.from_dict(e))
@@ -214,6 +218,8 @@ static func from_dict(d: Dictionary) -> GameState:
 	s.agency_events = Array(d.get("agency_events", []))
 	s.agency_events_last = d.get("agency_events_last", {})
 	s.awards = Array(d.get("awards", []))
+	s.rivals = d.get("rivals", {})
+	s.last_raid_day = int(d.get("last_raid_day", -999))
 	s.pending_event = d.get("pending_event", {})
 	s.cases = int(d.get("cases", 0))
 	s.speed = int(d.get("speed", 1))

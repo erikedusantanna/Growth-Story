@@ -66,8 +66,10 @@ e `c.price_factor` desloca os limiares de estrelas (cliente que paga mais espera
 
 - A cada 15 dias, chance `0,15 + rep/160` de chegar um prospect, até 2 simultâneos abaixo de 20 de
   reputação e 3 acima. O tier máximo do prospect segue as faixas de reputação (GDD §27).
-- Custos mensais: salários + aluguel do escritório (0 / 2.500 / 8.000 / 20.000) + R$ 250 por pessoa em
-  ferramentas. Ampliações custam 8 mil / 45 mil / 150 mil e pedem reputação 8 / 25 / 45.
+- Custos mensais: salários + aluguel do escritório (por nível em `data/offices.json`: 0–2.000 no bairro, 4–5,2 mil no
+  centro, 10–14,5 mil na capital, 25–32,5 mil no distrito, 60–78 mil no hub global) + R$ 250 por pessoa em
+  ferramentas. Expansões dentro da região custam de 3 mil a 260 mil; mudanças de sede 40 mil / 150 mil / 450 mil /
+  1,2 mi com reputação 15 / 35 / 55 / 75.
 
 ## Régua de ritmo (GDD §53)
 
@@ -80,9 +82,21 @@ de reputação. Um jogador real tende a crescer mais devagar que o bot; a faixa 
 
 ## Moral, RH, mobília e eventos da agência
 
-- **Moral** é o campo `motivation` do funcionário (0 até o teto). Teto base 85 (`data/furniture.json → base_morale_max`),
-  elevado por mobília. Toda alteração passa por `EmployeeSystem.change_morale`, que respeita o teto. Produtividade
-  = personalidade × (0,7 + moral × 0,6) × (1 − estresse/220) × buffs do RH × mobília.
+- **Moral** é o campo `motivation` do funcionário (0 até o teto). Teto base 75 (`data/furniture.json → base_morale_max`),
+  elevado por mobília. Toda alteração passa por `EmployeeSystem.change_morale`, que respeita o teto. Todo dia a moral
+  anda 1,5% da distância até o ponto de equilíbrio 55 (`MORALE_BASELINE`), soma a moral diária da mobília e dos pets
+  e subtrai as **pressões** (`morale_pressures`): estresse acima de 60 (−0,10/dia a cada 10 pontos), salário defasado
+  (12+ meses sem aumento, −0,10), sem desafio (15+ dias sem projeto, −0,10), escritório lotado (−0,10) e projeto
+  atrasado (−0,20). Entregas: 5★ +5, 4★ +3, 3★ 0, 2★ −4, 1★ −8; promoção +10. Pedido de demissão a partir de
+  lealdade < 25 e moral < 40. Produtividade = personalidade × (0,85 + moral × 0,55) × (1 − estresse/220) × buffs do RH
+  × mobília; a Execução do projeto usa (moral média + 20) × 0,4 — os dois foram recalibrados para valer no ponto 55 o
+  que valiam quando a moral vivia em 85.
+- **Humores** (`EmployeeSystem.mood_of(e, day)`): burnout > assediado (`last_offer_day` há ≤ 30 dias) > exausto
+  (estresse ≥ 75) > celebrando (`last_good_news_day` há ≤ 3 dias: promoção, prêmio, 5 estrelas) > desanimado
+  (moral ≤ 35) > feliz (moral ≥ 70). `Worker.set_mood()` mostra o ícone de 2 quadros (`assets/art/moods/`), pinta a
+  pele de vermelho no burnout (com estouro de 1 s), dá pulinhos no feliz/celebrando e reduz a velocidade de quem está
+  exausto, desanimado ou em burnout. `EventBus.employee_left` faz o `Worker` atravessar o escritório com a caixa
+  (`leave_for_good`) e se liberar na porta.
 - **RH** (`HRSystem`): fechado até contratar a analista (`hr_actions.json → hire`: custo único, `salary` mensal
   somado em `FinanceSystem.monthly_costs().hr`, exige escritório 3 e reputação 30). `state.hr_hired` liga o anexo
   do escritório (`offices.json → hr_room`: divisória, placa, mesa e analista fixa). Cada ação tem custo fixo
@@ -114,9 +128,28 @@ de reputação. Um jogador real tende a crescer mais devagar que o bot; a faixa 
   altura em que o painel deve começar (`Main.below_office_y()`); `Popups.close()` esconde a cena. Ao terminar um
   evento promovido, `AgencyEventSystem.on_day()` emite `EventBus.agency_event_finished(ev, people, summary)` e o
   popup de resultado mostra quem foi.
-- **Eventos da agência** (`AgencyEventSystem`): abrem com reputação 40. Custam `cost` e `people` por `days`
+- **Projetos complexos** (`ProjectSystem`, cliente tier ≥ `COMPLEX_TIER` = 5 e contrato de projeto): `can_create` exige
+  `COMPLEX_MIN_TEAM` (4) pessoas e `COMPLEX_MIN_ROLES` (2) papéis diferentes; `quote` aplica `COMPLEX_BUDGET_MULT` (1,5) e
+  `COMPLEX_EFFORT_MULT` (1,4); em `on_day`, ao passar de 50% de progresso, `_checkpoint` avalia com `_score` sem sorteio:
+  nota < 50 → esforço × (1 + `COMPLEX_REWORK` 0,25) e moral −3 na equipe; senão +3 de Execução.
+- **Eventos da agência** (`AgencyEventSystem`): abrem com reputação 40 e exigem `requires_region`. Custam `cost` e `people` por `days`
   (as pessoas ficam com `busy_reason = "Em evento"` e saem pela porta). Ao terminar, aplicam `effects`:
   `reputation`, `prospects` (+`prospect_tier_bonus`), `candidates`, `money` (patrocínio), `morale`, `delay_days`.
+
+## World Map e regiões (`data/regions.json`, `data/offices.json`, `OfficeSystem`)
+
+- `state.office_level` é um índice **global** de 1 a 16 sobre `data/offices.json` (gerado por `tools/gen_layouts.py`:
+  cada entrada tem `region`, `region_level`, `capacity`, `rent`, `upgrade_cost` e o layout). Os limiares antigos
+  viraram índices globais: R2 começa no nível 4, R3 no 7, R4 no 11, R5 no 14 (`requires_office`, `min_office_level`,
+  `unlock_office` foram remapeados).
+- `OfficeSystem.region()`, `region_data(r)`, `next_level()` (só expansões dentro da região), `can_move(r)`/`move_to(r)`
+  (só a região seguinte; exige `rep_required` e `move_cost`; abre `first_level`; liga `state.moving_until_day` =
+  dia + `moving_days`), `is_moving()`/`moving_multiplier()` (×`moving_productivity` na produtividade).
+- `ClientSystem.max_tier()` = min(região, 1 + equipe/3). Objetivo `region_2` (tipo `region`).
+- `WorldMapScreen` (CanvasLayer 9, aberta pelo botão 🌎 do HUD): `assets/art/map/world.png` (270×640 em 2×) com
+  marcos posicionados por `map_pos` de cada região; região atual mostra ampliação, a seguinte a mudança de sede,
+  as demais o cadeado. Concorrentes das regiões alcançadas aparecem como prédio com bandeira (painel no bloco C).
+- `OfficeView`: parede com `WALL_TINTS[região]` e vista da janela por região (morros, prédios, torres, mar).
 
 ## Combinações (`data/services.json → match_table`)
 
@@ -126,7 +159,7 @@ dois ou mais em `best` → *perfect*; um → *boa*; caso contrário *neutra*.
 ## Eventos (`data/events.json`)
 
 Campos de condição: `min_day`, `min_reputation`, `min_employees`, `min_active_clients`,
-`min_running_projects`, `min_cases`, `min_avg_stress`, `min_office_level`,
+`min_running_projects`, `min_cases`, `min_avg_stress`, `min_office_level`, `min_region`/`max_region` (região do World Map),
 `requires_personality`, `once`, `cooldown_days` (padrão 120: o mesmo evento não repete antes disso). Placeholders no texto: `{best_employee}`, `{random_client}`,
 `{personality_employee}`. Efeitos suportados estão em `EventSystem._apply_effect`.
 
@@ -152,6 +185,17 @@ mostra a era na lista de números.
   `min_members_for_bonus` pessoas (padrão 2) dá `productivity_bonus` (padrão +8%) a todos ali —
   `EmployeeSystem.productivity()` multiplica por `DepartmentSystem.productivity_multiplier(e)`.
   Aba Equipe mostra a visão geral dos departamentos e um seletor por funcionário.
+- **Rivais reais** (`competitor_system.gd`, `data/competitors.json → agencies` com `region`, `strength`, `aggression`,
+  `specialty`, `logo`): `ensure_rivals()` cria em `state.rivals[id]` força, 3 clientes (templates do tier da região ou
+  procedurais) e 2 pessoas (`generate_candidate("high")`) quando a região é alcançada. `on_month()`: cada rival ativa
+  tenta com chance `aggression` (×2 se agressiva) uma investida — `rival_offer_employee` (alvo = menor lealdade,
+  `last_offer_day` → humor assediado; evento com cobrir/promover/deixar sair) ou `rival_offer_client` (alvo = menor
+  relação < 60; igualar −15% de orçamento, reunião de retenção por Comunicação, deixar ir). Jogador: `can_raid()`
+  (cooldown `raid_cooldown_days` global em `state.last_raid_day`), `raid_client` (chance 35 + Comunicação×0,3 +
+  rep×0,2 − força×0,3 ± 20 pela relação; sucesso: cliente ativo com relação 40, `penalize(5)`, rival −5 de força e
+  agressiva por 90 dias) e `raid_employee` (chance 30 + rep×0,3 + (100−força)×0,2 − lealdade×0,2; bônus de 2 salários,
+  salário +10%, `penalize(3)`). Eventos dinâmicos passam `targets` no dicionário (`EventSystem.trigger` preserva) e
+  usam os efeitos `client_budget_mult`, `client_retention`, `lose_client_target`, `rival_strength`.
 - **Concorrência** (`competitor_system.gd`, `data/competitors.json`): a partir de `min_day`,
   todo dia cada prospect parado há mais de `steal_after_idle_days` tem `steal_chance_per_day`
   de ser fechado por uma agência rival (nome sorteado de `agencies`), via

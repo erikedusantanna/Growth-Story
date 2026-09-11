@@ -20,6 +20,13 @@ const FURNITURE := {
 	"chair": "res://assets/art/furniture/chair.png",
 	"chair_ergo": "res://assets/art/furniture/chair_ergo.png",
 	"sofa": "res://assets/art/furniture/sofa.png",
+	"reception": "res://assets/art/furniture/reception.png",
+	"glass_room": "res://assets/art/furniture/glass_room.png",
+	"studio": "res://assets/art/furniture/studio.png",
+	"kitchen": "res://assets/art/furniture/kitchen.png",
+	"gym": "res://assets/art/furniture/gym.png",
+	"server_rack": "res://assets/art/furniture/server_rack.png",
+	"terrace": "res://assets/art/furniture/terrace.png",
 	"plant": "res://assets/art/furniture/plant.png",
 	"coffee": "res://assets/art/furniture/coffee.png",
 	"coffee_premium": "res://assets/art/furniture/coffee_premium.png",
@@ -42,14 +49,18 @@ const WALL_PROP_Y := {"window": 10, "whiteboard": 10, "shelf": 0, "door": 4, "go
 const DAY_START_HOUR := 8.0
 const DAY_HOURS := 12.0
 ## Luz por hora: [hora, céu em cima, céu embaixo, tinta sobre o escritório, luminárias 0..1]
+## O entardecer começa às 16h (laranja), vira roxo às 18h30 e azul escuro às 20h. A transição
+## desenhada é suavizada no tempo (LIGHT_FADE_RATE): a virada 20:00 → 08:00 vira um amanhecer lento.
 const LIGHT_KEYS := [
 	[8.0, Color("#9fc4e6"), Color("#f7c184"), Color(1.0, 0.72, 0.42, 0.10), 0.0],
 	[9.5, Color("#dff1fb"), Color("#a9d8f0"), Color(1.0, 1.0, 1.0, 0.0), 0.0],
-	[16.0, Color("#dff1fb"), Color("#a9d8f0"), Color(1.0, 1.0, 1.0, 0.0), 0.0],
-	[17.5, Color("#ffd27a"), Color("#f28c4a"), Color(1.0, 0.6, 0.3, 0.14), 0.3],
-	[19.0, Color("#3b3f7a"), Color("#b06a6a"), Color(0.25, 0.2, 0.45, 0.22), 1.0],
+	[15.5, Color("#dff1fb"), Color("#a9d8f0"), Color(1.0, 1.0, 1.0, 0.0), 0.0],
+	[17.0, Color("#ffd27a"), Color("#f28c4a"), Color(1.0, 0.6, 0.3, 0.16), 0.3],
+	[18.5, Color("#6a4f8a"), Color("#d07a5a"), Color(0.5, 0.3, 0.4, 0.22), 0.8],
 	[20.0, Color("#141c30"), Color("#243559"), Color(0.10, 0.14, 0.32, 0.32), 1.0],
 ]
+const LIGHT_FADE_RATE := 1.1        # 1/s: ~63% do caminho em 0,9 s; o amanhecer leva ~2,5 s
+const WALL_TINTS := {1: Color(1, 1, 1), 2: Color(0.86, 0.92, 1.0), 3: Color(1.0, 0.94, 0.86), 4: Color(0.78, 0.82, 0.96), 5: Color(0.82, 0.84, 0.9)}
 const STARS := [Vector2(6, 5), Vector2(14, 9), Vector2(20, 4), Vector2(29, 11), Vector2(38, 6), Vector2(10, 15), Vector2(41, 15)]
 ## Balões de pensamento por situação do personagem
 const BUBBLES_WORK := ["💡", "📊", "✍️", "📈", "🎯", "☕"]
@@ -85,6 +96,7 @@ var hr_worker: Worker
 var window_positions: Array = []   # canto superior esquerdo de cada janela, em px do mundo
 var season_nodes: Array = []       # decoração da data comemorativa do mês
 var cloud_t := 0.0                 # tempo acumulado para nuvens, estrelas e balões
+var _light_now: Dictionary = {}    # luz desenhada, que persegue a luz da hora com um fade
 var bubble_timer := 3.0            # próximo balão de "pensamento" de alguém
 var _drawn_hour := -1.0
 
@@ -135,6 +147,7 @@ func _ready() -> void:
 	EventBus.day_passed.connect(func(_d): _sync_training())
 	EventBus.game_started.connect(func(): built_key = ""; refresh())
 	EventBus.office_feedback.connect(show_feedback)
+	EventBus.employee_left.connect(_on_employee_left)
 
 
 func _place_training_room() -> void:
@@ -386,15 +399,37 @@ func _process(delta: float) -> void:
 		cloud_t += delta
 		_tick_bubbles(delta)
 	var hour := current_hour()
-	if running or absf(hour - _drawn_hour) > 0.01:
+	var target := daylight(hour)
+	if _light_now.is_empty():
+		_light_now = target.duplicate()
+	var t := 1.0 - exp(-delta * LIGHT_FADE_RATE)
+	var changed := false
+	for key in ["sky_top", "sky_bottom", "tint"]:
+		var from: Color = _light_now[key]
+		var to: Color = target[key]
+		if not from.is_equal_approx(to):
+			_light_now[key] = from.lerp(to, t)
+			changed = true
+	for key in ["lamp", "night"]:
+		var fv: float = _light_now[key]
+		var tv: float = target[key]
+		if absf(fv - tv) > 0.001:
+			_light_now[key] = lerpf(fv, tv, t)
+			changed = true
+	if running or changed or absf(hour - _drawn_hour) > 0.01:
 		_drawn_hour = hour
 		sky_layer.queue_redraw()
 		tint_layer.queue_redraw()
 		glow_layer.queue_redraw()
 
 
+## Luz efetivamente desenhada (suavizada); antes do primeiro quadro, a luz da hora.
+func _light() -> Dictionary:
+	return _light_now if not _light_now.is_empty() else daylight(current_hour())
+
+
 func _draw_sky() -> void:
-	var light := daylight(current_hour())
+	var light := _light()
 	var hour := current_hour()
 	var night: float = light["night"]
 	var hill := Color("#7bbf6a").lerp(Color("#1e2a3a"), night * 0.75)
@@ -409,8 +444,9 @@ func _draw_sky() -> void:
 		if hour < 18.5:
 			var p := (hour - DAY_START_HOUR) / 10.5
 			var sun := Rect2(glass.position + Vector2(5.0 + 32.0 * p, 22.0 - 15.0 * sin(PI * clampf(p, 0.0, 1.0))), Vector2(4, 4))
-			_draw_clipped(sun, Color("#ffe066"), sky)
-			_draw_clipped(Rect2(sun.position, Vector2(2, 1)), Color("#fff6c0"), sky)
+			var sun_alpha := 1.0 - night
+			_draw_clipped(sun, Color(1.0, 0.88, 0.4, sun_alpha), sky)
+			_draw_clipped(Rect2(sun.position, Vector2(2, 1)), Color(1.0, 0.96, 0.75, sun_alpha), sky)
 		if night > 0.0:
 			_draw_clipped(Rect2(glass.position + Vector2(33, 6), Vector2(4, 4)), Color(0.95, 0.95, 0.9, night), sky)
 			_draw_clipped(Rect2(glass.position + Vector2(33, 6), Vector2(2, 2)), Color(1, 1, 1, night), sky)
@@ -424,10 +460,32 @@ func _draw_sky() -> void:
 			var cy := 5.0 + float(i) * 8.0
 			_draw_clipped(Rect2(glass.position + Vector2(cx, cy + 2), Vector2(11, 3)), cloud_col, sky)
 			_draw_clipped(Rect2(glass.position + Vector2(cx + 3, cy), Vector2(6, 2)), cloud_col, sky)
-		# morros ao fundo
-		for r in [Rect2(0, 21, 12, 4), Rect2(14, 19, 16, 4), Rect2(32, 22, 10, 4), Rect2(0, 24, 42, 10)]:
-			sky_layer.draw_rect(Rect2(glass.position + r.position, r.size), hill)
-		sky_layer.draw_rect(Rect2(glass.position + Vector2(0, 30), Vector2(42, 4)), hill_lo)
+		# ao fundo: morros no bairro, prédios cada vez mais altos nas outras regiões, mar no hub global
+		var region: int = Game.office.region() if Game.has_game() else 1
+		var far := Color("#9dbfda").lerp(Color("#1e2a3a"), night * 0.75)
+		var far_lo := Color("#86a9c6").lerp(Color("#141c28"), night * 0.75)
+		match region:
+			1:
+				for r in [Rect2(0, 21, 12, 4), Rect2(14, 19, 16, 4), Rect2(32, 22, 10, 4), Rect2(0, 24, 42, 10)]:
+					sky_layer.draw_rect(Rect2(glass.position + r.position, r.size), hill)
+				sky_layer.draw_rect(Rect2(glass.position + Vector2(0, 30), Vector2(42, 4)), hill_lo)
+			2:
+				for r in [Rect2(0, 22, 8, 12), Rect2(10, 18, 7, 16), Rect2(19, 24, 9, 10), Rect2(30, 20, 6, 14), Rect2(37, 25, 5, 9)]:
+					sky_layer.draw_rect(Rect2(glass.position + r.position, r.size), far)
+				sky_layer.draw_rect(Rect2(glass.position + Vector2(0, 30), Vector2(42, 4)), hill_lo)
+			3:
+				for r in [Rect2(0, 14, 6, 20), Rect2(7, 8, 8, 26), Rect2(17, 16, 6, 18), Rect2(25, 4, 7, 30), Rect2(34, 12, 8, 22)]:
+					sky_layer.draw_rect(Rect2(glass.position + r.position, r.size), far)
+					sky_layer.draw_rect(Rect2(glass.position + r.position + Vector2(r.size.x - 2, 0), Vector2(2, r.size.y)), far_lo)
+			4:
+				for r in [Rect2(0, 6, 7, 28), Rect2(9, 2, 9, 32), Rect2(20, 10, 6, 24), Rect2(28, 0, 8, 34), Rect2(37, 8, 5, 26)]:
+					sky_layer.draw_rect(Rect2(glass.position + r.position, r.size), far)
+					sky_layer.draw_rect(Rect2(glass.position + r.position + Vector2(r.size.x - 2, 0), Vector2(2, r.size.y)), far_lo)
+			_:
+				sky_layer.draw_rect(Rect2(glass.position + Vector2(0, 24), Vector2(42, 10)), Color("#3f8fd0").lerp(Color("#142a44"), night * 0.7))
+				for r in [Rect2(2, 4, 7, 20), Rect2(12, 0, 8, 24), Rect2(24, 8, 6, 16), Rect2(33, 2, 8, 22)]:
+					sky_layer.draw_rect(Rect2(glass.position + r.position, r.size), far)
+					sky_layer.draw_rect(Rect2(glass.position + r.position + Vector2(r.size.x - 2, 0), Vector2(2, r.size.y)), far_lo)
 
 
 func _draw_clipped(r: Rect2, color: Color, clip: Rect2) -> void:
@@ -438,7 +496,7 @@ func _draw_clipped(r: Rect2, color: Color, clip: Rect2) -> void:
 
 ## Tinta da hora do dia sobre todo o escritório (nada no meio do dia).
 func _draw_tint() -> void:
-	var light := daylight(current_hour())
+	var light := _light()
 	var tint: Color = light["tint"]
 	if tint.a <= 0.001:
 		return
@@ -447,7 +505,7 @@ func _draw_tint() -> void:
 
 ## Luminárias das mesas acendem no fim da tarde (círculos aditivos sobre os monitores).
 func _draw_glow() -> void:
-	var lamp: float = daylight(current_hour())["lamp"]
+	var lamp: float = _light()["lamp"]
 	if lamp <= 0.01:
 		return
 	var centers: Array = desk_positions.duplicate()
@@ -475,7 +533,9 @@ func _tick_bubbles(delta: float) -> void:
 		return
 	var w: Worker = candidates[randi() % candidates.size()]
 	var pool: Array = BUBBLES_IDLE
-	if w.resting:
+	if Game.office.is_moving():
+		pool = ["📦", "🚚", "📦"]
+	elif w.resting:
 		pool = BUBBLES_REST
 	elif w.state == Worker.State.AT_DESK and w.on_project:
 		pool = BUBBLES_WORK
@@ -542,8 +602,9 @@ func _draw_world() -> void:
 		return
 	var w := _total_width()
 	var h := int(layout.get("height", 7))
+	var wall_tint: Color = WALL_TINTS.get(Game.office.region() if Game.has_game() else 1, Color.WHITE)
 	for x in w:
-		world.draw_texture(wall_tex, Vector2(x * TILE, 0))
+		world.draw_texture(wall_tex, Vector2(x * TILE, 0), wall_tint)
 		for y in range(WALL_ROWS, h):
 			world.draw_texture(floor_tex, Vector2(x * TILE, y * TILE))
 	world.draw_texture(pillar_tex, Vector2(0, 0))
@@ -579,6 +640,7 @@ func _sync_workers() -> void:
 				worker.state = Worker.State.AWAY
 				worker.visible = false
 		worker.sync(e, st.day)
+		worker.set_carrying_box(Game.office.is_moving())
 		index += 1
 	for id in workers.keys():
 		if not seen.has(id):
@@ -599,6 +661,18 @@ func _sync_pets() -> void:
 		pet.setup(String(kind), area, st.seed + kind.hash())
 		scene_layer.add_child(pet)
 		pets[kind] = pet
+
+
+## Quem sai da agência atravessa o escritório com a caixa e some na porta (o nó se libera sozinho).
+func _on_employee_left(e: Employee, _reason: String) -> void:
+	var worker: Worker = workers.get(e.id)
+	if worker == null:
+		return
+	workers.erase(e.id)
+	if not is_visible_in_tree():
+		worker.queue_free()
+		return
+	worker.leave_for_good()
 
 
 ## Balão ("Café!") ou número flutuante ("+12 XP") sobre a cabeça do personagem.

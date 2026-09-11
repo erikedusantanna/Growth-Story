@@ -147,6 +147,79 @@ func show_agency_result(ev: Dictionary, people: Array, summary: String) -> void:
 		return parts.panel)
 
 
+## Painel de uma agência concorrente (pelo mapa): força, carteira e equipe, com as investidas.
+func show_rival(id: String) -> void:
+	_open(func():
+		var a: Dictionary = Game.competitors.agency_by_id(id)
+		var rs: Dictionary = Game.competitors.rival_state(id)
+		var parts := _panel("⚔️ %s" % String(a.get("name", "Concorrente")))
+		var b: VBoxContainer = parts.body
+		var region: Dictionary = Game.office.region_data(int(a.get("region", 1)))
+		b.add_child(UIKit.label(String(a.get("desc", "")), 15, UIKit.COLOR_TEXT, true))
+		b.add_child(UIKit.muted("%s · especialidade: %s%s" % [String(region.get("name", "")), Game.content.service_name(String(a.get("specialty", ""))),
+			" · 😠 agressiva depois da sua investida" if Game.competitors.is_aggressive(id) else ""], 13))
+		b.add_child(UIKit.stat_row("Força", float(rs.get("strength", a.get("strength", 40))), UIKit.COLOR_RED, 70))
+		var raid: Dictionary = Game.competitors.can_raid()
+		b.add_child(UIKit.label("Investidas: 1 a cada %d dias. %s" % [Game.competitors.raid_cooldown_days(), "Disponível agora." if raid.ok else String(raid.reason)], 14, UIKit.COLOR_GREEN if raid.ok else UIKit.COLOR_MUTED, true))
+		b.add_child(UIKit.label("🤝 Clientes dela (proposta: −%d de reputação se aceitar)" % int(Game.content.competitors.get("rep_cost_client", 5)), 16, UIKit.COLOR_ACCENT))
+		var clients: Array = rs.get("clients", [])
+		for i in clients.size():
+			var idx := i
+			var cd: Dictionary = clients[i]
+			var row := UIKit.hbox(8)
+			var info := UIKit.vbox(0)
+			info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			info.add_child(UIKit.label("%s · Tier %d" % [String(cd.get("name", "")), int(cd.get("tier", 1))], 15))
+			info.add_child(UIKit.muted("%s · %s/mês · %s" % [Game.content.segment_names.get(String(cd.get("segment", "")), ""), UIKit.money(float(cd.get("budget", 0))), Game.competitors.bond_name(String(cd.get("bond", "morna")))], 12))
+			row.add_child(info)
+			var chance := Game.competitors.raid_chance_client(a, cd)
+			var pb := UIKit.button("🤝 Propor (%d%%)" % int(chance), func():
+				var r: Dictionary = Game.competitors.raid_client(id, idx)
+				close()
+				if not r.ok:
+					show_info("Proposta", r.reason)
+				elif r.success:
+					show_info("Cliente conquistado!", "%s agora é seu cliente (relação 40). Você perdeu %d de reputação e %s vai reagir." % [r.client.name, int(Game.content.competitors.get("rep_cost_client", 5)), String(a.get("name", ""))])
+				else:
+					show_info("Não deu", "%s recusou (chance era %d%%). A investida do trimestre foi gasta." % [String(cd.get("name", "")), int(r.chance)]), false, 40)
+			pb.disabled = not raid.ok
+			pb.size_flags_horizontal = 0
+			pb.custom_minimum_size.x = 150
+			row.add_child(pb)
+			b.add_child(row)
+		b.add_child(UIKit.label("💼 Equipe dela (contratar: −%d de reputação se aceitar)" % int(Game.content.competitors.get("rep_cost_employee", 3)), 16, UIKit.COLOR_ACCENT))
+		var staff: Array = rs.get("staff", [])
+		for i in staff.size():
+			var idx := i
+			var sd: Dictionary = staff[i]
+			var tmp := Employee.from_dict(sd)
+			var row := UIKit.hbox(8)
+			row.add_child(UIKit.portrait(tmp, 3))
+			var info := UIKit.vbox(0)
+			info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			info.add_child(UIKit.label(tmp.name, 15))
+			info.add_child(UIKit.muted("%s · %s %d · salário %s · bônus %s" % [Game.content.role_name(tmp.role), UIKit.ATTR_SHORT[tmp.best_attr()], int(tmp.attr(tmp.best_attr())), UIKit.money(tmp.salary), UIKit.money(Game.competitors.signing_bonus(sd))], 12))
+			row.add_child(info)
+			var chance := Game.competitors.raid_chance_employee(a, sd)
+			var hb := UIKit.button("💼 Contratar (%d%%)" % int(chance), func():
+				var r: Dictionary = Game.competitors.raid_employee(id, idx)
+				close()
+				if not r.ok:
+					show_info("Contratação", r.reason)
+				elif r.success:
+					show_info("Contratado!", "%s entrou na equipe. Bônus de assinatura pago, −%d de reputação, e %s vai reagir." % [r.employee.name, int(Game.content.competitors.get("rep_cost_employee", 3)), String(a.get("name", ""))])
+				else:
+					show_info("Não deu", "%s recusou (chance era %d%%). A investida do trimestre foi gasta." % [tmp.name, int(r.chance)]), false, 40)
+			hb.disabled = not raid.ok
+			hb.size_flags_horizontal = 0
+			hb.custom_minimum_size.x = 150
+			row.add_child(hb)
+			b.add_child(row)
+		b.add_child(UIKit.muted("Ela também faz propostas: todo mês pode tentar levar seu funcionário menos leal ou seu cliente com relação mais fraca.", 12))
+		parts.buttons.add_child(UIKit.button("✖️ Fechar", close, true))
+		return parts.panel)
+
+
 ## Prêmios do Marketing: o time no palco (vencedores na frente) e o resultado por categoria.
 func show_awards(ceremony: Dictionary) -> void:
 	_open(func():

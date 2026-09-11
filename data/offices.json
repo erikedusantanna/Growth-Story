@@ -1,759 +1,3871 @@
 {
-  "offices": [
+ "comment": "Gerado por tools/gen_layouts.py — não editar à mão.",
+ "offices": [
+  {
+   "level": 1,
+   "region": 1,
+   "region_level": 1,
+   "name": "Quarto improvisado",
+   "capacity": 4,
+   "rent": 0,
+   "upgrade_cost": 0,
+   "rep_required": 0,
+   "width": 10,
+   "height": 7,
+   "desks": [
+    [
+     1,
+     3
+    ],
+    [
+     3,
+     3
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     3,
+     5
+    ]
+   ],
+   "zones": [
     {
-      "level": 1,
-      "name": "Quarto improvisado",
-      "capacity": 4,
-      "rent": 0,
-      "upgrade_cost": 0,
-      "rep_required": 0,
-      "width": 10,
-      "height": 7,
-      "desks": [
-        [
-          1,
-          3
-        ],
-        [
-          3,
-          3
-        ],
-        [
-          1,
-          5
-        ],
-        [
-          3,
-          5
-        ]
-      ],
-      "zones": [
-        {
-          "rect": [
-            0,
-            2,
-            5.4,
-            5
-          ],
-          "tint": "cool"
-        },
-        {
-          "rect": [
-            6.2,
-            3,
-            3.8,
-            4
-          ],
-          "tint": "lounge"
-        }
-      ],
-      "dividers": [],
-      "props": [
-        {
-          "type": "coffee",
-          "pos": [
-            8,
-            4
-          ]
-        },
-        {
-          "type": "plant",
-          "pos": [
-            9,
-            6
-          ]
-        }
-      ],
-      "wall": [
-        {
-          "type": "window",
-          "x": 1
-        },
-        {
-          "type": "whiteboard",
-          "x": 4
-        },
-        {
-          "type": "door",
-          "x": 8
-        }
-      ],
-      "spots": [
-        [
-          8,
-          5
-        ]
-      ],
-      "decor_slots": [
-        [
-          6,
-          6
-        ],
-        [
-          0,
-          6
-        ],
-        [
-          6,
-          3
-        ],
-        [
-          3,
-          6
-        ]
-      ],
-      "wall_slots": [
-        6
-      ],
-      "season_slot": [
-        0,
-        2
-      ]
+     "rect": [
+      0.19999999999999996,
+      2,
+      5.4,
+      4
+     ],
+     "tint": "cool"
     },
     {
-      "level": 2,
-      "name": "Sala pequena",
-      "capacity": 7,
-      "rent": 2500,
-      "upgrade_cost": 8000,
-      "rep_required": 8,
-      "width": 13,
-      "height": 8,
-      "desks": [
-        [
-          1,
-          3
-        ],
-        [
-          3,
-          3
-        ],
-        [
-          1,
-          5
-        ],
-        [
-          3,
-          5
-        ],
-        [
-          6,
-          3
-        ],
-        [
-          8,
-          3
-        ],
-        [
-          6,
-          5
-        ]
-      ],
-      "zones": [
-        {
-          "rect": [
-            0,
-            2,
-            5.2,
-            4
-          ],
-          "tint": "cool"
-        },
-        {
-          "rect": [
-            5.8,
-            2,
-            4.7,
-            4
-          ],
-          "tint": "green"
-        },
-        {
-          "rect": [
-            6,
-            6.2,
-            7,
-            1.8
-          ],
-          "tint": "lounge"
-        }
-      ],
-      "dividers": [
-        {
-          "x": 5.5,
-          "y0": 2,
-          "y1": 6
-        }
-      ],
-      "props": [
-        {
-          "type": "cooler",
-          "pos": [
-            11,
-            3
-          ]
-        },
-        {
-          "type": "coffee",
-          "pos": [
-            11,
-            5
-          ]
-        },
-        {
-          "type": "sofa",
-          "pos": [
-            7,
-            7
-          ]
-        }
-      ],
-      "wall": [
-        {
-          "type": "window",
-          "x": 1
-        },
-        {
-          "type": "whiteboard",
-          "x": 4
-        },
-        {
-          "type": "shelf",
-          "x": 8
-        },
-        {
-          "type": "door",
-          "x": 11
-        }
-      ],
-      "spots": [
-        [
-          12,
-          5
-        ],
-        [
-          11,
-          7
-        ]
-      ],
-      "decor_slots": [
-        [
-          4,
-          7
-        ],
-        [
-          10,
-          7
-        ],
-        [
-          0,
-          7
-        ],
-        [
-          12,
-          3
-        ]
-      ],
-      "wall_slots": [
-        6
-      ],
-      "season_slot": [
-        4.5,
-        7
-      ]
-    },
-    {
-      "level": 3,
-      "name": "Escritório profissional",
-      "capacity": 12,
-      "rent": 8000,
-      "upgrade_cost": 45000,
-      "rep_required": 25,
-      "width": 16,
-      "height": 9,
-      "desks": [
-        [
-          1,
-          3
-        ],
-        [
-          3,
-          3
-        ],
-        [
-          1,
-          5
-        ],
-        [
-          3,
-          5
-        ],
-        [
-          6,
-          3
-        ],
-        [
-          8,
-          3
-        ],
-        [
-          6,
-          5
-        ],
-        [
-          8,
-          5
-        ],
-        [
-          11,
-          3
-        ],
-        [
-          13,
-          3
-        ],
-        [
-          11,
-          5
-        ],
-        [
-          13,
-          5
-        ]
-      ],
-      "zones": [
-        {
-          "rect": [
-            0,
-            2,
-            5.2,
-            4
-          ],
-          "tint": "cool"
-        },
-        {
-          "rect": [
-            5.8,
-            2,
-            4.7,
-            4
-          ],
-          "tint": "green"
-        },
-        {
-          "rect": [
-            10.8,
-            2,
-            5.2,
-            4
-          ],
-          "tint": "purple"
-        },
-        {
-          "rect": [
-            8,
-            6.2,
-            8,
-            2.8
-          ],
-          "tint": "lounge"
-        }
-      ],
-      "dividers": [
-        {
-          "x": 5.5,
-          "y0": 2,
-          "y1": 6
-        },
-        {
-          "x": 10.5,
-          "y0": 2,
-          "y1": 6
-        }
-      ],
-      "props": [
-        {
-          "type": "coffee",
-          "pos": [
-            14,
-            6
-          ]
-        },
-        {
-          "type": "cooler",
-          "pos": [
-            15,
-            6
-          ]
-        },
-        {
-          "type": "meeting_table",
-          "pos": [
-            8,
-            8
-          ]
-        },
-        {
-          "type": "plant",
-          "pos": [
-            1,
-            8
-          ]
-        }
-      ],
-      "wall": [
-        {
-          "type": "window",
-          "x": 1
-        },
-        {
-          "type": "window",
-          "x": 4
-        },
-        {
-          "type": "whiteboard",
-          "x": 7
-        },
-        {
-          "type": "shelf",
-          "x": 10
-        },
-        {
-          "type": "door",
-          "x": 14
-        }
-      ],
-      "spots": [
-        [
-          12,
-          6
-        ],
-        [
-          15,
-          7
-        ],
-        [
-          7,
-          7
-        ]
-      ],
-      "decor_slots": [
-        [
-          3,
-          8
-        ],
-        [
-          12,
-          8
-        ],
-        [
-          0,
-          6
-        ],
-        [
-          5,
-          8
-        ]
-      ],
-      "wall_slots": [
-        12
-      ],
-      "hr_room": {
-        "width": 5,
-        "desk": [
-          1,
-          4
-        ],
-        "plant": [
-          3,
-          7
-        ],
-        "sign_x": 1.5
-      },
-      "season_slot": [
-        4.5,
-        7
-      ]
-    },
-    {
-      "level": 4,
-      "name": "Escritório com departamentos",
-      "capacity": 18,
-      "rent": 20000,
-      "upgrade_cost": 150000,
-      "rep_required": 45,
-      "width": 19,
-      "height": 10,
-      "desks": [
-        [
-          0,
-          3
-        ],
-        [
-          2,
-          3
-        ],
-        [
-          0,
-          5
-        ],
-        [
-          2,
-          5
-        ],
-        [
-          5,
-          3
-        ],
-        [
-          7,
-          3
-        ],
-        [
-          5,
-          5
-        ],
-        [
-          7,
-          5
-        ],
-        [
-          10,
-          3
-        ],
-        [
-          12,
-          3
-        ],
-        [
-          10,
-          5
-        ],
-        [
-          12,
-          5
-        ],
-        [
-          0,
-          8
-        ],
-        [
-          2,
-          8
-        ],
-        [
-          4,
-          8
-        ],
-        [
-          7,
-          8
-        ],
-        [
-          9,
-          8
-        ],
-        [
-          11,
-          8
-        ]
-      ],
-      "zones": [
-        {
-          "rect": [
-            0,
-            2,
-            4.2,
-            4
-          ],
-          "tint": "cool"
-        },
-        {
-          "rect": [
-            4.7,
-            2,
-            4.5,
-            4
-          ],
-          "tint": "green"
-        },
-        {
-          "rect": [
-            9.7,
-            2,
-            4.5,
-            4
-          ],
-          "tint": "purple"
-        },
-        {
-          "rect": [
-            0,
-            6.2,
-            6.2,
-            3.8
-          ],
-          "tint": "green"
-        },
-        {
-          "rect": [
-            6.7,
-            6.2,
-            7.5,
-            3.8
-          ],
-          "tint": "cool"
-        },
-        {
-          "rect": [
-            14.8,
-            2,
-            4.2,
-            8
-          ],
-          "tint": "lounge"
-        }
-      ],
-      "dividers": [
-        {
-          "x": 4.4,
-          "y0": 2,
-          "y1": 6
-        },
-        {
-          "x": 9.4,
-          "y0": 2,
-          "y1": 6
-        },
-        {
-          "x": 14.4,
-          "y0": 2,
-          "y1": 7
-        },
-        {
-          "x": 6.4,
-          "y0": 6,
-          "y1": 10
-        }
-      ],
-      "props": [
-        {
-          "type": "meeting_table",
-          "pos": [
-            15,
-            4
-          ]
-        },
-        {
-          "type": "sofa",
-          "pos": [
-            15,
-            7
-          ]
-        },
-        {
-          "type": "coffee",
-          "pos": [
-            17,
-            9
-          ]
-        },
-        {
-          "type": "cooler",
-          "pos": [
-            18,
-            9
-          ]
-        },
-        {
-          "type": "plant",
-          "pos": [
-            18,
-            3
-          ]
-        }
-      ],
-      "wall": [
-        {
-          "type": "window",
-          "x": 1
-        },
-        {
-          "type": "window",
-          "x": 4
-        },
-        {
-          "type": "whiteboard",
-          "x": 7
-        },
-        {
-          "type": "shelf",
-          "x": 10
-        },
-        {
-          "type": "shelf",
-          "x": 12
-        },
-        {
-          "type": "window",
-          "x": 14
-        },
-        {
-          "type": "door",
-          "x": 17
-        }
-      ],
-      "spots": [
-        [
-          18,
-          6
-        ],
-        [
-          15,
-          9
-        ],
-        [
-          18,
-          5
-        ]
-      ],
-      "decor_slots": [
-        [
-          13,
-          9
-        ],
-        [
-          15,
-          9
-        ],
-        [
-          0,
-          6
-        ],
-        [
-          9,
-          6
-        ]
-      ],
-      "wall_slots": [
-        15.5
-      ],
-      "hr_room": {
-        "width": 5,
-        "desk": [
-          1,
-          4
-        ],
-        "plant": [
-          3,
-          8
-        ],
-        "sign_x": 1.5
-      },
-      "season_slot": [
-        15.5,
-        2
-      ]
+     "rect": [
+      4.8,
+      2,
+      5.2,
+      5
+     ],
+     "tint": "lounge"
     }
-  ]
+   ],
+   "dividers": [],
+   "props": [
+    {
+     "type": "coffee",
+     "pos": [
+      7,
+      4
+     ]
+    },
+    {
+     "type": "cooler",
+     "pos": [
+      8,
+      4
+     ]
+    },
+    {
+     "type": "sofa",
+     "pos": [
+      6,
+      5
+     ]
+    },
+    {
+     "type": "plant",
+     "pos": [
+      9,
+      2
+     ]
+    }
+   ],
+   "wall": [
+    {
+     "type": "window",
+     "x": 1
+    },
+    {
+     "type": "whiteboard",
+     "x": 4
+    },
+    {
+     "type": "door",
+     "x": 8
+    }
+   ],
+   "spots": [
+    [
+     7,
+     5
+    ],
+    [
+     6,
+     6
+    ]
+   ],
+   "decor_slots": [
+    [
+     8,
+     6
+    ],
+    [
+     9,
+     6
+    ]
+   ],
+   "wall_slots": [
+    6
+   ],
+   "season_slot": [
+    5.5,
+    2
+   ]
+  },
+  {
+   "level": 2,
+   "region": 1,
+   "region_level": 2,
+   "name": "Sala no bairro",
+   "capacity": 6,
+   "rent": 1500,
+   "upgrade_cost": 3000,
+   "rep_required": 0,
+   "width": 13,
+   "height": 8,
+   "desks": [
+    [
+     0,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     7,
+     3
+    ]
+   ],
+   "zones": [
+    {
+     "rect": [
+      -0.3,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      4.7,
+      2,
+      4.6,
+      2.2
+     ],
+     "tint": "green"
+    },
+    {
+     "rect": [
+      9.8,
+      2,
+      3.2,
+      6
+     ],
+     "tint": "lounge"
+    }
+   ],
+   "dividers": [
+    {
+     "x": 4.4,
+     "y0": 2,
+     "y1": 6
+    }
+   ],
+   "props": [
+    {
+     "type": "cooler",
+     "pos": [
+      11,
+      3
+     ]
+    },
+    {
+     "type": "coffee",
+     "pos": [
+      11,
+      5
+     ]
+    },
+    {
+     "type": "plant",
+     "pos": [
+      12,
+      2
+     ]
+    }
+   ],
+   "wall": [
+    {
+     "type": "window",
+     "x": 1
+    },
+    {
+     "type": "window",
+     "x": 4
+    },
+    {
+     "type": "whiteboard",
+     "x": 7
+    },
+    {
+     "type": "door",
+     "x": 11
+    }
+   ],
+   "spots": [
+    [
+     12,
+     5
+    ],
+    [
+     11,
+     7
+    ]
+   ],
+   "decor_slots": [
+    [
+     12,
+     3
+    ],
+    [
+     10,
+     7
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     3,
+     7
+    ]
+   ],
+   "wall_slots": [
+    8
+   ],
+   "season_slot": [
+    10.5,
+    2
+   ]
+  },
+  {
+   "level": 3,
+   "region": 1,
+   "region_level": 3,
+   "name": "Estúdio no bairro",
+   "capacity": 8,
+   "rent": 2000,
+   "upgrade_cost": 6000,
+   "rep_required": 0,
+   "width": 13,
+   "height": 8,
+   "desks": [
+    [
+     0,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     7,
+     5
+    ]
+   ],
+   "zones": [
+    {
+     "rect": [
+      -0.3,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      4.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "green"
+    },
+    {
+     "rect": [
+      9.8,
+      2,
+      3.2,
+      6
+     ],
+     "tint": "lounge"
+    }
+   ],
+   "dividers": [
+    {
+     "x": 4.4,
+     "y0": 2,
+     "y1": 6
+    }
+   ],
+   "props": [
+    {
+     "type": "cooler",
+     "pos": [
+      11,
+      3
+     ]
+    },
+    {
+     "type": "coffee",
+     "pos": [
+      11,
+      5
+     ]
+    },
+    {
+     "type": "plant",
+     "pos": [
+      12,
+      2
+     ]
+    }
+   ],
+   "wall": [
+    {
+     "type": "window",
+     "x": 1
+    },
+    {
+     "type": "window",
+     "x": 4
+    },
+    {
+     "type": "whiteboard",
+     "x": 7
+    },
+    {
+     "type": "door",
+     "x": 11
+    }
+   ],
+   "spots": [
+    [
+     12,
+     5
+    ],
+    [
+     11,
+     7
+    ]
+   ],
+   "decor_slots": [
+    [
+     12,
+     3
+    ],
+    [
+     10,
+     7
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     3,
+     7
+    ]
+   ],
+   "wall_slots": [
+    8
+   ],
+   "season_slot": [
+    10.5,
+    2
+   ]
+  },
+  {
+   "level": 4,
+   "region": 2,
+   "region_level": 1,
+   "name": "Sala no centro",
+   "capacity": 8,
+   "rent": 4000,
+   "upgrade_cost": 0,
+   "rep_required": 0,
+   "width": 13,
+   "height": 8,
+   "desks": [
+    [
+     0,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     7,
+     5
+    ]
+   ],
+   "zones": [
+    {
+     "rect": [
+      -0.3,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      4.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "green"
+    },
+    {
+     "rect": [
+      9.8,
+      2,
+      3.2,
+      6
+     ],
+     "tint": "lounge"
+    }
+   ],
+   "dividers": [
+    {
+     "x": 4.4,
+     "y0": 2,
+     "y1": 6
+    }
+   ],
+   "props": [
+    {
+     "type": "cooler",
+     "pos": [
+      11,
+      3
+     ]
+    },
+    {
+     "type": "coffee",
+     "pos": [
+      11,
+      5
+     ]
+    },
+    {
+     "type": "plant",
+     "pos": [
+      12,
+      2
+     ]
+    }
+   ],
+   "wall": [
+    {
+     "type": "window",
+     "x": 1
+    },
+    {
+     "type": "window",
+     "x": 4
+    },
+    {
+     "type": "whiteboard",
+     "x": 7
+    },
+    {
+     "type": "door",
+     "x": 11
+    }
+   ],
+   "spots": [
+    [
+     12,
+     5
+    ],
+    [
+     11,
+     7
+    ]
+   ],
+   "decor_slots": [
+    [
+     12,
+     3
+    ],
+    [
+     10,
+     7
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     3,
+     7
+    ]
+   ],
+   "wall_slots": [
+    8
+   ],
+   "season_slot": [
+    10.5,
+    2
+   ]
+  },
+  {
+   "level": 5,
+   "region": 2,
+   "region_level": 2,
+   "name": "Escritório no centro",
+   "capacity": 10,
+   "rent": 4600,
+   "upgrade_cost": 12000,
+   "rep_required": 0,
+   "width": 19,
+   "height": 8,
+   "desks": [
+    [
+     0,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     7,
+     5
+    ],
+    [
+     10,
+     3
+    ],
+    [
+     12,
+     3
+    ]
+   ],
+   "zones": [
+    {
+     "rect": [
+      -0.3,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      4.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "green"
+    },
+    {
+     "rect": [
+      9.7,
+      2,
+      4.6,
+      2.2
+     ],
+     "tint": "purple"
+    },
+    {
+     "rect": [
+      14.8,
+      2,
+      4.2,
+      6
+     ],
+     "tint": "lounge"
+    }
+   ],
+   "dividers": [
+    {
+     "x": 4.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 9.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 14.4,
+     "y0": 2,
+     "y1": 5
+    }
+   ],
+   "props": [
+    {
+     "type": "coffee",
+     "pos": [
+      17,
+      4
+     ]
+    },
+    {
+     "type": "cooler",
+     "pos": [
+      18,
+      4
+     ]
+    },
+    {
+     "type": "sofa",
+     "pos": [
+      16,
+      6
+     ]
+    },
+    {
+     "type": "plant",
+     "pos": [
+      18,
+      2
+     ]
+    }
+   ],
+   "wall": [
+    {
+     "type": "window",
+     "x": 1
+    },
+    {
+     "type": "window",
+     "x": 4
+    },
+    {
+     "type": "whiteboard",
+     "x": 7
+    },
+    {
+     "type": "shelf",
+     "x": 10
+    },
+    {
+     "type": "door",
+     "x": 17
+    }
+   ],
+   "spots": [
+    [
+     17,
+     5
+    ],
+    [
+     16,
+     7
+    ]
+   ],
+   "decor_slots": [
+    [
+     18,
+     6
+    ],
+    [
+     18,
+     7
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     3,
+     7
+    ]
+   ],
+   "wall_slots": [
+    14
+   ],
+   "season_slot": [
+    15.5,
+    2
+   ]
+  },
+  {
+   "level": 6,
+   "region": 2,
+   "region_level": 3,
+   "name": "Andar no centro",
+   "capacity": 12,
+   "rent": 5200,
+   "upgrade_cost": 18000,
+   "rep_required": 0,
+   "width": 19,
+   "height": 9,
+   "desks": [
+    [
+     0,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     7,
+     5
+    ],
+    [
+     10,
+     3
+    ],
+    [
+     12,
+     3
+    ],
+    [
+     10,
+     5
+    ],
+    [
+     12,
+     5
+    ]
+   ],
+   "zones": [
+    {
+     "rect": [
+      -0.3,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      4.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "green"
+    },
+    {
+     "rect": [
+      9.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "purple"
+    },
+    {
+     "rect": [
+      14.8,
+      2,
+      4.2,
+      7
+     ],
+     "tint": "lounge"
+    }
+   ],
+   "dividers": [
+    {
+     "x": 4.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 9.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 14.4,
+     "y0": 2,
+     "y1": 6
+    }
+   ],
+   "props": [
+    {
+     "type": "coffee",
+     "pos": [
+      17,
+      4
+     ]
+    },
+    {
+     "type": "cooler",
+     "pos": [
+      18,
+      4
+     ]
+    },
+    {
+     "type": "sofa",
+     "pos": [
+      16,
+      7
+     ]
+    },
+    {
+     "type": "meeting_table",
+     "pos": [
+      15,
+      6
+     ]
+    },
+    {
+     "type": "plant",
+     "pos": [
+      18,
+      2
+     ]
+    }
+   ],
+   "wall": [
+    {
+     "type": "window",
+     "x": 1
+    },
+    {
+     "type": "window",
+     "x": 4
+    },
+    {
+     "type": "whiteboard",
+     "x": 7
+    },
+    {
+     "type": "shelf",
+     "x": 10
+    },
+    {
+     "type": "door",
+     "x": 17
+    }
+   ],
+   "spots": [
+    [
+     17,
+     5
+    ],
+    [
+     16,
+     8
+    ]
+   ],
+   "decor_slots": [
+    [
+     18,
+     6
+    ],
+    [
+     18,
+     8
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     3,
+     8
+    ]
+   ],
+   "wall_slots": [
+    14
+   ],
+   "season_slot": [
+    15.5,
+    2
+   ]
+  },
+  {
+   "level": 7,
+   "region": 3,
+   "region_level": 1,
+   "name": "Escritório na capital",
+   "capacity": 12,
+   "rent": 10000,
+   "upgrade_cost": 0,
+   "rep_required": 0,
+   "width": 19,
+   "height": 9,
+   "desks": [
+    [
+     0,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     7,
+     5
+    ],
+    [
+     10,
+     3
+    ],
+    [
+     12,
+     3
+    ],
+    [
+     10,
+     5
+    ],
+    [
+     12,
+     5
+    ]
+   ],
+   "zones": [
+    {
+     "rect": [
+      -0.3,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      4.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "green"
+    },
+    {
+     "rect": [
+      9.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "purple"
+    },
+    {
+     "rect": [
+      14.8,
+      2,
+      4.2,
+      7
+     ],
+     "tint": "lounge"
+    }
+   ],
+   "dividers": [
+    {
+     "x": 4.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 9.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 14.4,
+     "y0": 2,
+     "y1": 6
+    }
+   ],
+   "props": [
+    {
+     "type": "coffee",
+     "pos": [
+      17,
+      4
+     ]
+    },
+    {
+     "type": "cooler",
+     "pos": [
+      18,
+      4
+     ]
+    },
+    {
+     "type": "sofa",
+     "pos": [
+      16,
+      7
+     ]
+    },
+    {
+     "type": "meeting_table",
+     "pos": [
+      15,
+      6
+     ]
+    },
+    {
+     "type": "plant",
+     "pos": [
+      18,
+      2
+     ]
+    }
+   ],
+   "wall": [
+    {
+     "type": "window",
+     "x": 1
+    },
+    {
+     "type": "window",
+     "x": 4
+    },
+    {
+     "type": "whiteboard",
+     "x": 7
+    },
+    {
+     "type": "shelf",
+     "x": 10
+    },
+    {
+     "type": "door",
+     "x": 17
+    }
+   ],
+   "spots": [
+    [
+     17,
+     5
+    ],
+    [
+     16,
+     8
+    ]
+   ],
+   "decor_slots": [
+    [
+     18,
+     6
+    ],
+    [
+     18,
+     8
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     3,
+     8
+    ]
+   ],
+   "wall_slots": [
+    14
+   ],
+   "season_slot": [
+    15.5,
+    2
+   ],
+   "hr_room": {
+    "width": 5,
+    "desk": [
+     1,
+     4
+    ],
+    "plant": [
+     3,
+     7
+    ],
+    "sign_x": 1.5
+   }
+  },
+  {
+   "level": 8,
+   "region": 3,
+   "region_level": 2,
+   "name": "Andar na capital",
+   "capacity": 14,
+   "rent": 11500,
+   "upgrade_cost": 30000,
+   "rep_required": 0,
+   "width": 19,
+   "height": 10,
+   "desks": [
+    [
+     0,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     7,
+     5
+    ],
+    [
+     10,
+     3
+    ],
+    [
+     12,
+     3
+    ],
+    [
+     10,
+     5
+    ],
+    [
+     12,
+     5
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     2,
+     8
+    ]
+   ],
+   "zones": [
+    {
+     "rect": [
+      -0.3,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      4.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "green"
+    },
+    {
+     "rect": [
+      9.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "purple"
+    },
+    {
+     "rect": [
+      0,
+      6.2,
+      4.4,
+      3.8
+     ],
+     "tint": "warm"
+    },
+    {
+     "rect": [
+      14.8,
+      2,
+      4.2,
+      8
+     ],
+     "tint": "lounge"
+    }
+   ],
+   "dividers": [
+    {
+     "x": 4.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 9.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 14.4,
+     "y0": 2,
+     "y1": 7
+    }
+   ],
+   "props": [
+    {
+     "type": "coffee",
+     "pos": [
+      17,
+      4
+     ]
+    },
+    {
+     "type": "cooler",
+     "pos": [
+      18,
+      4
+     ]
+    },
+    {
+     "type": "sofa",
+     "pos": [
+      16,
+      8
+     ]
+    },
+    {
+     "type": "meeting_table",
+     "pos": [
+      15,
+      6
+     ]
+    },
+    {
+     "type": "plant",
+     "pos": [
+      18,
+      2
+     ]
+    }
+   ],
+   "wall": [
+    {
+     "type": "window",
+     "x": 1
+    },
+    {
+     "type": "window",
+     "x": 4
+    },
+    {
+     "type": "whiteboard",
+     "x": 7
+    },
+    {
+     "type": "shelf",
+     "x": 10
+    },
+    {
+     "type": "door",
+     "x": 17
+    }
+   ],
+   "spots": [
+    [
+     17,
+     5
+    ],
+    [
+     16,
+     9
+    ]
+   ],
+   "decor_slots": [
+    [
+     18,
+     6
+    ],
+    [
+     18,
+     9
+    ],
+    [
+     16,
+     3
+    ],
+    [
+     15,
+     9
+    ]
+   ],
+   "wall_slots": [
+    14
+   ],
+   "season_slot": [
+    15.5,
+    2
+   ],
+   "hr_room": {
+    "width": 5,
+    "desk": [
+     1,
+     4
+    ],
+    "plant": [
+     3,
+     8
+    ],
+    "sign_x": 1.5
+   }
+  },
+  {
+   "level": 9,
+   "region": 3,
+   "region_level": 3,
+   "name": "Sede na capital",
+   "capacity": 16,
+   "rent": 13000,
+   "upgrade_cost": 45000,
+   "rep_required": 0,
+   "width": 19,
+   "height": 10,
+   "desks": [
+    [
+     0,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     7,
+     5
+    ],
+    [
+     10,
+     3
+    ],
+    [
+     12,
+     3
+    ],
+    [
+     10,
+     5
+    ],
+    [
+     12,
+     5
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     4,
+     8
+    ],
+    [
+     7,
+     8
+    ]
+   ],
+   "zones": [
+    {
+     "rect": [
+      -0.3,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      4.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "green"
+    },
+    {
+     "rect": [
+      9.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "purple"
+    },
+    {
+     "rect": [
+      0,
+      6.2,
+      6.4,
+      3.8
+     ],
+     "tint": "warm"
+    },
+    {
+     "rect": [
+      6.8,
+      6.2,
+      2.4,
+      3.8
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      14.8,
+      2,
+      4.2,
+      8
+     ],
+     "tint": "lounge"
+    }
+   ],
+   "dividers": [
+    {
+     "x": 4.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 9.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 6.4,
+     "y0": 6,
+     "y1": 10
+    },
+    {
+     "x": 14.4,
+     "y0": 2,
+     "y1": 7
+    }
+   ],
+   "props": [
+    {
+     "type": "coffee",
+     "pos": [
+      17,
+      4
+     ]
+    },
+    {
+     "type": "cooler",
+     "pos": [
+      18,
+      4
+     ]
+    },
+    {
+     "type": "sofa",
+     "pos": [
+      16,
+      8
+     ]
+    },
+    {
+     "type": "meeting_table",
+     "pos": [
+      15,
+      6
+     ]
+    },
+    {
+     "type": "plant",
+     "pos": [
+      18,
+      2
+     ]
+    }
+   ],
+   "wall": [
+    {
+     "type": "window",
+     "x": 1
+    },
+    {
+     "type": "window",
+     "x": 4
+    },
+    {
+     "type": "whiteboard",
+     "x": 7
+    },
+    {
+     "type": "shelf",
+     "x": 10
+    },
+    {
+     "type": "door",
+     "x": 17
+    }
+   ],
+   "spots": [
+    [
+     17,
+     5
+    ],
+    [
+     16,
+     9
+    ]
+   ],
+   "decor_slots": [
+    [
+     18,
+     6
+    ],
+    [
+     18,
+     9
+    ],
+    [
+     16,
+     3
+    ],
+    [
+     15,
+     9
+    ]
+   ],
+   "wall_slots": [
+    14
+   ],
+   "season_slot": [
+    15.5,
+    2
+   ],
+   "hr_room": {
+    "width": 5,
+    "desk": [
+     1,
+     4
+    ],
+    "plant": [
+     3,
+     8
+    ],
+    "sign_x": 1.5
+   }
+  },
+  {
+   "level": 10,
+   "region": 3,
+   "region_level": 4,
+   "name": "Torre na capital",
+   "capacity": 18,
+   "rent": 14500,
+   "upgrade_cost": 60000,
+   "rep_required": 0,
+   "width": 19,
+   "height": 10,
+   "desks": [
+    [
+     0,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     7,
+     5
+    ],
+    [
+     10,
+     3
+    ],
+    [
+     12,
+     3
+    ],
+    [
+     10,
+     5
+    ],
+    [
+     12,
+     5
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     4,
+     8
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     9,
+     8
+    ],
+    [
+     11,
+     8
+    ]
+   ],
+   "zones": [
+    {
+     "rect": [
+      -0.3,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      4.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "green"
+    },
+    {
+     "rect": [
+      9.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "purple"
+    },
+    {
+     "rect": [
+      0,
+      6.2,
+      6.4,
+      3.8
+     ],
+     "tint": "warm"
+    },
+    {
+     "rect": [
+      6.8,
+      6.2,
+      6.4,
+      3.8
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      14.8,
+      2,
+      4.2,
+      8
+     ],
+     "tint": "lounge"
+    }
+   ],
+   "dividers": [
+    {
+     "x": 4.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 9.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 6.4,
+     "y0": 6,
+     "y1": 10
+    },
+    {
+     "x": 14.4,
+     "y0": 2,
+     "y1": 7
+    }
+   ],
+   "props": [
+    {
+     "type": "coffee",
+     "pos": [
+      17,
+      4
+     ]
+    },
+    {
+     "type": "cooler",
+     "pos": [
+      18,
+      4
+     ]
+    },
+    {
+     "type": "sofa",
+     "pos": [
+      16,
+      8
+     ]
+    },
+    {
+     "type": "meeting_table",
+     "pos": [
+      15,
+      6
+     ]
+    },
+    {
+     "type": "plant",
+     "pos": [
+      18,
+      2
+     ]
+    }
+   ],
+   "wall": [
+    {
+     "type": "window",
+     "x": 1
+    },
+    {
+     "type": "window",
+     "x": 4
+    },
+    {
+     "type": "whiteboard",
+     "x": 7
+    },
+    {
+     "type": "shelf",
+     "x": 10
+    },
+    {
+     "type": "door",
+     "x": 17
+    }
+   ],
+   "spots": [
+    [
+     17,
+     5
+    ],
+    [
+     16,
+     9
+    ]
+   ],
+   "decor_slots": [
+    [
+     18,
+     6
+    ],
+    [
+     18,
+     9
+    ],
+    [
+     16,
+     3
+    ],
+    [
+     15,
+     9
+    ]
+   ],
+   "wall_slots": [
+    14
+   ],
+   "season_slot": [
+    15.5,
+    2
+   ],
+   "hr_room": {
+    "width": 5,
+    "desk": [
+     1,
+     4
+    ],
+    "plant": [
+     3,
+     8
+    ],
+    "sign_x": 1.5
+   }
+  },
+  {
+   "level": 11,
+   "region": 4,
+   "region_level": 1,
+   "name": "Andar no distrito",
+   "capacity": 18,
+   "rent": 25000,
+   "upgrade_cost": 0,
+   "rep_required": 0,
+   "width": 19,
+   "height": 10,
+   "desks": [
+    [
+     0,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     7,
+     5
+    ],
+    [
+     10,
+     3
+    ],
+    [
+     12,
+     3
+    ],
+    [
+     10,
+     5
+    ],
+    [
+     12,
+     5
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     4,
+     8
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     9,
+     8
+    ],
+    [
+     11,
+     8
+    ]
+   ],
+   "zones": [
+    {
+     "rect": [
+      -0.3,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      4.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "green"
+    },
+    {
+     "rect": [
+      9.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "purple"
+    },
+    {
+     "rect": [
+      0,
+      6.2,
+      6.4,
+      3.8
+     ],
+     "tint": "warm"
+    },
+    {
+     "rect": [
+      6.8,
+      6.2,
+      6.4,
+      3.8
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      14.8,
+      2,
+      4.2,
+      8
+     ],
+     "tint": "lounge"
+    }
+   ],
+   "dividers": [
+    {
+     "x": 4.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 9.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 6.4,
+     "y0": 6,
+     "y1": 10
+    },
+    {
+     "x": 14.4,
+     "y0": 2,
+     "y1": 7
+    }
+   ],
+   "props": [
+    {
+     "type": "coffee",
+     "pos": [
+      17,
+      4
+     ]
+    },
+    {
+     "type": "cooler",
+     "pos": [
+      18,
+      4
+     ]
+    },
+    {
+     "type": "sofa",
+     "pos": [
+      16,
+      8
+     ]
+    },
+    {
+     "type": "meeting_table",
+     "pos": [
+      15,
+      6
+     ]
+    },
+    {
+     "type": "plant",
+     "pos": [
+      18,
+      2
+     ]
+    }
+   ],
+   "wall": [
+    {
+     "type": "window",
+     "x": 1
+    },
+    {
+     "type": "window",
+     "x": 4
+    },
+    {
+     "type": "whiteboard",
+     "x": 7
+    },
+    {
+     "type": "shelf",
+     "x": 10
+    },
+    {
+     "type": "door",
+     "x": 17
+    }
+   ],
+   "spots": [
+    [
+     17,
+     5
+    ],
+    [
+     16,
+     9
+    ]
+   ],
+   "decor_slots": [
+    [
+     18,
+     6
+    ],
+    [
+     18,
+     9
+    ],
+    [
+     16,
+     3
+    ],
+    [
+     15,
+     9
+    ]
+   ],
+   "wall_slots": [
+    14
+   ],
+   "season_slot": [
+    15.5,
+    2
+   ],
+   "hr_room": {
+    "width": 5,
+    "desk": [
+     1,
+     4
+    ],
+    "plant": [
+     3,
+     8
+    ],
+    "sign_x": 1.5
+   }
+  },
+  {
+   "level": 12,
+   "region": 4,
+   "region_level": 2,
+   "name": "Sede no distrito",
+   "capacity": 20,
+   "rent": 28750,
+   "upgrade_cost": 90000,
+   "rep_required": 0,
+   "width": 24,
+   "height": 10,
+   "desks": [
+    [
+     0,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     7,
+     5
+    ],
+    [
+     10,
+     3
+    ],
+    [
+     12,
+     3
+    ],
+    [
+     10,
+     5
+    ],
+    [
+     12,
+     5
+    ],
+    [
+     15,
+     3
+    ],
+    [
+     17,
+     3
+    ],
+    [
+     15,
+     5
+    ],
+    [
+     17,
+     5
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     4,
+     8
+    ],
+    [
+     7,
+     8
+    ]
+   ],
+   "zones": [
+    {
+     "rect": [
+      -0.3,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      4.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "green"
+    },
+    {
+     "rect": [
+      9.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "purple"
+    },
+    {
+     "rect": [
+      14.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "warm"
+    },
+    {
+     "rect": [
+      0,
+      6.2,
+      6.4,
+      3.8
+     ],
+     "tint": "warm"
+    },
+    {
+     "rect": [
+      6.8,
+      6.2,
+      2.4,
+      3.8
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      19.8,
+      2,
+      4.2,
+      8
+     ],
+     "tint": "lounge"
+    }
+   ],
+   "dividers": [
+    {
+     "x": 4.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 9.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 14.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 6.4,
+     "y0": 6,
+     "y1": 10
+    },
+    {
+     "x": 19.4,
+     "y0": 2,
+     "y1": 7
+    }
+   ],
+   "props": [
+    {
+     "type": "coffee",
+     "pos": [
+      22,
+      4
+     ]
+    },
+    {
+     "type": "cooler",
+     "pos": [
+      23,
+      4
+     ]
+    },
+    {
+     "type": "sofa",
+     "pos": [
+      21,
+      8
+     ]
+    },
+    {
+     "type": "meeting_table",
+     "pos": [
+      20,
+      6
+     ]
+    },
+    {
+     "type": "plant",
+     "pos": [
+      23,
+      2
+     ]
+    }
+   ],
+   "wall": [
+    {
+     "type": "window",
+     "x": 1
+    },
+    {
+     "type": "window",
+     "x": 4
+    },
+    {
+     "type": "whiteboard",
+     "x": 7
+    },
+    {
+     "type": "shelf",
+     "x": 10
+    },
+    {
+     "type": "window",
+     "x": 14
+    },
+    {
+     "type": "door",
+     "x": 22
+    }
+   ],
+   "spots": [
+    [
+     22,
+     5
+    ],
+    [
+     21,
+     9
+    ]
+   ],
+   "decor_slots": [
+    [
+     23,
+     6
+    ],
+    [
+     23,
+     9
+    ],
+    [
+     21,
+     3
+    ],
+    [
+     20,
+     9
+    ]
+   ],
+   "wall_slots": [
+    19
+   ],
+   "season_slot": [
+    20.5,
+    2
+   ],
+   "hr_room": {
+    "width": 5,
+    "desk": [
+     1,
+     4
+    ],
+    "plant": [
+     3,
+     8
+    ],
+    "sign_x": 1.5
+   }
+  },
+  {
+   "level": 13,
+   "region": 4,
+   "region_level": 3,
+   "name": "Torre no distrito",
+   "capacity": 22,
+   "rent": 32500,
+   "upgrade_cost": 120000,
+   "rep_required": 0,
+   "width": 24,
+   "height": 10,
+   "desks": [
+    [
+     0,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     7,
+     5
+    ],
+    [
+     10,
+     3
+    ],
+    [
+     12,
+     3
+    ],
+    [
+     10,
+     5
+    ],
+    [
+     12,
+     5
+    ],
+    [
+     15,
+     3
+    ],
+    [
+     17,
+     3
+    ],
+    [
+     15,
+     5
+    ],
+    [
+     17,
+     5
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     4,
+     8
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     9,
+     8
+    ],
+    [
+     11,
+     8
+    ]
+   ],
+   "zones": [
+    {
+     "rect": [
+      -0.3,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      4.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "green"
+    },
+    {
+     "rect": [
+      9.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "purple"
+    },
+    {
+     "rect": [
+      14.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "warm"
+    },
+    {
+     "rect": [
+      0,
+      6.2,
+      6.4,
+      3.8
+     ],
+     "tint": "warm"
+    },
+    {
+     "rect": [
+      6.8,
+      6.2,
+      6.4,
+      3.8
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      19.8,
+      2,
+      4.2,
+      8
+     ],
+     "tint": "lounge"
+    }
+   ],
+   "dividers": [
+    {
+     "x": 4.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 9.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 14.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 6.4,
+     "y0": 6,
+     "y1": 10
+    },
+    {
+     "x": 19.4,
+     "y0": 2,
+     "y1": 7
+    }
+   ],
+   "props": [
+    {
+     "type": "coffee",
+     "pos": [
+      22,
+      4
+     ]
+    },
+    {
+     "type": "cooler",
+     "pos": [
+      23,
+      4
+     ]
+    },
+    {
+     "type": "sofa",
+     "pos": [
+      21,
+      8
+     ]
+    },
+    {
+     "type": "meeting_table",
+     "pos": [
+      20,
+      6
+     ]
+    },
+    {
+     "type": "plant",
+     "pos": [
+      23,
+      2
+     ]
+    }
+   ],
+   "wall": [
+    {
+     "type": "window",
+     "x": 1
+    },
+    {
+     "type": "window",
+     "x": 4
+    },
+    {
+     "type": "whiteboard",
+     "x": 7
+    },
+    {
+     "type": "shelf",
+     "x": 10
+    },
+    {
+     "type": "window",
+     "x": 14
+    },
+    {
+     "type": "door",
+     "x": 22
+    }
+   ],
+   "spots": [
+    [
+     22,
+     5
+    ],
+    [
+     21,
+     9
+    ]
+   ],
+   "decor_slots": [
+    [
+     23,
+     6
+    ],
+    [
+     23,
+     9
+    ],
+    [
+     21,
+     3
+    ],
+    [
+     20,
+     9
+    ]
+   ],
+   "wall_slots": [
+    19
+   ],
+   "season_slot": [
+    20.5,
+    2
+   ],
+   "hr_room": {
+    "width": 5,
+    "desk": [
+     1,
+     4
+    ],
+    "plant": [
+     3,
+     8
+    ],
+    "sign_x": 1.5
+   }
+  },
+  {
+   "level": 14,
+   "region": 5,
+   "region_level": 1,
+   "name": "Sede global",
+   "capacity": 22,
+   "rent": 60000,
+   "upgrade_cost": 0,
+   "rep_required": 0,
+   "width": 24,
+   "height": 10,
+   "desks": [
+    [
+     0,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     7,
+     5
+    ],
+    [
+     10,
+     3
+    ],
+    [
+     12,
+     3
+    ],
+    [
+     10,
+     5
+    ],
+    [
+     12,
+     5
+    ],
+    [
+     15,
+     3
+    ],
+    [
+     17,
+     3
+    ],
+    [
+     15,
+     5
+    ],
+    [
+     17,
+     5
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     4,
+     8
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     9,
+     8
+    ],
+    [
+     11,
+     8
+    ]
+   ],
+   "zones": [
+    {
+     "rect": [
+      -0.3,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      4.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "green"
+    },
+    {
+     "rect": [
+      9.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "purple"
+    },
+    {
+     "rect": [
+      14.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "warm"
+    },
+    {
+     "rect": [
+      0,
+      6.2,
+      6.4,
+      3.8
+     ],
+     "tint": "warm"
+    },
+    {
+     "rect": [
+      6.8,
+      6.2,
+      6.4,
+      3.8
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      19.8,
+      2,
+      4.2,
+      8
+     ],
+     "tint": "lounge"
+    }
+   ],
+   "dividers": [
+    {
+     "x": 4.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 9.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 14.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 6.4,
+     "y0": 6,
+     "y1": 10
+    },
+    {
+     "x": 19.4,
+     "y0": 2,
+     "y1": 7
+    }
+   ],
+   "props": [
+    {
+     "type": "coffee",
+     "pos": [
+      22,
+      4
+     ]
+    },
+    {
+     "type": "cooler",
+     "pos": [
+      23,
+      4
+     ]
+    },
+    {
+     "type": "sofa",
+     "pos": [
+      21,
+      8
+     ]
+    },
+    {
+     "type": "meeting_table",
+     "pos": [
+      20,
+      6
+     ]
+    },
+    {
+     "type": "plant",
+     "pos": [
+      23,
+      2
+     ]
+    }
+   ],
+   "wall": [
+    {
+     "type": "window",
+     "x": 1
+    },
+    {
+     "type": "window",
+     "x": 4
+    },
+    {
+     "type": "whiteboard",
+     "x": 7
+    },
+    {
+     "type": "shelf",
+     "x": 10
+    },
+    {
+     "type": "window",
+     "x": 14
+    },
+    {
+     "type": "door",
+     "x": 22
+    }
+   ],
+   "spots": [
+    [
+     22,
+     5
+    ],
+    [
+     21,
+     9
+    ]
+   ],
+   "decor_slots": [
+    [
+     23,
+     6
+    ],
+    [
+     23,
+     9
+    ],
+    [
+     21,
+     3
+    ],
+    [
+     20,
+     9
+    ]
+   ],
+   "wall_slots": [
+    19
+   ],
+   "season_slot": [
+    20.5,
+    2
+   ],
+   "hr_room": {
+    "width": 5,
+    "desk": [
+     1,
+     4
+    ],
+    "plant": [
+     3,
+     8
+    ],
+    "sign_x": 1.5
+   }
+  },
+  {
+   "level": 15,
+   "region": 5,
+   "region_level": 2,
+   "name": "Torre global",
+   "capacity": 25,
+   "rent": 69000,
+   "upgrade_cost": 200000,
+   "rep_required": 0,
+   "width": 29,
+   "height": 10,
+   "desks": [
+    [
+     0,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     7,
+     5
+    ],
+    [
+     10,
+     3
+    ],
+    [
+     12,
+     3
+    ],
+    [
+     10,
+     5
+    ],
+    [
+     12,
+     5
+    ],
+    [
+     15,
+     3
+    ],
+    [
+     17,
+     3
+    ],
+    [
+     15,
+     5
+    ],
+    [
+     17,
+     5
+    ],
+    [
+     20,
+     3
+    ],
+    [
+     22,
+     3
+    ],
+    [
+     20,
+     5
+    ],
+    [
+     22,
+     5
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     4,
+     8
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     9,
+     8
+    ]
+   ],
+   "zones": [
+    {
+     "rect": [
+      -0.3,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      4.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "green"
+    },
+    {
+     "rect": [
+      9.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "purple"
+    },
+    {
+     "rect": [
+      14.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "warm"
+    },
+    {
+     "rect": [
+      19.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      0,
+      6.2,
+      6.4,
+      3.8
+     ],
+     "tint": "warm"
+    },
+    {
+     "rect": [
+      6.8,
+      6.2,
+      4.4,
+      3.8
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      24.8,
+      2,
+      4.2,
+      8
+     ],
+     "tint": "lounge"
+    }
+   ],
+   "dividers": [
+    {
+     "x": 4.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 9.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 14.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 19.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 6.4,
+     "y0": 6,
+     "y1": 10
+    },
+    {
+     "x": 24.4,
+     "y0": 2,
+     "y1": 7
+    }
+   ],
+   "props": [
+    {
+     "type": "coffee",
+     "pos": [
+      27,
+      4
+     ]
+    },
+    {
+     "type": "cooler",
+     "pos": [
+      28,
+      4
+     ]
+    },
+    {
+     "type": "sofa",
+     "pos": [
+      26,
+      8
+     ]
+    },
+    {
+     "type": "meeting_table",
+     "pos": [
+      25,
+      6
+     ]
+    },
+    {
+     "type": "plant",
+     "pos": [
+      28,
+      2
+     ]
+    }
+   ],
+   "wall": [
+    {
+     "type": "window",
+     "x": 1
+    },
+    {
+     "type": "window",
+     "x": 4
+    },
+    {
+     "type": "whiteboard",
+     "x": 7
+    },
+    {
+     "type": "shelf",
+     "x": 10
+    },
+    {
+     "type": "window",
+     "x": 14
+    },
+    {
+     "type": "shelf",
+     "x": 19
+    },
+    {
+     "type": "window",
+     "x": 23
+    },
+    {
+     "type": "door",
+     "x": 27
+    }
+   ],
+   "spots": [
+    [
+     27,
+     5
+    ],
+    [
+     26,
+     9
+    ]
+   ],
+   "decor_slots": [
+    [
+     28,
+     6
+    ],
+    [
+     28,
+     9
+    ],
+    [
+     26,
+     3
+    ],
+    [
+     25,
+     9
+    ]
+   ],
+   "wall_slots": [
+    24
+   ],
+   "season_slot": [
+    25.5,
+    2
+   ],
+   "hr_room": {
+    "width": 5,
+    "desk": [
+     1,
+     4
+    ],
+    "plant": [
+     3,
+     8
+    ],
+    "sign_x": 1.5
+   }
+  },
+  {
+   "level": 16,
+   "region": 5,
+   "region_level": 3,
+   "name": "Campus global",
+   "capacity": 28,
+   "rent": 78000,
+   "upgrade_cost": 260000,
+   "rep_required": 0,
+   "width": 29,
+   "height": 10,
+   "desks": [
+    [
+     0,
+     3
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     5,
+     5
+    ],
+    [
+     7,
+     5
+    ],
+    [
+     10,
+     3
+    ],
+    [
+     12,
+     3
+    ],
+    [
+     10,
+     5
+    ],
+    [
+     12,
+     5
+    ],
+    [
+     15,
+     3
+    ],
+    [
+     17,
+     3
+    ],
+    [
+     15,
+     5
+    ],
+    [
+     17,
+     5
+    ],
+    [
+     20,
+     3
+    ],
+    [
+     22,
+     3
+    ],
+    [
+     20,
+     5
+    ],
+    [
+     22,
+     5
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     4,
+     8
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     9,
+     8
+    ],
+    [
+     11,
+     8
+    ],
+    [
+     14,
+     8
+    ],
+    [
+     16,
+     8
+    ]
+   ],
+   "zones": [
+    {
+     "rect": [
+      -0.3,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      4.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "green"
+    },
+    {
+     "rect": [
+      9.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "purple"
+    },
+    {
+     "rect": [
+      14.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "warm"
+    },
+    {
+     "rect": [
+      19.7,
+      2,
+      4.6,
+      4
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      0,
+      6.2,
+      6.4,
+      3.8
+     ],
+     "tint": "warm"
+    },
+    {
+     "rect": [
+      6.8,
+      6.2,
+      6.4,
+      3.8
+     ],
+     "tint": "cool"
+    },
+    {
+     "rect": [
+      13.8,
+      6.2,
+      4.4,
+      3.8
+     ],
+     "tint": "green"
+    },
+    {
+     "rect": [
+      24.8,
+      2,
+      4.2,
+      8
+     ],
+     "tint": "lounge"
+    }
+   ],
+   "dividers": [
+    {
+     "x": 4.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 9.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 14.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 19.4,
+     "y0": 2,
+     "y1": 6
+    },
+    {
+     "x": 6.4,
+     "y0": 6,
+     "y1": 10
+    },
+    {
+     "x": 13.4,
+     "y0": 6,
+     "y1": 10
+    },
+    {
+     "x": 24.4,
+     "y0": 2,
+     "y1": 7
+    }
+   ],
+   "props": [
+    {
+     "type": "coffee",
+     "pos": [
+      27,
+      4
+     ]
+    },
+    {
+     "type": "cooler",
+     "pos": [
+      28,
+      4
+     ]
+    },
+    {
+     "type": "sofa",
+     "pos": [
+      26,
+      8
+     ]
+    },
+    {
+     "type": "meeting_table",
+     "pos": [
+      25,
+      6
+     ]
+    },
+    {
+     "type": "plant",
+     "pos": [
+      28,
+      2
+     ]
+    }
+   ],
+   "wall": [
+    {
+     "type": "window",
+     "x": 1
+    },
+    {
+     "type": "window",
+     "x": 4
+    },
+    {
+     "type": "whiteboard",
+     "x": 7
+    },
+    {
+     "type": "shelf",
+     "x": 10
+    },
+    {
+     "type": "window",
+     "x": 14
+    },
+    {
+     "type": "shelf",
+     "x": 19
+    },
+    {
+     "type": "window",
+     "x": 23
+    },
+    {
+     "type": "door",
+     "x": 27
+    }
+   ],
+   "spots": [
+    [
+     27,
+     5
+    ],
+    [
+     26,
+     9
+    ]
+   ],
+   "decor_slots": [
+    [
+     28,
+     6
+    ],
+    [
+     28,
+     9
+    ],
+    [
+     26,
+     3
+    ],
+    [
+     25,
+     9
+    ]
+   ],
+   "wall_slots": [
+    24
+   ],
+   "season_slot": [
+    25.5,
+    2
+   ],
+   "hr_room": {
+    "width": 5,
+    "desk": [
+     1,
+     4
+    ],
+    "plant": [
+     3,
+     8
+    ],
+    "sign_x": 1.5
+   }
+  }
+ ]
 }
