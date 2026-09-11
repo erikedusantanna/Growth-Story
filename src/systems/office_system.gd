@@ -82,6 +82,7 @@ func move_to(r: int) -> Dictionary:
 	game.finance.add_money(-float(rd.get("move_cost", 0)), "Mudança de sede: %s" % String(rd.get("name", "")), "expense")
 	st.office_level = int(rd.get("first_level", st.office_level + 1))
 	st.moving_until_day = st.day + int(game.content.regions.get("moving_days", 7))
+	game.competitors.ensure_rivals()
 	var office := current()
 	game.add_log("🌎 A agência mudou de sede: %s (%s). Cabem %d pessoas; clientes tier %d passam a aparecer. Semana de mudança: produtividade reduzida." % [
 		String(rd.get("name", "")), String(office.get("name", "")), int(office.get("capacity", 0)), int(rd.get("tier", r))], "unlock")

@@ -25,6 +25,7 @@ func _ready() -> void:
 	_test_briefings_chemistry_awards(game)
 	_test_morale_moods(game)
 	_test_regions(game)
+	_test_rivals(game)
 	if failures == 0:
 		print("\n[OK] Todos os testes passaram.")
 		get_tree().quit(0)
@@ -497,6 +498,8 @@ func _test_office_life(game) -> void:
 	check(float((noon["tint"] as Color).a) < 0.001 and float(noon["lamp"]) == 0.0, "meio-dia sem tinta nem luminárias")
 	check(float((night["tint"] as Color).a) > 0.2 and float(night["lamp"]) == 1.0 and float(night["night"]) == 1.0, "20:00 é noite com luminárias acesas")
 	check((dusk["sky_bottom"] as Color).r > (noon["sky_bottom"] as Color).r, "fim de tarde tem céu mais alaranjado")
+	var golden: Dictionary = OfficeView.daylight(16.5)
+	check(float((golden["tint"] as Color).a) > 0.05, "às 16h30 o entardecer já começou")
 	check(Hud.clock_text().length() == 5, "relógio do HUD formata HH:MM (%s)" % Hud.clock_text())
 	# som ambiente
 	var amb = Audio._ambience_player.stream
@@ -693,3 +696,58 @@ func _test_regions(game) -> void:
 	check(not game.office.is_moving(), "semana de mudança termina")
 	var restored = GameState.from_dict(st.to_dict())
 	check(restored.office_level == st.office_level and restored.moving_until_day == st.moving_until_day, "região e mudança sobrevivem ao save")
+
+
+func _test_rivals(game) -> void:
+	print("== Concorrentes reais ==")
+	game.new_game("Rivais", "Chefe", 55)
+	var st = game.state
+	check(game.competitors.active_rivals().is_empty(), "no bairro não há rival")
+	st.money = 3000000.0
+	st.reputation = 90.0
+	check(game.office.move_to(2).ok, "mudou para o Centro Regional")
+	var rivals: Array = game.competitors.active_rivals()
+	check(rivals.size() == 1 and String(rivals[0].id) == "vertice", "Vértice Digital aparece na Região 2")
+	var rs: Dictionary = game.competitors.rival_state("vertice")
+	check(rs.clients.size() == 3 and rs.staff.size() == 2, "rival tem 3 clientes e 2 pessoas")
+	check(game.competitors.can_raid().ok, "investida disponível")
+	var rep_before: float = st.reputation
+	var clients_before: int = st.active_clients().size()
+	var r: Dictionary = game.competitors.raid_client("vertice", 0, 1)
+	check(r.ok and r.success and st.active_clients().size() == clients_before + 1, "proposta forçada leva o cliente da rival")
+	check(is_equal_approx(st.reputation, rep_before - 5.0), "custa 5 de reputação")
+	check(game.competitors.is_aggressive("vertice") and not game.competitors.can_raid().ok, "rival fica agressiva e a investida entra em cooldown")
+	check(game.competitors.can_raid().days_left == 90, "cooldown de 90 dias")
+	st.last_raid_day = -999
+	for i in 6:
+		st.candidates.append(game.employees.generate_candidate("normal"))
+		game.employees.hire(st.candidates[st.candidates.size() - 1])
+	var team_before: int = st.employees.size()
+	rep_before = st.reputation
+	var money_before: float = st.money
+	var r2: Dictionary = game.competitors.raid_employee("vertice", 0, 1)
+	check(r2.ok and r2.success and st.employees.size() == team_before + 1, "contratação forçada traz a pessoa da rival")
+	check(is_equal_approx(st.reputation, rep_before - 3.0) and st.money < money_before, "custa 3 de reputação e o bônus de assinatura")
+	st.last_raid_day = -999
+	var r3: Dictionary = game.competitors.raid_client("vertice", 0, 0)
+	check(r3.ok and not r3.success and not game.competitors.can_raid().ok, "investida que falha também gasta o trimestre")
+	game.competitors.ensure_rivals()
+	check(game.competitors.rival_state("vertice").clients.size() == 3, "carteira da rival se recompõe")
+	# investidas da rival: funcionário e cliente
+	st.pending_event = {}
+	check(game.competitors.rival_offer_employee("vertice"), "rival faz proposta a um funcionário")
+	var target_id: int = int(st.pending_event.targets.employee_id)
+	check(st.employee_by_id(target_id).last_offer_day == st.day, "alvo fica com humor assediado")
+	var size_before: int = st.employees.size()
+	game.resolve_event(2)
+	check(st.employees.size() == size_before - 1, "\"deixar sair\" perde a pessoa")
+	var c = st.prospects()[0] if not st.prospects().is_empty() else game.clients.spawn_prospect()
+	c.status = Client.Status.ACTIVE
+	c.relationship = 30.0
+	c.tier = 1
+	check(game.competitors.rival_offer_client("vertice"), "rival faz proposta a um cliente")
+	var budget_before: float = c.budget
+	game.resolve_event(0)
+	check(c.budget < budget_before and c.is_active(), "igualar o desconto mantém o cliente com orçamento menor")
+	var restored = GameState.from_dict(st.to_dict())
+	check(restored.rivals.has("vertice") and restored.last_raid_day == st.last_raid_day, "rivais sobrevivem ao save")

@@ -104,11 +104,11 @@ func _build_markers() -> void:
 	var st: GameState = Game.state
 	header_title.text = "🌎 %s · %s" % [st.agency_name, String(Game.office.region_data(current).get("name", ""))]
 	var regions: Array = Game.office.regions()
-	# concorrentes das regiões já alcançadas (sede desenhada ao lado do marco)
-	for rd in regions:
-		var r := int(rd.get("region", 1))
-		if bool(rd.get("has_rival", false)) and r <= current:
-			markers.add_child(_rival_sprite(rd))
+	# concorrentes das regiões já alcançadas (sede desenhada ao lado do marco; toque abre o painel)
+	for a in Game.competitors.active_rivals():
+		var rd: Dictionary = Game.office.region_data(int(a.get("region", 1)))
+		if not rd.is_empty():
+			markers.add_child(_rival_sprite(rd, a))
 	for rd in regions:
 		var r := int(rd.get("region", 1))
 		var card := _marker(rd, r, current)
@@ -129,12 +129,11 @@ func _build_markers() -> void:
 			markers.add_child(pin)
 
 
-func _rival_sprite(rd: Dictionary) -> Control:
+func _rival_sprite(rd: Dictionary, a: Dictionary) -> Control:
 	var holder := Control.new()
 	var pos: Array = rd.get("map_pos", [0, 0])
 	var tex := TextureRect.new()
-	var variants := ["brick", "navy", "glass"]
-	tex.texture = load("res://assets/art/map/rival_%s.png" % variants[int(rd.get("region", 1)) % variants.size()])
+	tex.texture = load("res://assets/art/map/rival_%s.png" % String(a.get("logo", "brick")))
 	tex.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	tex.stretch_mode = TextureRect.STRETCH_SCALE
 	tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -142,12 +141,21 @@ func _rival_sprite(rd: Dictionary) -> Control:
 	tex.position = Vector2(float(pos[0]) * MAP_SCALE + 110.0, float(pos[1]) * MAP_SCALE - 96.0)
 	tex.position.x = minf(tex.position.x, board.custom_minimum_size.x - 86.0)
 	holder.add_child(tex)
-	var names: Array = Game.competitors.agency_names()
-	var label := UIKit.label("⚔️ %s" % String(names[int(rd.get("region", 1)) % names.size()]), 11, Color.WHITE)
+	var label := UIKit.label("⚔️ %s%s" % [String(a.get("name", "")), " 😠" if Game.competitors.is_aggressive(String(a.get("id", ""))) else ""], 11, Color.WHITE)
 	label.add_theme_constant_override("outline_size", 3)
 	label.add_theme_color_override("font_outline_color", Color(0.1, 0.12, 0.2))
 	label.position = tex.position + Vector2(-10, 112)
 	holder.add_child(label)
+	var btn := Button.new()
+	btn.flat = true
+	for st_name in ["normal", "hover", "pressed", "focus"]:
+		btn.add_theme_stylebox_override(st_name, StyleBoxEmpty.new())
+	btn.position = tex.position
+	btn.size = Vector2(80, 130)
+	btn.tooltip_text = String(a.get("name", ""))
+	btn.set_meta("rival_id", String(a.get("id", "")))
+	btn.pressed.connect(func(): _popups().show_rival(String(a.get("id", ""))))
+	holder.add_child(btn)
 	return holder
 
 

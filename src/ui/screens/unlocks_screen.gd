@@ -42,11 +42,19 @@ func build() -> void:
 func _build_competitors() -> void:
 	var names: Array = Game.competitors.agency_names()
 	content.add_child(header("⚔️ Concorrência"))
-	content.add_child(UIKit.card([
+	var rivals: Array = Game.competitors.active_rivals()
+	var lines: Array = [
 		UIKit.label("⚔️ O mercado não espera", 15, UIKit.COLOR_RED, true),
 		UIKit.muted("Prospects deixados sem proposta por muito tempo podem ser fechados por uma agência rival antes de você. Faça a proposta ou dispense — não deixe esfriar.", 13),
-		UIKit.muted("Concorrentes: %s." % ", ".join(names), 12),
-	]))
+	]
+	if rivals.is_empty():
+		lines.append(UIKit.muted("Rivais de verdade aparecem no mapa 🌎 a partir do Centro Regional: elas fazem propostas aos seus clientes e funcionários, e você pode revidar.", 12))
+	for a in rivals:
+		var rs: Dictionary = Game.competitors.rival_state(String(a.get("id", "")))
+		lines.append(UIKit.label("%s · força %d · %s%s" % [String(a.get("name", "")), int(rs.get("strength", a.get("strength", 40))), String(Game.office.region_data(int(a.get("region", 1))).get("name", "")),
+			" · 😠 agressiva" if Game.competitors.is_aggressive(String(a.get("id", ""))) else ""], 13, UIKit.COLOR_TEXT, true))
+	lines.append(UIKit.muted("Toque na sede de uma rival no mapa 🌎 para ver clientes e equipe dela e fazer uma investida (1 a cada 3 meses).", 12))
+	content.add_child(UIKit.card(lines))
 	content.add_child(UIKit.spacer(4))
 
 

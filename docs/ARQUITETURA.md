@@ -181,6 +181,17 @@ mostra a era na lista de números.
   `min_members_for_bonus` pessoas (padrão 2) dá `productivity_bonus` (padrão +8%) a todos ali —
   `EmployeeSystem.productivity()` multiplica por `DepartmentSystem.productivity_multiplier(e)`.
   Aba Equipe mostra a visão geral dos departamentos e um seletor por funcionário.
+- **Rivais reais** (`competitor_system.gd`, `data/competitors.json → agencies` com `region`, `strength`, `aggression`,
+  `specialty`, `logo`): `ensure_rivals()` cria em `state.rivals[id]` força, 3 clientes (templates do tier da região ou
+  procedurais) e 2 pessoas (`generate_candidate("high")`) quando a região é alcançada. `on_month()`: cada rival ativa
+  tenta com chance `aggression` (×2 se agressiva) uma investida — `rival_offer_employee` (alvo = menor lealdade,
+  `last_offer_day` → humor assediado; evento com cobrir/promover/deixar sair) ou `rival_offer_client` (alvo = menor
+  relação < 60; igualar −15% de orçamento, reunião de retenção por Comunicação, deixar ir). Jogador: `can_raid()`
+  (cooldown `raid_cooldown_days` global em `state.last_raid_day`), `raid_client` (chance 35 + Comunicação×0,3 +
+  rep×0,2 − força×0,3 ± 20 pela relação; sucesso: cliente ativo com relação 40, `penalize(5)`, rival −5 de força e
+  agressiva por 90 dias) e `raid_employee` (chance 30 + rep×0,3 + (100−força)×0,2 − lealdade×0,2; bônus de 2 salários,
+  salário +10%, `penalize(3)`). Eventos dinâmicos passam `targets` no dicionário (`EventSystem.trigger` preserva) e
+  usam os efeitos `client_budget_mult`, `client_retention`, `lose_client_target`, `rival_strength`.
 - **Concorrência** (`competitor_system.gd`, `data/competitors.json`): a partir de `min_day`,
   todo dia cada prospect parado há mais de `steal_after_idle_days` tem `steal_chance_per_day`
   de ser fechado por uma agência rival (nome sorteado de `agencies`), via

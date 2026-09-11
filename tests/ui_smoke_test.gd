@@ -153,6 +153,27 @@ func _ready() -> void:
 	await get_tree().process_frame
 	map_ok = map_ok and not main.world_map.visible and not Game.ui_blocking
 	print("  mapa abre com 5 regiões e fecha: %s" % map_ok)
+	# rival: na Região 2 a sede aparece no mapa e o painel abre
+	Game.state.money = 500000.0
+	Game.state.reputation = 60.0
+	var region_before: int = Game.state.office_level
+	Game.office.move_to(2)
+	main.show_world_map()
+	await get_tree().process_frame
+	var rival_buttons: int = 0
+	for n in main.world_map.markers.get_children():
+		for ch in n.get_children():
+			if ch is Button and ch.has_meta("rival_id"):
+				rival_buttons += 1
+	main.world_map.close()
+	main.popups.show_rival("vertice")
+	await get_tree().process_frame
+	var rival_ok: bool = rival_buttons >= 1 and rival_buttons == Game.competitors.active_rivals().size() and main.popups.is_open()
+	print("  rival no mapa e painel: %s (%d sede)" % [rival_ok, rival_buttons])
+	main.popups.close()
+	await _drain_popups(main)
+	Game.state.office_level = region_before
+	Game.state.moving_until_day = -1
 	main.popups.show_awards(Game.awards.evaluate_year(GameState.START_YEAR))
 	await get_tree().process_frame
 	var awards_scene: bool = main.popups.is_open() and main.event_stage.visible
@@ -189,7 +210,7 @@ func _ready() -> void:
 	main.show_title()
 	await get_tree().process_frame
 	print("  workers no escritório: %d" % main.office_view.workers.size())
-	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene and mood_ok and leaving_ok and map_ok
+	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene and mood_ok and leaving_ok and map_ok and rival_ok
 	print("[%s] UI smoke" % ("OK" if ok else "FALHA"))
 	get_tree().quit(0 if ok else 1)
 

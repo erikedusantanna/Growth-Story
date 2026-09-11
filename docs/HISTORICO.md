@@ -389,6 +389,15 @@ README.
 - O bot da simulação quase nunca junta caixa para mudar de sede; a régua continua sendo medida na Região 1.
   Balanceamento das mudanças de sede depende de teste jogado.
 
+## 8d. Bloco C do plano (concorrentes reais) — feito nesta sessão
+
+- `data/competitors.json` com agências por região; `CompetitorSystem` reescrito (carteira/equipe geradas,
+  investidas da rival por evento, investidas do jogador pelo painel da rival no mapa, cooldown de 90 dias,
+  reputação exata −5/−3 via `ReputationSystem.penalize`).
+- Anoitecer/amanhecer suavizados (pedido do usuário): luz desenhada persegue a luz da hora com fade
+  (`LIGHT_FADE_RATE`), entardecer começa às 16h, roxo às 18h30, noite às 20h; a virada 20h → 8h vira um
+  amanhecer lento.
+
 ## 9. Checklist para retomar o projeto
 
 1. Ler este documento, depois `README.md` (tabela "O que já existe") e `docs/ARQUITETURA.md`;

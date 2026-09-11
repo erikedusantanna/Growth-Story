@@ -264,6 +264,11 @@ func _ready() -> void:
 	await _frames(3)
 	await _shot("14c_mapa_capital")
 	main.world_map.close()
+	if not Game.competitors.active_rivals().is_empty():
+		main.popups.show_rival(String(Game.competitors.active_rivals()[0].id))
+		await _frames(2)
+		await _shot("14d_concorrente")
+		main.popups.close()
 	print("screenshots em %s" % ProjectSettings.globalize_path(out_dir))
 	get_tree().quit(0)
 

@@ -42,14 +42,17 @@ const WALL_PROP_Y := {"window": 10, "whiteboard": 10, "shelf": 0, "door": 4, "go
 const DAY_START_HOUR := 8.0
 const DAY_HOURS := 12.0
 ## Luz por hora: [hora, céu em cima, céu embaixo, tinta sobre o escritório, luminárias 0..1]
+## O entardecer começa às 16h (laranja), vira roxo às 18h30 e azul escuro às 20h. A transição
+## desenhada é suavizada no tempo (LIGHT_FADE_RATE): a virada 20:00 → 08:00 vira um amanhecer lento.
 const LIGHT_KEYS := [
 	[8.0, Color("#9fc4e6"), Color("#f7c184"), Color(1.0, 0.72, 0.42, 0.10), 0.0],
 	[9.5, Color("#dff1fb"), Color("#a9d8f0"), Color(1.0, 1.0, 1.0, 0.0), 0.0],
-	[16.0, Color("#dff1fb"), Color("#a9d8f0"), Color(1.0, 1.0, 1.0, 0.0), 0.0],
-	[17.5, Color("#ffd27a"), Color("#f28c4a"), Color(1.0, 0.6, 0.3, 0.14), 0.3],
-	[19.0, Color("#3b3f7a"), Color("#b06a6a"), Color(0.25, 0.2, 0.45, 0.22), 1.0],
+	[15.5, Color("#dff1fb"), Color("#a9d8f0"), Color(1.0, 1.0, 1.0, 0.0), 0.0],
+	[17.0, Color("#ffd27a"), Color("#f28c4a"), Color(1.0, 0.6, 0.3, 0.16), 0.3],
+	[18.5, Color("#6a4f8a"), Color("#d07a5a"), Color(0.5, 0.3, 0.4, 0.22), 0.8],
 	[20.0, Color("#141c30"), Color("#243559"), Color(0.10, 0.14, 0.32, 0.32), 1.0],
 ]
+const LIGHT_FADE_RATE := 1.1        # 1/s: ~63% do caminho em 0,9 s; o amanhecer leva ~2,5 s
 const WALL_TINTS := {1: Color(1, 1, 1), 2: Color(0.86, 0.92, 1.0), 3: Color(1.0, 0.94, 0.86), 4: Color(0.78, 0.82, 0.96), 5: Color(0.82, 0.84, 0.9)}
 const STARS := [Vector2(6, 5), Vector2(14, 9), Vector2(20, 4), Vector2(29, 11), Vector2(38, 6), Vector2(10, 15), Vector2(41, 15)]
 ## Balões de pensamento por situação do personagem
@@ -86,6 +89,7 @@ var hr_worker: Worker
 var window_positions: Array = []   # canto superior esquerdo de cada janela, em px do mundo
 var season_nodes: Array = []       # decoração da data comemorativa do mês
 var cloud_t := 0.0                 # tempo acumulado para nuvens, estrelas e balões
+var _light_now: Dictionary = {}    # luz desenhada, que persegue a luz da hora com um fade
 var bubble_timer := 3.0            # próximo balão de "pensamento" de alguém
 var _drawn_hour := -1.0
 
@@ -388,15 +392,37 @@ func _process(delta: float) -> void:
 		cloud_t += delta
 		_tick_bubbles(delta)
 	var hour := current_hour()
-	if running or absf(hour - _drawn_hour) > 0.01:
+	var target := daylight(hour)
+	if _light_now.is_empty():
+		_light_now = target.duplicate()
+	var t := 1.0 - exp(-delta * LIGHT_FADE_RATE)
+	var changed := false
+	for key in ["sky_top", "sky_bottom", "tint"]:
+		var from: Color = _light_now[key]
+		var to: Color = target[key]
+		if not from.is_equal_approx(to):
+			_light_now[key] = from.lerp(to, t)
+			changed = true
+	for key in ["lamp", "night"]:
+		var fv: float = _light_now[key]
+		var tv: float = target[key]
+		if absf(fv - tv) > 0.001:
+			_light_now[key] = lerpf(fv, tv, t)
+			changed = true
+	if running or changed or absf(hour - _drawn_hour) > 0.01:
 		_drawn_hour = hour
 		sky_layer.queue_redraw()
 		tint_layer.queue_redraw()
 		glow_layer.queue_redraw()
 
 
+## Luz efetivamente desenhada (suavizada); antes do primeiro quadro, a luz da hora.
+func _light() -> Dictionary:
+	return _light_now if not _light_now.is_empty() else daylight(current_hour())
+
+
 func _draw_sky() -> void:
-	var light := daylight(current_hour())
+	var light := _light()
 	var hour := current_hour()
 	var night: float = light["night"]
 	var hill := Color("#7bbf6a").lerp(Color("#1e2a3a"), night * 0.75)
@@ -411,8 +437,9 @@ func _draw_sky() -> void:
 		if hour < 18.5:
 			var p := (hour - DAY_START_HOUR) / 10.5
 			var sun := Rect2(glass.position + Vector2(5.0 + 32.0 * p, 22.0 - 15.0 * sin(PI * clampf(p, 0.0, 1.0))), Vector2(4, 4))
-			_draw_clipped(sun, Color("#ffe066"), sky)
-			_draw_clipped(Rect2(sun.position, Vector2(2, 1)), Color("#fff6c0"), sky)
+			var sun_alpha := 1.0 - night
+			_draw_clipped(sun, Color(1.0, 0.88, 0.4, sun_alpha), sky)
+			_draw_clipped(Rect2(sun.position, Vector2(2, 1)), Color(1.0, 0.96, 0.75, sun_alpha), sky)
 		if night > 0.0:
 			_draw_clipped(Rect2(glass.position + Vector2(33, 6), Vector2(4, 4)), Color(0.95, 0.95, 0.9, night), sky)
 			_draw_clipped(Rect2(glass.position + Vector2(33, 6), Vector2(2, 2)), Color(1, 1, 1, night), sky)
@@ -462,7 +489,7 @@ func _draw_clipped(r: Rect2, color: Color, clip: Rect2) -> void:
 
 ## Tinta da hora do dia sobre todo o escritório (nada no meio do dia).
 func _draw_tint() -> void:
-	var light := daylight(current_hour())
+	var light := _light()
 	var tint: Color = light["tint"]
 	if tint.a <= 0.001:
 		return
@@ -471,7 +498,7 @@ func _draw_tint() -> void:
 
 ## Luminárias das mesas acendem no fim da tarde (círculos aditivos sobre os monitores).
 func _draw_glow() -> void:
-	var lamp: float = daylight(current_hour())["lamp"]
+	var lamp: float = _light()["lamp"]
 	if lamp <= 0.01:
 		return
 	var centers: Array = desk_positions.duplicate()

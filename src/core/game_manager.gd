@@ -119,6 +119,7 @@ func on_month() -> void:
 	finance.on_month()
 	employees.on_month()
 	seasons.on_month()
+	competitors.on_month()
 	save_game()
 	EventBus.month_passed.emit(state.month_index())
 	EventBus.state_changed.emit()
