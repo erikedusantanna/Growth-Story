@@ -121,13 +121,17 @@ func _ready() -> void:
 	await _shot("07g_escritorio_zoom_out")
 	main.office_view._layout_world(true)
 	# hora do dia: fim de tarde e noite (a fração do dia vem do acumulador do TimeSystem)
+	# (a luz desenhada persegue a hora com fade; settle_light pula o fade para a captura)
 	Game.time.accumulator = TimeSystem.SECONDS_PER_DAY * 0.8
+	main.office_view.settle_light()
 	await _frames(2)
 	await _shot("07i_escritorio_tarde")
 	Game.time.accumulator = TimeSystem.SECONDS_PER_DAY * 0.99
+	main.office_view.settle_light()
 	await _frames(2)
 	await _shot("07j_escritorio_noite")
 	Game.time.accumulator = TimeSystem.SECONDS_PER_DAY * 0.3
+	main.office_view.settle_light()
 	# dezembro: decoração de Natal
 	var saved_day := st.day
 	st.day = GameState.DAYS_PER_MONTH * 11 + 3

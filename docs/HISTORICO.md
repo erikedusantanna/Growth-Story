@@ -404,6 +404,21 @@ README.
   (+ feira internacional), 7 mobílias novas por nível (com sprites em `tools/gen_art.py`), 8 clientes tier 4–5,
   projetos complexos para tier 5 (equipe mínima, checkpoint com refação).
 
+## 8f. Ajustes pós-merge do PR #14 (ícones do HUD, luz do escritório, velocidades)
+
+- **Emojis não renderizam no Windows** (a fonte padrão do Godot não tem emoji e o fallback do sistema
+  não funcionou: botões 🌎/🔊 ficaram vazios no build do usuário). Solução em duas partes: `UIKit`
+  coloca a **Noto Emoji** (monocromática, OFL, `assets/fonts/NotoEmoji.ttf`) como fallback da fonte
+  padrão, da negrito e da pixel (`theme.default_font`), então os ~190 emojis da interface renderizam
+  em qualquer plataforma; e os botões do HUD/tela inicial (mapa, pausa/play, som) viraram ícones
+  pixel art 20×20 (`tools/gen_icons.py`, `HUD_BUTTON_ICONS`, `Button.icon`).
+- **Luz do escritório**: `tint_layer` passou a multiplicar as cores (`BLEND_MODE_MUL`); `LIGHT_KEYS`
+  guarda multiplicadores (branco = dia). Tarde alaranjada (16h–18h30), noite quase apagada (~0,3) com
+  halos das luminárias em 9 anéis aditivos; o vidro das janelas fica fora da tinta. `settle_light()`
+  pula o fade (usado no tour).
+- **Velocidades**: `SECONDS_PER_DAY` 10,5 s e `SPEEDS` [1, 3, 7.5] — o 1x ficou 3× mais lento, o 2x é o
+  antigo 1x (3,5 s) e o 3x (1,4 s) é um pouco mais lento que o antigo 3x (1,17 s).
+
 ## 9. Checklist para retomar o projeto
 
 1. Ler este documento, depois `README.md` (tabela "O que já existe") e `docs/ARQUITETURA.md`;

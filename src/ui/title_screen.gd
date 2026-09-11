@@ -91,7 +91,9 @@ func _ready() -> void:
 	fv.add_child(message)
 
 	# som e versão
-	music_button = UIKit.button("🔊", _toggle_music, false, 40)
+	music_button = UIKit.button("", _toggle_music, false, 40)
+	music_button.icon = UIKit.icon_texture("sound_on")
+	music_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	music_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	music_button.anchor_left = 1.0
 	music_button.anchor_right = 1.0
@@ -192,7 +194,7 @@ func _toggle_music() -> void:
 
 
 func _refresh_music_button() -> void:
-	music_button.text = "🔊" if Audio.music_enabled else "🔇"
+	music_button.icon = UIKit.icon_texture("sound_on" if Audio.music_enabled else "sound_off")
 
 
 func _on_continue() -> void:
