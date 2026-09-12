@@ -342,9 +342,10 @@ func _ready() -> void:
 		print("  LARGURA: HUD pede %.0f px (limite %.0f)" % [hud_w, vp_w])
 	print("  layout cabe na tela: %s (mais largo: %.0f de %.0f px)" % [layout_ok, widest, vp_w])
 	# evento salvo em aberto: ao carregar precisa reaparecer, senão o tempo fica travado
+	await _drain_popups(main)   # começa sem nada na fila para o teste medir só o evento salvo
 	Game.events.trigger(Game.content.events[0])
 	await get_tree().process_frame
-	main.popups.close()
+	main.popups.close()   # fecha o popup sem resolver: o evento continua pendente e vai para o save
 	Game.save_game()
 	var pending_id: String = String(Game.state.pending_event.get("id", ""))
 	Game.state = null
@@ -353,8 +354,7 @@ func _ready() -> void:
 	reload_ok = reload_ok and main.popups.is_open() and String(Game.state.pending_event.get("id", "")) == pending_id
 	Game.state.paused = false
 	Game.resolve_event(0)
-	main.popups.close()
-	await get_tree().process_frame
+	await _drain_popups(main)   # o desfecho pode abrir outro popup; o tempo só volta com a fila vazia
 	reload_ok = reload_ok and Game.state.pending_event.is_empty() and Game.is_running()
 	print("  save com evento em aberto volta a rodar: %s" % reload_ok)
 	# tela inicial: escolher de qual espaço continuar
