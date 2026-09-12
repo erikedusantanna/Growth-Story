@@ -48,17 +48,20 @@ const WALL_PROP_Y := {"window": 10, "whiteboard": 10, "shelf": 0, "door": 4, "go
 ## O dia de trabalho vai das 08:00 às 20:00; a fração do dia vem do TimeSystem.
 const DAY_START_HOUR := 8.0
 const DAY_HOURS := 12.0
-## Luz por hora: [hora, céu em cima, céu embaixo, tinta sobre o escritório, luminárias 0..1]
-## O entardecer começa às 16h (laranja), vira roxo às 18h30 e azul escuro às 20h. A transição
-## desenhada é suavizada no tempo (LIGHT_FADE_RATE): a virada 20:00 → 08:00 vira um amanhecer lento.
+## Luz por hora: [hora, céu em cima, céu embaixo, luz sobre o escritório (multiplica as cores:
+## branco = dia claro), luminárias 0..1]. O entardecer começa às 16h (laranja), vira roxo às
+## 18h30 e azul escuro às 20h, quando o escritório fica quase apagado e só as luminárias das
+## mesas iluminam. A transição desenhada é suavizada no tempo (LIGHT_FADE_RATE): a virada
+## 20:00 → 08:00 vira um amanhecer lento.
 const LIGHT_KEYS := [
-	[8.0, Color("#9fc4e6"), Color("#f7c184"), Color(1.0, 0.72, 0.42, 0.10), 0.0],
-	[9.5, Color("#dff1fb"), Color("#a9d8f0"), Color(1.0, 1.0, 1.0, 0.0), 0.0],
-	[15.5, Color("#dff1fb"), Color("#a9d8f0"), Color(1.0, 1.0, 1.0, 0.0), 0.0],
-	[17.0, Color("#ffd27a"), Color("#f28c4a"), Color(1.0, 0.6, 0.3, 0.16), 0.3],
-	[18.5, Color("#6a4f8a"), Color("#d07a5a"), Color(0.5, 0.3, 0.4, 0.22), 0.8],
-	[20.0, Color("#141c30"), Color("#243559"), Color(0.10, 0.14, 0.32, 0.32), 1.0],
+	[8.0, Color("#9fc4e6"), Color("#f7c184"), Color(0.96, 0.88, 0.78), 0.0],
+	[9.5, Color("#dff1fb"), Color("#a9d8f0"), Color(1.0, 1.0, 1.0), 0.0],
+	[15.5, Color("#dff1fb"), Color("#a9d8f0"), Color(1.0, 1.0, 1.0), 0.0],
+	[17.0, Color("#ffd27a"), Color("#f28c4a"), Color(1.0, 0.80, 0.58), 0.35],
+	[18.5, Color("#6a4f8a"), Color("#d07a5a"), Color(0.62, 0.46, 0.58), 0.8],
+	[20.0, Color("#141c30"), Color("#243559"), Color(0.26, 0.30, 0.50), 1.0],
 ]
+const GLOW_RINGS := 9                # anéis do halo das luminárias
 const LIGHT_FADE_RATE := 1.1        # 1/s: ~63% do caminho em 0,9 s; o amanhecer leva ~2,5 s
 const WALL_TINTS := {1: Color(1, 1, 1), 2: Color(0.86, 0.92, 1.0), 3: Color(1.0, 0.94, 0.86), 4: Color(0.78, 0.82, 0.96), 5: Color(0.82, 0.84, 0.9)}
 const STARS := [Vector2(6, 5), Vector2(14, 9), Vector2(20, 4), Vector2(29, 11), Vector2(38, 6), Vector2(10, 15), Vector2(41, 15)]
@@ -126,6 +129,9 @@ func _ready() -> void:
 	scene_layer.y_sort_enabled = true
 	world.add_child(scene_layer)
 	tint_layer = Node2D.new()
+	var mul_mat := CanvasItemMaterial.new()
+	mul_mat.blend_mode = CanvasItemMaterial.BLEND_MODE_MUL
+	tint_layer.material = mul_mat
 	world.add_child(tint_layer)
 	tint_layer.draw.connect(_draw_tint)
 	glow_layer = Node2D.new()
@@ -423,6 +429,15 @@ func _process(delta: float) -> void:
 		glow_layer.queue_redraw()
 
 
+## Assenta a luz desenhada na luz da hora atual, sem fade (troca de dia ao carregar, testes).
+func settle_light() -> void:
+	_light_now = daylight(current_hour())
+	_drawn_hour = -1.0
+	sky_layer.queue_redraw()
+	tint_layer.queue_redraw()
+	glow_layer.queue_redraw()
+
+
 ## Luz efetivamente desenhada (suavizada); antes do primeiro quadro, a luz da hora.
 func _light() -> Dictionary:
 	return _light_now if not _light_now.is_empty() else daylight(current_hour())
@@ -494,13 +509,34 @@ func _draw_clipped(r: Rect2, color: Color, clip: Rect2) -> void:
 		sky_layer.draw_rect(c, color)
 
 
-## Tinta da hora do dia sobre todo o escritório (nada no meio do dia).
+## Luz da hora do dia sobre todo o escritório (multiplica as cores; nada no meio do dia).
+## O vidro das janelas fica de fora: o céu já tem a cor da hora e a janela vira um retângulo
+## claro na parede escura, como num escritório real à noite.
 func _draw_tint() -> void:
 	var light := _light()
 	var tint: Color = light["tint"]
-	if tint.a <= 0.001:
+	if tint.is_equal_approx(Color.WHITE):
 		return
-	tint_layer.draw_rect(Rect2(0, 0, float(_total_width()) * TILE, float(layout.get("height", 7)) * TILE), tint)
+	var w := float(_total_width()) * TILE
+	var h := float(layout.get("height", 7)) * TILE
+	var glass: Array = []
+	for wp in window_positions:
+		glass.append(Rect2(wp + Vector2(3, 3), Vector2(42, 34)))
+	if glass.is_empty():
+		tint_layer.draw_rect(Rect2(0, 0, w, h), tint)
+		return
+	glass.sort_custom(func(a, b): return a.position.x < b.position.x)
+	var gy: float = glass[0].position.y
+	var gh: float = glass[0].size.y
+	tint_layer.draw_rect(Rect2(0, 0, w, gy), tint)
+	tint_layer.draw_rect(Rect2(0, gy + gh, w, h - gy - gh), tint)
+	var x := 0.0
+	for g in glass:
+		if g.position.x > x:
+			tint_layer.draw_rect(Rect2(x, gy, g.position.x - x, gh), tint)
+		x = g.end.x
+	if x < w:
+		tint_layer.draw_rect(Rect2(x, gy, w - x, gh), tint)
 
 
 ## Luminárias das mesas acendem no fim da tarde (círculos aditivos sobre os monitores).
@@ -513,10 +549,12 @@ func _draw_glow() -> void:
 		centers.append(hr_worker.position)
 	for d in centers:
 		var c: Vector2 = d + Vector2(30, -24)
-		# três anéis com alfa decrescente: halo suave em vez de um disco chapado
-		glow_layer.draw_circle(c, 34.0, Color(1.0, 0.8, 0.5, 0.045 * lamp))
-		glow_layer.draw_circle(c, 24.0, Color(1.0, 0.82, 0.55, 0.06 * lamp))
-		glow_layer.draw_circle(c, 14.0, Color(1.0, 0.86, 0.6, 0.08 * lamp))
+		# halo em vários anéis de alfa baixo (somados viram um gradiente suave). À noite o
+		# escritório está multiplicado por ~0,3, então as luminárias precisam devolver luz de
+		# verdade para a mesa virar uma ilha iluminada.
+		for i in GLOW_RINGS:
+			var f := float(i) / float(GLOW_RINGS)   # 0 = anel externo, ~1 = miolo
+			glow_layer.draw_circle(c, 50.0 - 40.0 * f, Color(1.0, 0.78 + 0.1 * f, 0.48 + 0.14 * f, 0.036 * lamp))
 
 
 ## De vez em quando alguém "pensa" alguma coisa: balão com emoji conforme o que está fazendo.

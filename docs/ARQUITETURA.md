@@ -151,6 +151,19 @@ de reputação. Um jogador real tende a crescer mais devagar que o bot; a faixa 
   as demais o cadeado. Concorrentes das regiões alcançadas aparecem como prédio com bandeira (painel no bloco C).
 - `OfficeView`: parede com `WALL_TINTS[região]` e vista da janela por região (morros, prédios, torres, mar).
 
+### Camada viva do mapa (`src/ui/world_map_life.gd`, `data/map_life.json`)
+
+`WorldMapLife` é um `Node2D` em coordenadas 1x (a tela aplica `MAP_SCALE`) entre a imagem da
+cidade e os cartões. `tools/gen_art.py --export` grava, junto com `world.png`, o `data/map_life.json`
+com a avenida (`road`, posições das regiões), as ruas secundárias (`streets`, polilinhas por tile),
+faixas do mar (`sea_lanes`), pontos de espuma, janelas (`windows`, `dark_windows`) e o farol.
+Veículos andam por polilinhas deslocadas para a faixa da direita (`_lane`), com fade nas pontas;
+nuvens têm sombra; avião e pássaros nascem por temporizador. A luz da hora vem de
+`OfficeView.daylight()` (a tela aplica `life.tint` no `modulate` do mapa); à noite `_draw()` acende
+um subconjunto fixo de janelas e gira o feixe do farol. `play_move(from, to)` cria o caminhão da
+mudança pela avenida e emite `truck_arrived`; a tela acompanha com o scroll e só então mostra a
+mensagem de sede nova.
+
 ## Combinações (`data/services.json → match_table`)
 
 Por segmento há uma lista `best` e uma `poor`. Qualquer serviço em `poor` → *ruim*;

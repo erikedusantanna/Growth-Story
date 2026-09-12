@@ -34,9 +34,7 @@ func _ready() -> void:
 	date_label = UIKit.number("01 Jan 2010  08:00", 17, UIKit.COLOR_TEXT)
 	date_box.add_child(date_label)
 	top.add_child(date_box)
-	var map_button := UIKit.button("🌎", func(): get_tree().call_group("main", "show_world_map"), false, 36)
-	map_button.size_flags_horizontal = 0
-	map_button.custom_minimum_size.x = 44
+	var map_button := _icon_button("map", func(): get_tree().call_group("main", "show_world_map"), 44)
 	map_button.tooltip_text = "Mapa: regiões, mudança de sede e concorrentes"
 	map_button.set_meta("tutorial", "map")
 	top.add_child(map_button)
@@ -47,9 +45,8 @@ func _ready() -> void:
 	phase_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	phase_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	bottom.add_child(phase_label)
-	pause_button = UIKit.button("II", func(): Game.toggle_pause(), false, 36)
-	pause_button.size_flags_horizontal = 0
-	pause_button.custom_minimum_size.x = 48
+	pause_button = _icon_button("pause", func(): Game.toggle_pause(), 48)
+	pause_button.tooltip_text = "Pausar / continuar"
 	bottom.add_child(pause_button)
 	for i in 3:
 		var speed := i + 1
@@ -60,11 +57,9 @@ func _ready() -> void:
 			b.set_meta("tutorial", "speed2")
 		bottom.add_child(b)
 		speed_buttons.append(b)
-	music_button = UIKit.button("🔊", func():
+	music_button = _icon_button("sound_on", func():
 		Audio.toggle_music()
-		refresh(), false, 36)
-	music_button.size_flags_horizontal = 0
-	music_button.custom_minimum_size.x = 44
+		refresh(), 44)
 	music_button.tooltip_text = "Música ligada/desligada"
 	bottom.add_child(music_button)
 
@@ -72,6 +67,16 @@ func _ready() -> void:
 	EventBus.day_passed.connect(func(_d): refresh())
 	EventBus.money_changed.connect(func(_v, _d): refresh())
 	EventBus.reputation_changed.connect(func(_v, _d): refresh())
+
+
+## Botão só com ícone pixel art (os emojis não renderizam em todas as plataformas).
+static func _icon_button(icon_name: String, callback: Callable, width: int) -> Button:
+	var b := UIKit.button("", callback, false, 36)
+	b.size_flags_horizontal = 0
+	b.custom_minimum_size.x = width
+	b.icon = UIKit.icon_texture(icon_name)
+	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return b
 
 
 ## Hora do dia de trabalho (08:00–20:00), em passos de 10 minutos, a partir da fração do dia.
@@ -99,8 +104,8 @@ func refresh() -> void:
 	rep_label.text = "%d" % int(roundf(st.reputation))
 	date_label.text = "%s  %s" % [st.date_text(), clock_text()]
 	phase_label.text = "%s · %s" % [st.agency_name, Game.reputation.phase_name()]
-	pause_button.text = ">" if st.paused else "II"
-	music_button.text = "🔊" if Audio.music_enabled else "🔇"
+	pause_button.icon = UIKit.icon_texture("play" if st.paused else "pause")
+	music_button.icon = UIKit.icon_texture("sound_on" if Audio.music_enabled else "sound_off")
 	for i in speed_buttons.size():
 		var b: Button = speed_buttons[i]
 		var active: bool = st.speed == i + 1 and not st.paused

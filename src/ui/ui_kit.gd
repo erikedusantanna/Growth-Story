@@ -33,7 +33,34 @@ static func theme() -> Theme:
 	return _theme
 
 
+static var _emoji: Font = null
+static var _default: FontVariation = null
 static var _bold: FontVariation = null
+
+
+## Fonte de emoji embutida (Noto Emoji, monocromática, licença OFL em assets/fonts).
+## A fonte padrão do Godot não tem emoji e o fallback do sistema não funciona em toda
+## plataforma (no Windows os botões ficavam vazios), então ela entra como fallback de
+## todas as fontes da interface.
+static func emoji_font() -> Font:
+	if _emoji == null:
+		_emoji = load("res://assets/fonts/NotoEmoji.ttf")
+	return _emoji
+
+
+static func _with_emoji(f: Font) -> Font:
+	if f != null and emoji_font() != null and not f.fallbacks.has(emoji_font()):
+		f.fallbacks = f.fallbacks + [emoji_font()]
+	return f
+
+
+## Fonte padrão da interface: a fonte do Godot com os emojis como fallback.
+static func default_font() -> Font:
+	if _default == null:
+		_default = FontVariation.new()
+		_default.base_font = ThemeDB.fallback_font
+		_with_emoji(_default)
+	return _default
 
 
 ## Fonte em negrito derivada da fonte padrão (títulos e números, como nas referências).
@@ -42,6 +69,7 @@ static func bold_font() -> Font:
 		_bold = FontVariation.new()
 		_bold.base_font = ThemeDB.fallback_font
 		_bold.variation_embolden = 0.9
+		_with_emoji(_bold)
 	return _bold
 
 
@@ -54,7 +82,7 @@ static var _pixel: Font = null
 static func pixel_font() -> Font:
 	if _pixel == null:
 		var f: Font = load("res://assets/fonts/pixel.fnt")
-		_pixel = f if f != null else bold_font()
+		_pixel = _with_emoji(f) if f != null else bold_font()
 	return _pixel
 
 
@@ -74,6 +102,7 @@ static func _rounded(bg: Color, border: Color = Color.TRANSPARENT, radius: int =
 
 static func build_theme() -> Theme:
 	var theme := Theme.new()
+	theme.default_font = default_font()
 	theme.default_font_size = 18
 
 	theme.set_stylebox("panel", "PanelContainer", _rounded(COLOR_PANEL, COLOR_BORDER, 10, 2))
@@ -152,9 +181,13 @@ static func number(text: String, size: int = 20, color: Color = COLOR_NUMBER) ->
 	return l
 
 
+static func icon_texture(name: String) -> Texture2D:
+	return load("res://assets/art/icons/%s.png" % name)
+
+
 static func icon(name: String, scale: int = 2) -> TextureRect:
 	var t := TextureRect.new()
-	t.texture = load("res://assets/art/icons/%s.png" % name)
+	t.texture = icon_texture(name)
 	t.custom_minimum_size = Vector2(10 * scale, 10 * scale)
 	t.stretch_mode = TextureRect.STRETCH_SCALE
 	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE

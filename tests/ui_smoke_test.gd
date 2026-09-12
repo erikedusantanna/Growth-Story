@@ -149,6 +149,14 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var map_ok: bool = main.world_map.visible and main.world_map.marker_nodes.size() == 5 and Game.ui_blocking
+	# camada viva: veículos e nuvens existem, e o caminhão da mudança anda pela avenida
+	var life: WorldMapLife = main.world_map.life
+	var life_ok: bool = life.vehicles.size() > 20 and life.clouds.size() == WorldMapLife.CLOUD_COUNT and life.play_move(1, 2) and life.truck_active()
+	var car0: Vector2 = life.vehicles[0]["sprite"].position
+	await get_tree().create_timer(0.4).timeout
+	life_ok = life_ok and float(life.truck["d"]) > 0.0 and life.vehicles[0]["sprite"].position != car0
+	print("  camada viva do mapa (veículos, nuvens, caminhão): %s (%d veículos)" % [life_ok, life.vehicles.size()])
+	map_ok = map_ok and life_ok
 	main.world_map.close()
 	await get_tree().process_frame
 	map_ok = map_ok and not main.world_map.visible and not Game.ui_blocking

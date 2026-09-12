@@ -1359,8 +1359,10 @@ def _band_of(y):
     return 5
 
 
-def world_map(regions_pos):
-    """regions_pos: lista de (x, y) dos marcos das 5 regioes em 1x, de baixo para cima."""
+def world_map(regions_pos, meta=None):
+    """regions_pos: lista de (x, y) dos marcos das 5 regioes em 1x, de baixo para cima.
+    meta (dict, opcional) recebe as rotas e pontos usados pela camada viva do mapa (WorldMapLife):
+    avenida, ruas, espuma do mar e janelas dos predios."""
     import random
     rng = random.Random(7)
     c = canvas(MAP_W, MAP_H, "sea")
@@ -1474,7 +1476,61 @@ def world_map(regions_pos):
         rect(c, fx - 3, yy, 6, 3, "light_r")
     rect(c, fx - 4, fy - 26, 8, 4, "b_navy"); rect(c, fx - 2, fy - 25, 4, 2, "b_win")
     outline_region(c, 0, 0, MAP_W, MAP_H)
+    if meta is not None:
+        meta.update(_map_meta(tiles, ox, oy, regions_pos, c))
     return c
+
+
+def _map_meta(tiles, ox, oy, regions_pos, c):
+    """Rotas e pontos da camada viva: polilinhas em px 1x (centro do tile = iso_pt + 4 em y)."""
+    center = lambda i, j: [iso_pt(i, j, ox, oy)[0], iso_pt(i, j, ox, oy)[1] + 4]
+    inside = lambda pt: 4 <= pt[0] <= MAP_W - 4 and 4 <= pt[1] <= MAP_H - 4
+    streets = []
+    def runs(keys, fixed_first):
+        # agrupa tiles de rua secundaria em sequencias consecutivas (mesmo i, j crescente; ou mesmo j)
+        groups = {}
+        for (i, j) in keys:
+            a, b = (i, j) if fixed_first else (j, i)
+            groups.setdefault(a, []).append(b)
+        for a, bs in groups.items():
+            bs.sort()
+            run = []
+            for b in bs:
+                if run and b != run[-1] + 1:
+                    if len(run) >= 4:
+                        streets.append([center(a, x) if fixed_first else center(x, a) for x in run])
+                    run = []
+                run.append(b)
+            if len(run) >= 4:
+                streets.append([center(a, x) if fixed_first else center(x, a) for x in run])
+    road_lo = [(i, j) for (i, j), ch in tiles.items() if ch == "iso_road_lo"]
+    runs([(i, j) for (i, j) in road_lo if i % 9 == 0], True)
+    runs([(i, j) for (i, j) in road_lo if j % 9 == 0], False)
+    streets = [[pt for pt in line if inside(pt)] for line in streets]
+    streets = [line for line in streets if len(line) >= 4]
+    foam = []
+    for (i, j), ch in tiles.items():
+        if ch == "sea" and (i * 3 + j * 5) % 13 == 0:
+            x, y = iso_pt(i, j, ox, oy)
+            if inside((x, y + 4)):
+                foam.append([x, y + 4])
+    windows, dark_windows = [], []
+    h, w = len(c), len(c[0])
+    for y in range(1, h):
+        for x in range(1, w):
+            ch = c[y][x]
+            if ch in ("b_win", "b_win_d") and c[y - 1][x] != ch and c[y][x - 1] != ch:
+                (windows if ch == "b_win" else dark_windows).append([x, y])
+    return {
+        "road": [list(p) for p in regions_pos],
+        "streets": streets,
+        "sea_lanes": [[[0, 18], [MAP_W, 18]], [[70, 94], [178, 46], [210, 26], [MAP_W, 14]]],
+        "foam": foam,
+        "windows": windows,
+        "dark_windows": dark_windows[::3],
+        "lighthouse": [232, 30],
+        "size": [MAP_W, MAP_H],
+    }
 
 
 def outline_region(c, x0, y0, w, h):
@@ -1529,9 +1585,46 @@ def rival_hq(color="b_brick"):
     return c
 
 
+PAL.update({"veh_w": hx("#f4f6f8"), "veh_k": hx("#26303f"), "truck_o": hx("#f28c3a"), "truck_lo": hx("#c46a24"), "hull": hx("#7a4a25"), "hull_lo": hx("#54301a"),
+            "cloud": (255, 255, 255, 235), "cloud_lo": (214, 228, 242, 235), "flag_r": hx("#e04a3c"), "flag_lo": hx("#b03428"), "pole": hx("#5b6470")})
+
+
+def map_life_sprites():
+    """Sprites 1x da camada viva do mapa (carros, caminhao, barco, aviao, passaros, nuvens, bandeira)."""
+    def grid(rows):
+        return [list(r) for r in rows]
+    car = grid([".WWWWW.", "WWkkkWW", "WWWWWWW", ".o...o."])            # corpo branco: cor pelo modulate
+    truck = grid([".111111111..", ".111111111..", ".111111111WW", ".111111111Wk", ".111111111WW", "oooooooooooo", "..o......o.."])
+    boat = grid(["....W....", "...WW....", "..WWWW...", "..WWWWW..", "ooooooooo", ".ooooooo."])
+    plane = grid(["....W......", "WWWWWWWWWW.", ".WWWWWWWWWWW", "...WW......"])
+    bird = hstack([grid(["o...o", ".o.o.", "..o.."]), grid(["..o..", ".o.o.", "o...o"])])
+    cloud_a = grid([".......CCCCCC.........", "....CCCCCCCCCCC.......", "..CCCCCCCCCCCCCCCC....", "CCCCCCCCCCCCCCCCCCCCC.",
+                    "CCCCCCCCCCCCCCCCCCCCCC", ".LLLLLLLLLLLLLLLLLLLL.", "...LLLLLLLLLLLLLLLL..."])
+    cloud_b = grid(["....CCCCC....", "..CCCCCCCCC..", "CCCCCCCCCCCCC", ".LLLLLLLLLLL.", "...LLLLLLL..."])
+    flag = hstack([grid(["pRRRRRR", "pRRRRRR", "pRRRRR.", "pRRRR..", "p......", "p......"]),
+                   grid(["p......", "pRRRR..", "pRRRRRR", "pRRRRRR", "pRRRR..", "p......"])])
+    remap = {".": None, "W": "veh_w", "1": "truck_o", "k": "veh_k", "C": "cloud", "L": "cloud_lo", "R": "flag_r", "p": "pole"}
+    out = {}
+    for name, c in {"car": car, "truck": truck, "boat": boat, "plane": plane, "bird": bird,
+                    "cloud_a": cloud_a, "cloud_b": cloud_b, "flag": flag}.items():
+        out[name] = [[remap.get(ch, ch) for ch in row] for row in c]
+    for row in out["boat"]:
+        for x, ch in enumerate(row):
+            if ch == "o":
+                row[x] = "hull"
+    return out
+
+
 def export_map(root, regions_pos):
+    import json
     out = os.path.join(root, "assets", "art", "map")
-    write_png(os.path.join(out, "world.png"), world_map(regions_pos))
+    meta = {}
+    write_png(os.path.join(out, "world.png"), world_map(regions_pos, meta))
+    with open(os.path.join(root, "data", "map_life.json"), "w", encoding="utf-8") as fh:
+        json.dump(dict(comment="Gerado por tools/gen_art.py (--export): rotas e pontos da camada viva do World Map, em px 1x.", **meta), fh, ensure_ascii=False, separators=(",", ":"))
+        fh.write("\n")
+    for name, c in map_life_sprites().items():
+        write_png(os.path.join(out, f"{name}.png"), c)
     write_png(os.path.join(out, "pin.png"), map_pin())
     write_png(os.path.join(out, "lock.png"), map_lock())
     write_png(os.path.join(out, "star.png"), map_star())

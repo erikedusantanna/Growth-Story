@@ -496,8 +496,12 @@ func _test_office_life(game) -> void:
 	var noon: Dictionary = OfficeView.daylight(13.0)
 	var night: Dictionary = OfficeView.daylight(20.0)
 	var dusk: Dictionary = OfficeView.daylight(17.5)
-	check(float((noon["tint"] as Color).a) < 0.001 and float(noon["lamp"]) == 0.0, "meio-dia sem tinta nem luminárias")
-	check(float((night["tint"] as Color).a) > 0.2 and float(night["lamp"]) == 1.0 and float(night["night"]) == 1.0, "20:00 é noite com luminárias acesas")
+	check((noon["tint"] as Color).is_equal_approx(Color.WHITE) and float(noon["lamp"]) == 0.0, "meio-dia com luz branca e sem luminárias")
+	var night_tint: Color = night["tint"]
+	check(night_tint.r < 0.4 and night_tint.g < 0.4 and night_tint.b < 0.6 and float(night["lamp"]) == 1.0 and float(night["night"]) == 1.0, "20:00 é noite escura com luminárias acesas")
+	var dusk_tint: Color = dusk["tint"]
+	check(dusk_tint.r > dusk_tint.b + 0.15 and dusk_tint.r > 0.85, "17:30 tem luz alaranjada no escritório")
+	check(is_equal_approx(TimeSystem.SECONDS_PER_DAY / float(TimeSystem.SPEEDS[1]), 3.5) and float(TimeSystem.SPEEDS[0]) == 1.0 and float(TimeSystem.SPEEDS[2]) < 9.0, "2x é o antigo 1x (3,5 s por dia) e 3x é mais lento que 3x o antigo 1x")
 	check((dusk["sky_bottom"] as Color).r > (noon["sky_bottom"] as Color).r, "fim de tarde tem céu mais alaranjado")
 	var golden: Dictionary = OfficeView.daylight(16.5)
 	check(float((golden["tint"] as Color).a) > 0.05, "às 16h30 o entardecer já começou")
