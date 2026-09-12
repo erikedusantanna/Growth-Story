@@ -143,6 +143,7 @@ func _build_markers() -> void:
 	life.hq_pos = _hq_map_pos()
 	life.parked_truck = Game.office.is_moving()
 	life.flags = PackedVector2Array()
+	life.rivals = PackedVector2Array()
 	# concorrentes das regiões já alcançadas (sede desenhada ao lado do marco; toque abre o painel)
 	for a in Game.competitors.active_rivals():
 		var rd: Dictionary = Game.office.region_data(int(a.get("region", 1)))
@@ -180,22 +181,42 @@ func _rival_sprite(rd: Dictionary, a: Dictionary) -> Control:
 	tex.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	tex.stretch_mode = TextureRect.STRETCH_SCALE
 	tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tex.size = Vector2(80, 112)
-	tex.position = Vector2(float(pos[0]) * MAP_SCALE + 110.0, float(pos[1]) * MAP_SCALE - 96.0)
-	tex.position.x = minf(tex.position.x, board.custom_minimum_size.x - 86.0)
+	tex.size = Vector2(100, 140)
+	tex.position = Vector2(float(pos[0]) * MAP_SCALE + 110.0, float(pos[1]) * MAP_SCALE - 124.0)
+	tex.position.x = minf(tex.position.x, board.custom_minimum_size.x - 106.0)
 	holder.add_child(tex)
-	life.flags.append(tex.position / MAP_SCALE + Vector2(6.0, -5.0))
-	var label := UIKit.label("⚔️ %s%s" % [String(a.get("name", "")), " 😠" if Game.competitors.is_aggressive(String(a.get("id", ""))) else ""], 11, Color.WHITE)
-	label.add_theme_constant_override("outline_size", 3)
-	label.add_theme_color_override("font_outline_color", Color(0.1, 0.12, 0.2))
-	label.position = tex.position + Vector2(-10, 112)
-	holder.add_child(label)
+	life.flags.append(tex.position / MAP_SCALE + Vector2(7.0, -5.0))
+	life.rivals.append((tex.position + tex.size * 0.5) / MAP_SCALE + Vector2(0.0, 14.0))
+	# rótulo com fundo escuro e badge ⚔️ acima do prédio: legível sobre qualquer parte da cidade
+	var aggressive: bool = Game.competitors.is_aggressive(String(a.get("id", "")))
+	var tag := PanelContainer.new()
+	tag.theme = UIKit.theme()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#7a1f1a", 0.92) if aggressive else Color("#1f2633", 0.92)
+	style.border_color = Color("#e04a3c")
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	style.content_margin_left = 6
+	style.content_margin_right = 6
+	style.content_margin_top = 2
+	style.content_margin_bottom = 2
+	tag.add_theme_stylebox_override("panel", style)
+	tag.add_child(UIKit.label("⚔️ %s%s" % [String(a.get("name", "")), " 😠" if aggressive else ""], 13, Color.WHITE))
+	tag.position = tex.position + Vector2(-30.0, -30.0)
+	tag.position.x = clampf(tag.position.x, 4.0, board.custom_minimum_size.x - 170.0)
+	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(tag)
+	var hint := UIKit.label("toque para ver", 11, Color("#ffd27a"))
+	hint.add_theme_constant_override("outline_size", 3)
+	hint.add_theme_color_override("font_outline_color", Color(0.1, 0.12, 0.2))
+	hint.position = tex.position + Vector2(8.0, 140.0)
+	holder.add_child(hint)
 	var btn := Button.new()
 	btn.flat = true
 	for st_name in ["normal", "hover", "pressed", "focus"]:
 		btn.add_theme_stylebox_override(st_name, StyleBoxEmpty.new())
-	btn.position = tex.position
-	btn.size = Vector2(80, 130)
+	btn.position = tag.position
+	btn.size = Vector2(maxf(tex.position.x + 100.0 - tag.position.x, 150.0), 190.0)
 	btn.tooltip_text = String(a.get("name", ""))
 	btn.set_meta("rival_id", String(a.get("id", "")))
 	btn.pressed.connect(func(): _popups().show_rival(String(a.get("id", ""))))

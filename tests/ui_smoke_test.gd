@@ -152,6 +152,8 @@ func _ready() -> void:
 	# camada viva: veículos e nuvens existem, e o caminhão da mudança anda pela avenida
 	var life: WorldMapLife = main.world_map.life
 	var life_ok: bool = life.vehicles.size() > 20 and life.clouds.size() == WorldMapLife.CLOUD_COUNT and life.play_move(1, 2) and life.truck_active()
+	# os carros passam ATRÁS dos prédios: a camada de cobertura fica depois dos veículos
+	life_ok = life_ok and life.cover != null and life.cover.texture != null and life.cover.get_index() > life.ground.get_index()
 	var car0: Vector2 = life.vehicles[0]["sprite"].position
 	await get_tree().create_timer(0.4).timeout
 	life_ok = life_ok and float(life.truck["d"]) > 0.0 and life.vehicles[0]["sprite"].position != car0
@@ -178,6 +180,52 @@ func _ready() -> void:
 	await get_tree().process_frame
 	var rival_ok: bool = rival_buttons >= 1 and rival_buttons == Game.competitors.active_rivals().size() and main.popups.is_open()
 	print("  rival no mapa e painel: %s (%d sede)" % [rival_ok, rival_buttons])
+	# a sede da rival ganhou anel vermelho e rótulo com fundo (ficar visível era o pedido)
+	main.show_world_map()
+	await get_tree().process_frame
+	var rival_marks: int = main.world_map.life.rivals.size()
+	main.world_map.close()
+	await get_tree().process_frame
+	print("  destaque da rival no mapa: %s (%d anel)" % [rival_marks >= 1, rival_marks])
+	rival_ok = rival_ok and rival_marks >= 1
+	# calendário: abre com os 12 meses, agenda e foco do mês
+	main.show_calendar()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var cal_ok: bool = main.calendar_screen.visible and Game.ui_blocking and main.calendar_screen.body.get_child_count() > 4
+	main.calendar_screen.close()
+	await get_tree().process_frame
+	cal_ok = cal_ok and not main.calendar_screen.visible and not Game.ui_blocking
+	print("  calendário abre e fecha: %s" % cal_ok)
+	# missão nova e notícia abrem o popup com a arte
+	Game.state.day = 300
+	Game.quests.start("dois_projetos")
+	await get_tree().process_frame
+	var quest_ok: bool = main.popups.is_open()
+	main.popups.close()
+	await get_tree().process_frame
+	Game.news.publish("b4_pivot")
+	await get_tree().process_frame
+	var news_ok: bool = main.popups.is_open()
+	main.popups.close()
+	await get_tree().process_frame
+	print("  popup de missão: %s · popup de notícia: %s" % [quest_ok, news_ok])
+	# pets novos andam pelo escritório
+	for kind in ["rabbit", "parrot", "capybara"]:
+		if not Game.state.pets.has(kind):
+			Game.state.pets.append(kind)
+	main.office_view.refresh()
+	await get_tree().process_frame
+	var pets_ok: bool = main.office_view.pets.size() >= 3
+	print("  pets no escritório: %s (%d)" % [pets_ok, main.office_view.pets.size()])
+	# aba Clientes avisa quando há prospect esperando
+	Game.clients.spawn_prospect()
+	main.show_screen("team")
+	await get_tree().process_frame
+	await get_tree().create_timer(0.2).timeout
+	var nav: Button = main.nav_buttons["clients"]
+	var alert_ok: bool = nav.text.contains(str(Game.state.prospects().size())) and nav.modulate != Color.WHITE
+	print("  aba Clientes avisa prospect: %s (\"%s\")" % [alert_ok, nav.text.replace("\n", " ")])
 	main.popups.close()
 	await _drain_popups(main)
 	Game.state.office_level = region_before
@@ -215,10 +263,45 @@ func _ready() -> void:
 	for key in main.SCREEN_ORDER:
 		main.show_screen(key)
 		await get_tree().process_frame
+	# nada pode ser mais largo que a tela: HUD ou tela larga demais empurra o layout e corta a interface
+	var vp_w: float = 540.0 - 16.0
+	var widest := 0.0
+	var layout_ok := true
+	for key in main.SCREEN_ORDER:
+		main.show_screen(key)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var w: float = main.screens[key].get_combined_minimum_size().x
+		widest = maxf(widest, w)
+		if w > vp_w:
+			layout_ok = false
+			print("  LARGURA: tela %s pede %.0f px (limite %.0f)" % [key, w, vp_w])
+	var hud_w: float = main.hud.get_combined_minimum_size().x
+	widest = maxf(widest, hud_w)
+	if hud_w > vp_w:
+		layout_ok = false
+		print("  LARGURA: HUD pede %.0f px (limite %.0f)" % [hud_w, vp_w])
+	print("  layout cabe na tela: %s (mais largo: %.0f de %.0f px)" % [layout_ok, widest, vp_w])
+	# evento salvo em aberto: ao carregar precisa reaparecer, senão o tempo fica travado
+	Game.events.trigger(Game.content.events[0])
+	await get_tree().process_frame
+	main.popups.close()
+	Game.save_game()
+	var pending_id: String = String(Game.state.pending_event.get("id", ""))
+	Game.state = null
+	var reload_ok: bool = Game.load_game()
+	await get_tree().process_frame
+	reload_ok = reload_ok and main.popups.is_open() and String(Game.state.pending_event.get("id", "")) == pending_id
+	Game.state.paused = false
+	Game.resolve_event(0)
+	main.popups.close()
+	await get_tree().process_frame
+	reload_ok = reload_ok and Game.state.pending_event.is_empty() and Game.is_running()
+	print("  save com evento em aberto volta a rodar: %s" % reload_ok)
 	main.show_title()
 	await get_tree().process_frame
 	print("  workers no escritório: %d" % main.office_view.workers.size())
-	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene and mood_ok and leaving_ok and map_ok and rival_ok
+	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene and mood_ok and leaving_ok and map_ok and rival_ok and cal_ok and quest_ok and news_ok and pets_ok and alert_ok and layout_ok and reload_ok
 	print("[%s] UI smoke" % ("OK" if ok else "FALHA"))
 	get_tree().quit(0 if ok else 1)
 

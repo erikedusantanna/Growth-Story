@@ -29,6 +29,7 @@ var proposal_attempts: int = 0
 var retainer_months_left: int = 0     # >0 quando há contrato recorrente
 var price_factor: float = 1.0         # preço negociado na proposta (1.0 = orçamento de referência)
 var briefing: String = ""             # tema do próximo projeto (data/briefings.json); "" = sortear
+var paid: bool = false                # chegou pela mídia paga (só informativo)
 
 
 func is_active() -> bool:
@@ -44,7 +45,7 @@ func to_dict() -> Dictionary:
 		"relationship": relationship, "satisfaction": satisfaction, "status": status,
 		"known_on": known_on, "last_project_day": last_project_day, "projects_done": projects_done,
 		"proposal_attempts": proposal_attempts, "retainer_months_left": retainer_months_left,
-		"price_factor": price_factor, "briefing": briefing,
+		"price_factor": price_factor, "briefing": briefing, "paid": paid,
 	}
 
 
@@ -75,4 +76,5 @@ static func from_dict(d: Dictionary) -> Client:
 	c.retainer_months_left = int(d.get("retainer_months_left", 0))
 	c.price_factor = float(d.get("price_factor", 1.0))
 	c.briefing = String(d.get("briefing", ""))
+	c.paid = bool(d.get("paid", false))
 	return c

@@ -20,6 +20,9 @@ var competitors := CompetitorSystem.new()
 var seasons := SeasonSystem.new()
 var chemistry := ChemistrySystem.new()
 var awards := AwardSystem.new()
+var quests := QuestSystem.new()
+var news := NewsSystem.new()
+var calendar := CalendarSystem.new()
 var save := SaveSystem.new()
 var time := TimeSystem.new()
 
@@ -32,9 +35,12 @@ var ui_blocking := false
 func _ready() -> void:
 	content = ContentDB.new()
 	content.load_all()
-	for system in [services, employees, clients, projects, finance, reputation, events, office, objectives, hr, agency_events, era, departments, competitors, seasons, chemistry, awards, time]:
+	for system in [services, employees, clients, projects, finance, reputation, events, office, objectives, hr, agency_events, era, departments, competitors, seasons, chemistry, awards, quests, news, calendar, time]:
 		system.setup(self)
-	EventBus.state_changed.connect(func(): if state != null: objectives.check())
+	EventBus.state_changed.connect(func():
+		if state != null:
+			objectives.check()
+			quests.check())
 
 
 func _process(delta: float) -> void:
@@ -55,6 +61,7 @@ func has_game() -> bool:
 
 func new_game(agency_name: String = "Minha Agência", founder_name: String = "Você", seed: int = -1) -> void:
 	state = GameState.new()
+	ui_blocking = false
 	state.seed = seed if seed >= 0 else randi()
 	state.rng.seed = state.seed
 	state.agency_name = agency_name.strip_edges() if agency_name.strip_edges() != "" else "Minha Agência"
@@ -74,8 +81,19 @@ func load_game() -> bool:
 		return false
 	state = loaded
 	state.paused = true
+	ui_blocking = false   # nenhum modal está aberto no começo da sessão
 	EventBus.game_started.emit()
 	EventBus.state_changed.emit()
+	# um evento pode ter sido salvo em aberto (ele trava o tempo até ser respondido):
+	# mostra de novo, senão o jogo carrega congelado e os botões de velocidade não resolvem
+	if not state.pending_event.is_empty():
+		if (state.pending_event.get("choices", []) as Array).is_empty():
+			state.pending_event = {}
+		else:
+			EventBus.event_triggered.emit(state.pending_event)
+	# o save também pode ter sido feito no fechamento do mês que quebrou a agência
+	elif state.game_over:
+		EventBus.game_over.emit("A partida salva terminou: a agência tinha quebrado.")
 	return true
 
 
@@ -107,6 +125,9 @@ func on_day() -> void:
 	events.on_day()
 	hr.on_day()
 	agency_events.on_day()
+	quests.on_day()
+	calendar.on_day()
+	news.on_day()
 	objectives.check()
 	if state.day % GameState.DAYS_PER_MONTH == 0:
 		on_month()

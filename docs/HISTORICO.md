@@ -432,6 +432,44 @@ README.
   densa); ao reexportar, o mapa passou a ser o do código atual (mais aberto, ruas visíveis). Se o
   usuário preferir a versão densa, é ajustar as probabilidades em `world_map()` e reexportar.
 
+## 8h. Lote de missões, calendário, notícias e balanceamento por serviço (12/09)
+
+Pedido do usuário depois de jogar o build do PR #16. O que entrou:
+
+- **Mapa**: `world_cover.png` (só prédios/árvores, exportado junto com `world.png`) desenhado por cima
+  dos veículos — os carros passam **atrás** dos prédios; rival com sprite maior, anel vermelho pulsando,
+  rótulo com fundo e "toque para ver".
+- **Atributos por serviço** (`indicator_weights`, `team_fit`, `key_attrs`): os pesos dos quatro
+  indicadores saem dos serviços do projeto (`ATTR_TO_INDICATOR`, mistura 55% com os pesos base) e a
+  aptidão média da equipe soma até +15 / tira até −9 na nota. O diálogo de novo projeto mostra o que
+  o trabalho pede e a aptidão de cada pessoa; a ficha mostra "rende mais em".
+- **Missões** (`QuestSystem`, `data/quests.json`): 16 tipos com prazo, progresso por contador de
+  stats, entrega com N★, dias de moral alta, caixa ou tamanho da equipe. Cumprir paga; perder o prazo
+  custa 1 de reputação. Popup ao surgir, linha no feed e item no calendário.
+- **Calendário** (`CalendarSystem` + `CalendarScreen`, botão 📅 ao lado do 🌎): grade de 12 meses,
+  agenda unificada, banca de notícias, **foco do mês** (4 opções, uma por mês, efeitos em vendas /
+  produtividade / estresse / custos) e **aniversário de contrato** com presente.
+- **Notícias** (`NewsSystem`, `data/news.json`, `assets/art/news/`): 28 manchetes cômicas com marcas
+  fictícias, em jornal ou rede social, com 9 ilustrações novas. Efeito só em algumas, sempre escrito.
+- **Mídia paga** (`ClientSystem.CAMPAIGNS`): 3 campanhas que entregam leads em poucos dias, com custo
+  por região; prospect novo toca `prospect.wav` e a aba Clientes pisca com o número.
+- **Pets**: coelho, tartaruga, papagaio e capivara (sprites em `gen_art.py`, ações de RH encadeadas).
+
+**Balanceamento:** o bot da simulação ficou mais sensato (reserva de caixa, só cresce se o aluguel novo
+couber por 6 meses, escolhe o foco do mês, compra mídia paga quando falta prospect). A CI usa a seed
+12345; entre seeds o bot continua variando muito (de R$ 850 mil a quase falir), como já acontecia.
+
+### Dois bugs relatados e corrigidos no mesmo lote
+
+1. **Interface "com zoom" e cortada ao trocar de aba**: o HUD passou a pedir 595 px de largura mínima
+   (a tela tem 540) quando o botão do calendário entrou na linha de cima — o layout inteiro era
+   empurrado. Os botões desceram para a linha de baixo (que tinha folga) e o HUD voltou a 355 px.
+   O `ui_smoke_test` agora falha se qualquer tela ou o HUD pedir mais que a largura da tela.
+2. **Tempo travado ao continuar um save**: o jogo salva no fechamento do mês, e se um evento estava
+   em aberto o `pending_event` ia junto — ao carregar, nada reabria o popup e `is_running()` ficava
+   falso para sempre (os botões 1x/2x/3x não resolviam). Agora `load_game()` reemite o evento (ou
+   limpa se estiver sem opções) e explica um save que terminou em falência. Coberto por teste.
+
 ## 9. Checklist para retomar o projeto
 
 1. Ler este documento, depois `README.md` (tabela "O que já existe") e `docs/ARQUITETURA.md`;

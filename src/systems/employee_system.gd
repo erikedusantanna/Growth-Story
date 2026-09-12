@@ -109,6 +109,15 @@ func _salary_for(e: Employee) -> float:
 	return roundf(raw / 50.0) * 50.0
 
 
+## Serviços em que a pessoa rende mais (habilidade pelos pesos do serviço), entre os liberados.
+func best_services(e: Employee, n: int = 2) -> Array:
+	var ids: Array = game.state.unlocked_services.duplicate()
+	if ids.size() < 3:
+		ids = game.content.service_order.duplicate()
+	ids.sort_custom(func(a, b): return e.skill_for(game.content.services.get(a, {}).get("weights", {})) > e.skill_for(game.content.services.get(b, {}).get("weights", {})))
+	return ids.slice(0, n)
+
+
 func title(e: Employee) -> String:
 	if e.is_founder:
 		return "Fundador(a)"
@@ -436,6 +445,9 @@ func on_day() -> void:
 	var st: GameState = game.state
 	var stress_mult: float = float(game.hr.buff_multipliers()["stress_rate"]) * float(game.office.furniture_effects()["stress_rate"])
 	var morale_daily: float = float(game.office.furniture_effects()["morale_daily"])
+	if game.calendar.has_focus("gente"):
+		stress_mult *= 0.75
+		morale_daily += 0.1
 	var cap: float = game.office.morale_max()
 	for e in st.employees:
 		var pers: Dictionary = game.content.personalities.get(e.personality, {})

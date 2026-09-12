@@ -32,6 +32,8 @@ var seasons: Array = []              # datas comemorativas (data/seasons.json)
 var tutorial: Array = []             # passos do guia inicial (data/tutorial.json)
 var briefings: Array = []            # temas de projeto (data/briefings.json)
 var chemistry: Array = []            # pares de personalidade (data/chemistry.json)
+var quests: Dictionary = {}          # missões (data/quests.json)
+var news: Dictionary = {}            # notícias cômicas (data/news.json)
 
 
 func load_all() -> void:
@@ -73,6 +75,8 @@ func load_all() -> void:
 	chemistry = _load_json("res://data/chemistry.json").get("pairs", [])
 	departments = _load_json("res://data/departments.json")
 	competitors = _load_json("res://data/competitors.json")
+	quests = _load_json("res://data/quests.json")
+	news = _load_json("res://data/news.json")
 
 
 func _load_json(path: String) -> Dictionary:

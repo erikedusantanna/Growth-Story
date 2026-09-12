@@ -48,7 +48,9 @@ var road: PackedVector2Array = []
 var lighthouse := Vector2(232, 30)
 
 var ground: Node2D     # veículos, caminhão, barcos (recebem a luz da hora)
+var cover: Sprite2D    # só os prédios/árvores da cidade: os carros passam por trás deles
 var sky: Node2D        # pássaros, sombras, nuvens, avião
+var rivals: PackedVector2Array = []   # centro da sede de cada rival (1x): anel vermelho pulsando
 var tex_car: Texture2D
 var tex_truck: Texture2D
 var tex_boat: Texture2D
@@ -64,6 +66,11 @@ func _ready() -> void:
 	rng.seed = 20260911
 	ground = Node2D.new()
 	add_child(ground)
+	cover = Sprite2D.new()
+	cover.texture = load("res://assets/art/map/world_cover.png")
+	cover.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	cover.centered = false
+	add_child(cover)
 	sky = Node2D.new()
 	add_child(sky)
 	tex_car = load("res://assets/art/map/car.png")
@@ -309,6 +316,7 @@ func _process(delta: float) -> void:
 	tint = (light["tint"] as Color).lerp(Color.WHITE, 0.3)
 	night = float(light["night"])
 	ground.modulate = tint
+	cover.modulate = tint
 	sky.modulate = tint.lerp(Color.WHITE, 0.3)
 	for v in vehicles:
 		v["d"] = fmod(float(v["d"]) + float(v["speed"]) * delta, float(v["total"]))
@@ -403,6 +411,11 @@ func _draw() -> void:
 		for k in 2:
 			var ph := fmod(t / RING_PERIOD + k * 0.5, 1.0)
 			draw_arc(hq_pos, 5.0 + 11.0 * ph, 0.0, TAU, 28, Color(0.24, 0.76, 0.42, (1.0 - ph) * 0.8), 1.5)
+	# rivais: anel vermelho pulsando em volta da sede (para a concorrente saltar aos olhos)
+	for r in rivals:
+		var ph := fmod(t / 1.3, 1.0)
+		draw_arc(r, 22.0 + 10.0 * ph, 0.0, TAU, 32, Color(0.9, 0.25, 0.2, (1.0 - ph) * 0.9), 2.0)
+		draw_arc(r, 22.0, 0.0, TAU, 32, Color(0.9, 0.25, 0.2, 0.55 + 0.25 * sin(t * 4.0)), 1.5)
 	# bandeiras das rivais (2 quadros)
 	if tex_flag != null:
 		var frame := 0 if fmod(t * 3.0, 2.0) < 1.0 else 1

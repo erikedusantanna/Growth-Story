@@ -27,12 +27,184 @@ func _ready() -> void:
 	_test_regions(game)
 	_test_rivals(game)
 	_test_region_content(game)
+	_test_service_fit(game)
+	_test_quests(game)
+	_test_news(game)
+	_test_calendar(game)
+	_test_paid_media(game)
+	_test_pets(game)
 	if failures == 0:
 		print("\n[OK] Todos os testes passaram.")
 		get_tree().quit(0)
 	else:
 		print("\n[FALHA] %d verificação(ões) falharam." % failures)
 		get_tree().quit(1)
+
+
+func _test_service_fit(game) -> void:
+	print("== Atributos por serviço ==")
+	game.new_game("Perfil", "Chefe", 31)
+	var st = game.state
+	var w_traffic: Dictionary = game.projects.indicator_weights(["paid_traffic"])
+	var w_design: Dictionary = game.projects.indicator_weights(["design"])
+	check(float(w_traffic["performance"]) > float(w_design["performance"]), "tráfego pago pesa mais Performance que design (%.2f vs %.2f)" % [w_traffic["performance"], w_design["performance"]])
+	check(float(w_design["creativity"]) > float(w_traffic["creativity"]), "design pesa mais Criatividade que tráfego pago (%.2f vs %.2f)" % [w_design["creativity"], w_traffic["creativity"]])
+	check(game.projects.key_attrs(["paid_traffic"], 1) == ["performance"], "atributo-chave do tráfego pago é Performance")
+	check(game.projects.key_attrs(["design"], 1) == ["creativity"], "atributo-chave do design é Criatividade")
+	# duas equipes iguais, menos no atributo que o serviço pede
+	var c = game.clients.spawn_prospect()
+	c.status = Client.Status.ACTIVE
+	c.difficulty = 1
+	var specialist: Employee = game.employees.generate_candidate("normal")
+	var wrong: Employee = game.employees.generate_candidate("normal")
+	for key in Employee.ATTRS:
+		specialist.attrs[key] = 45.0
+		wrong.attrs[key] = 45.0
+	specialist.attrs["performance"] = 90.0
+	specialist.attrs["technology"] = 80.0
+	wrong.attrs["creativity"] = 90.0
+	specialist.motivation = 60.0
+	wrong.motivation = 60.0
+	st.employees.append(specialist)
+	st.employees.append(wrong)
+	var p_fit: Dictionary = game.projects.predict(c, ["paid_traffic"], [specialist.id], Project.Kind.PROJECT)
+	var p_off: Dictionary = game.projects.predict(c, ["paid_traffic"], [wrong.id], Project.Kind.PROJECT)
+	check(float(p_fit.score) > float(p_off.score) + 5.0, "no tráfego pago quem tem Performance entrega bem mais (%.0f vs %.0f)" % [p_fit.score, p_off.score])
+	var d_fit: Dictionary = game.projects.predict(c, ["design"], [wrong.id], Project.Kind.PROJECT)
+	var d_off: Dictionary = game.projects.predict(c, ["design"], [specialist.id], Project.Kind.PROJECT)
+	check(float(d_fit.score) > float(d_off.score) + 5.0, "no design quem tem Criatividade entrega bem mais (%.0f vs %.0f)" % [d_fit.score, d_off.score])
+	var best: Array = game.employees.best_services(specialist, 1)
+	check(best.has("paid_traffic"), "a ficha aponta tráfego pago para quem tem Performance (%s)" % str(best))
+
+
+func _test_quests(game) -> void:
+	print("== Missões ==")
+	game.new_game("Missões", "Chefe", 44)
+	var st = game.state
+	st.day = 60
+	var q: Dictionary = game.quests.start("dois_projetos")
+	check(not q.is_empty() and game.quests.active().size() == 1, "missão começou")
+	check(game.quests.days_left(q) > 0 and not game.quests.is_done(q), "missão tem prazo e ainda não está cumprida")
+	var money_before: float = st.money
+	var rep_before: float = st.reputation
+	st.stats["projects_done"] = int(st.stats.get("projects_done", 0)) + 2
+	game.quests.check()
+	check(game.quests.active().is_empty(), "missão cumprida sai da lista")
+	check(st.money > money_before and st.reputation > rep_before, "missão cumprida paga dinheiro e reputação")
+	check(int(st.stats.get("quests_done", 0)) == 1, "estatística de missões conta a cumprida")
+	# perder o prazo custa reputação
+	st.day = 200
+	var q2: Dictionary = game.quests.start("dois_projetos")
+	check(not q2.is_empty(), "missão nova depois do cooldown")
+	var rep2: float = st.reputation
+	st.day = int(q2.deadline_day)
+	game.quests.on_day()
+	check(game.quests.active().is_empty(), "missão vencida sai da lista")
+	check(st.reputation < rep2, "perder o prazo custa reputação (%.1f → %.1f)" % [rep2, st.reputation])
+	# entrega com estrelas
+	st.day = 400
+	var q3: Dictionary = game.quests.start("entrega_4")
+	game.quests._on_project_completed(null, {"stars": 5})
+	check(game.quests.active().is_empty(), "entrega 5★ cumpre a missão de 4★")
+	# sobrevive ao save
+	st.day = 600
+	game.quests.start("dois_projetos")
+	check(game.save.save(st), "salvou com missão ativa")
+	var loaded = game.save.load_state()
+	check(loaded != null and loaded.quests.size() == 1, "missão ativa sobrevive ao save")
+
+
+func _test_news(game) -> void:
+	print("== Notícias ==")
+	game.new_game("Notícias", "Chefe", 45)
+	var st = game.state
+	check(game.news.all().size() >= 20, "banca tem %d manchetes" % game.news.all().size())
+	var published: Array = []
+	EventBus.news_published.connect(func(n): published.append(n))
+	var n: Dictionary = game.news.publish("b4_pivot")
+	check(not n.is_empty() and published.size() == 1, "notícia publicada avisa a interface")
+	check(st.news_feed.size() == 1 and String(st.news_feed[0].id) == "b4_pivot", "notícia entra na banca")
+	check(game.news.outlet(n) != "", "notícia tem veículo (%s)" % game.news.outlet(n))
+	var rep_before: float = st.reputation
+	game.news.publish("algoritmo_muda")
+	check(st.reputation < rep_before, "notícia com efeito declarado mexe no jogo")
+	var ids := {}
+	for item in game.news.all():
+		check(not ids.has(String(item.id)), "id de notícia único: %s" % String(item.id))
+		ids[String(item.id)] = true
+		check(FileAccess.file_exists("res://assets/art/news/%s.png" % String(item.get("art", ""))), "ilustração existe para %s" % String(item.id))
+
+
+func _test_calendar(game) -> void:
+	print("== Calendário e agenda ==")
+	game.new_game("Agenda", "Chefe", 46)
+	var st = game.state
+	st.money = 200000.0
+	check(game.calendar.focus().is_empty(), "mês começa sem foco")
+	check(game.calendar.set_focus("caixa").ok, "foco do mês escolhido")
+	check(game.calendar.has_focus("caixa"), "foco em caixa ativo")
+	check(not game.calendar.set_focus("vendas").ok, "só um foco por mês")
+	var costs_focus: float = float(game.finance.monthly_costs().total)
+	st.focus = {}
+	var costs_plain: float = float(game.finance.monthly_costs().total)
+	check(costs_focus < costs_plain, "foco em caixa baixa o custo do mês (%s < %s)" % [FinanceSystem.format_money(costs_focus), FinanceSystem.format_money(costs_plain)])
+	check(game.calendar.month_markers().size() == 12, "grade mostra 12 meses")
+	var items: Array = game.calendar.upcoming(120)
+	check(items.size() >= 3, "agenda lista o que vem pela frente (%d itens)" % items.size())
+	var kinds: Array = items.map(func(i): return String(i.kind))
+	check(kinds.has("money"), "fechamento do mês está na agenda")
+	var sorted_ok := true
+	for i in range(1, items.size()):
+		if int(items[i].day) < int(items[i - 1].day):
+			sorted_ok = false
+	check(sorted_ok, "agenda vem em ordem de data")
+	# aniversário de contrato e presente
+	var c = game.clients.spawn_prospect()
+	c.status = Client.Status.ACTIVE
+	c.known_on = 0
+	c.relationship = 40.0
+	st.day = 360
+	check(game.calendar.anniversary_day(c) == 360, "aniversário de contrato cai 1 ano depois")
+	check(game.calendar.can_send_gift(c).ok, "dá para mandar presente na semana do aniversário")
+	check(game.calendar.send_gift(c).ok and c.relationship > 40.0, "presente melhora a relação (%.0f)" % c.relationship)
+	check(not game.calendar.can_send_gift(c).ok, "só um presente por aniversário")
+
+
+func _test_paid_media(game) -> void:
+	print("== Mídia paga ==")
+	game.new_game("Mídia", "Chefe", 47)
+	var st = game.state
+	st.money = 100000.0
+	var before: int = st.prospects().size()
+	check(game.clients.start_campaign("boost").ok, "campanha contratada")
+	check(game.clients.pending_leads() >= 1 and st.money < 100000.0, "lead a caminho e campanha cobrada")
+	var guard := 0
+	while game.clients.pending_leads() > 0 and guard < 30:
+		st.day += 1
+		game.clients.on_day()
+		guard += 1
+	check(st.prospects().size() > before, "lead da mídia paga virou prospect")
+	var paid_found := false
+	for c in st.prospects():
+		if c.paid:
+			paid_found = true
+	check(paid_found, "prospect pago vem marcado")
+	check(int(st.stats.get("campaigns", 0)) == 1, "estatística de campanhas conta")
+	st.money = 100.0
+	check(not game.clients.can_start_campaign(game.clients.campaign_by_id("launch")).ok, "sem caixa não dá para comprar mídia")
+
+
+func _test_pets(game) -> void:
+	print("== Pets ==")
+	game.new_game("Pets", "Chefe", 48)
+	var st = game.state
+	var kinds: Array = []
+	for a in game.hr.actions():
+		if a.has("pet"):
+			kinds.append(String(a["pet"]))
+			check(FileAccess.file_exists("res://assets/art/furniture/%s.png" % String(a["pet"])), "sprite do pet %s existe" % String(a["pet"]))
+			check(Pet.SPEED.has(String(a["pet"])), "pet %s tem velocidade definida" % String(a["pet"]))
+	check(kinds.size() == 6, "seis pets disponíveis (%s)" % ", ".join(kinds))
 
 
 func check(cond: bool, msg: String) -> void:
@@ -99,18 +271,26 @@ func _run_simulation(game, seed: int, years: int) -> void:
 			if game.employees.hire(best).ok:
 				hires += 1
 		var nxt_office: Dictionary = game.office.next_level()
-		if not nxt_office.is_empty() and st.money > float(nxt_office.get("upgrade_cost", 0)) + 30000.0 and st.employees.size() >= game.office.capacity() - 1:
+		# só cresce com fôlego: o aluguel novo precisa caber por meses (evita escritório grande e vazio)
+		if not nxt_office.is_empty() and st.money > float(nxt_office.get("upgrade_cost", 0)) + 30000.0 + float(nxt_office.get("rent", 0)) * 6.0 and st.employees.size() >= game.office.capacity() - 1:
 			game.office.upgrade()
 		elif nxt_office.is_empty() and game.office.region() < game.office.regions().size():
 			var next_region: Dictionary = game.office.region_data(game.office.region() + 1)
-			if game.office.can_move(game.office.region() + 1).ok and st.money > float(next_region.get("move_cost", 0)) + 30000.0:
+			var first_level: Dictionary = game.office.level_data(int(next_region.get("first_level", 1)))
+			if game.office.can_move(game.office.region() + 1).ok and st.employees.size() >= 5 and st.money > float(next_region.get("move_cost", 0)) + 30000.0 + float(first_level.get("rent", 0)) * 6.0:
 				game.office.move_to(game.office.region() + 1)
-		if st.money > 30000:
+		# foco do mês: de graça e sempre vale a pena (o bot alterna caixa e vendas)
+		if game.calendar.focus().is_empty():
+			game.calendar.set_focus("caixa" if st.money < costs.total * 3.0 else "vendas")
+		# mídia paga quando falta prospect e sobra caixa
+		if st.prospects().is_empty() and game.clients.pending_leads() == 0 and st.money > costs.total * 5.0:
+			game.clients.start_campaign("boost")
+		if st.money > costs.total * 3.0 + 30000:
 			for sid in game.content.service_order:
 				if game.services.can_unlock(sid).ok:
 					game.services.unlock(sid)
 					break
-		if st.money > 6000 and st.day % 20 == 0:
+		if st.money > costs.total + 6000 and st.day % 20 == 0:
 			for e in st.available_employees():
 				game.employees.train(e, "criativo")
 				break
@@ -119,7 +299,7 @@ func _run_simulation(game, seed: int, years: int) -> void:
 			for e in st.employees:
 				if not e.is_founder and e.months_since_raise >= EmployeeSystem.RAISE_MONTHS_LIMIT and st.money > float(costs_now.total) * 2.0:
 					game.employees.raise_by_player(e)
-		if st.day % 30 == 5 and st.money > 15000:
+		if st.day % 30 == 5 and st.money > costs.total * 2.0 + 15000:
 			for f in game.office.furniture_items():
 				if game.office.can_buy(f).ok:
 					game.office.buy(f)
@@ -160,7 +340,7 @@ func _run_simulation(game, seed: int, years: int) -> void:
 	if year_report.size() >= 1:
 		var y1: Dictionary = year_report[0]
 		check(y1.employees >= 2 and y1.employees <= 5, "ano 1: equipe entre 2 e 5 (%d)" % y1.employees)
-		check(y1.rep >= 8.0 and y1.rep <= 50.0, "ano 1: reputação entre 8 e 50 (%.0f)" % y1.rep)
+		check(y1.rep >= 8.0 and y1.rep <= 56.0, "ano 1: reputação entre 8 e 56 (%.0f)" % y1.rep)
 	check(not st.game_over, "não faliu com política simples")
 	check(completed >= 6, "concluiu pelo menos 6 projetos/ciclos (%d)" % completed)
 	check(events_resolved >= 3, "eventos dispararam (%d)" % events_resolved)

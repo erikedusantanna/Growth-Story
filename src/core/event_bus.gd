@@ -12,6 +12,7 @@ signal reputation_changed(value: float, delta: float)
 signal employee_hired(employee)
 signal employee_left(employee, reason: String)
 signal employee_promoted(employee)
+signal prospect_arrived(client)               # novo prospect na lista (orgânico ou mídia paga)
 signal client_signed(client)
 signal client_lost(client)
 signal diagnosis_done(client)
@@ -23,4 +24,7 @@ signal agency_event_finished(event: Dictionary, people: Array, summary: String) 
 signal awards_ceremony(ceremony: Dictionary)  # Prêmios do Marketing na virada do ano
 signal game_over(reason: String)
 signal office_feedback(employee_id: int, text: String, kind: String)  # balão/número flutuante sobre o personagem
+signal quest_started(quest: Dictionary)       # missão nova apareceu
+signal quest_finished(quest: Dictionary, success: bool)
+signal news_published(news: Dictionary)      # notícia cômica (jornal/rede social)
 signal game_started()

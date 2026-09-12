@@ -15,6 +15,19 @@ const COMPLEX_MIN_ROLES := 2
 const COMPLEX_EFFORT_MULT := 1.4
 const COMPLEX_BUDGET_MULT := 1.5
 const COMPLEX_REWORK := 0.25
+## Quanto os serviços do projeto mandam nos pesos dos indicadores (0 = só os pesos base).
+## Tráfego pago pesa Performance; design pesa Criatividade; CRM pesa Execução (tecnologia+gestão).
+const SERVICE_WEIGHT_BLEND := 0.55
+const FIT_NEUTRAL := 50.0            # habilidade média da equipe nos atributos do serviço que não soma nem tira
+const FIT_PER_POINT := 0.5           # nota por ponto de habilidade acima/abaixo do neutro
+const FIT_BONUS_MAX := 15.0
+const FIT_PENALTY_MAX := 9.0         # errar o perfil dói, mas menos do que acertar recompensa
+## Atributo → indicador da nota: como cada peso de serviço cai nos quatro indicadores.
+const ATTR_TO_INDICATOR := {
+	"creativity": {"creativity": 1.0}, "strategy": {"strategy": 1.0}, "performance": {"performance": 1.0},
+	"management": {"execution": 1.0}, "technology": {"execution": 0.7, "performance": 0.3},
+	"communication": {"strategy": 0.5, "creativity": 0.5},
+}
 
 var game
 
@@ -204,6 +217,54 @@ func team_skill(p: Project, e: Employee) -> float:
 	return total / maxf(p.services.size(), 1.0)
 
 
+## Habilidade média da equipe nos atributos pedidos pelos serviços (0–100).
+func team_fit(p: Project) -> float:
+	var members := team_members(p)
+	if members.is_empty():
+		return 0.0
+	var total := 0.0
+	for e in members:
+		total += team_skill(p, e)
+	return total / float(members.size())
+
+
+## Pesos dos quatro indicadores para estes serviços: os pesos base misturados com os atributos
+## que os serviços pedem (ATTR_TO_INDICATOR). Somam 1.
+func indicator_weights(services: Array) -> Dictionary:
+	var base := {"strategy": 0.3, "creativity": 0.25, "execution": 0.25, "performance": 0.2}
+	var from_services := {"strategy": 0.0, "creativity": 0.0, "execution": 0.0, "performance": 0.0}
+	var n := 0
+	for sid in services:
+		var weights: Dictionary = game.content.services.get(sid, {}).get("weights", {})
+		if weights.is_empty():
+			continue
+		n += 1
+		for attr in weights:
+			for ind in ATTR_TO_INDICATOR.get(attr, {}):
+				from_services[ind] += float(weights[attr]) * float(ATTR_TO_INDICATOR[attr][ind])
+	var out := {}
+	var total := 0.0
+	for key in base:
+		var sv: float = from_services[key] / float(n) if n > 0 else float(base[key])
+		out[key] = (1.0 - SERVICE_WEIGHT_BLEND) * float(base[key]) + SERVICE_WEIGHT_BLEND * sv
+		total += out[key]
+	for key in out:
+		out[key] = out[key] / maxf(total, 0.001)
+	return out
+
+
+## Atributos que mais pesam nestes serviços, do maior para o menor (para dicas e rótulos).
+func key_attrs(services: Array, n: int = 2) -> Array:
+	var sums := {}
+	for sid in services:
+		var weights: Dictionary = game.content.services.get(sid, {}).get("weights", {})
+		for attr in weights:
+			sums[attr] = float(sums.get(attr, 0.0)) + float(weights[attr])
+	var keys: Array = sums.keys()
+	keys.sort_custom(func(a, b): return float(sums[a]) > float(sums[b]))
+	return keys.slice(0, n)
+
+
 ## Alvos dos indicadores a partir da equipe, dos serviços e do briefing.
 func compute_targets(p: Project) -> void:
 	var members := team_members(p)
@@ -248,7 +309,8 @@ func daily_output(p: Project) -> float:
 	for e in members:
 		total += (0.5 + team_skill(p, e) / 100.0 * 1.5) * game.employees.productivity(e)
 	var chem: int = game.chemistry.team_chemistry(members)["score"]
-	return total * (1.0 + ChemistrySystem.OUTPUT_PER_POINT * float(chem))
+	var focus_mult: float = 1.06 if game.calendar.has_focus("entrega") else 1.0
+	return total * (1.0 + ChemistrySystem.OUTPUT_PER_POINT * float(chem)) * focus_mult
 
 
 func estimated_days(p: Project) -> int:
@@ -392,7 +454,7 @@ func _score(p: Project, c: Client, with_noise: bool, predicted_days: int = -1) -
 	var pweights: Dictionary = pers.get("weights", {})
 	var briefing := briefing_of(p)
 	var bweights: Dictionary = briefing.get("weights", {})
-	var base_weights := {"strategy": 0.3, "creativity": 0.25, "execution": 0.25, "performance": 0.2}
+	var base_weights := indicator_weights(p.services)
 	var breakdown: Array = []
 	var score := 0.0
 	var weight_sum := 0.0
@@ -406,6 +468,16 @@ func _score(p: Project, c: Client, with_noise: bool, predicted_days: int = -1) -
 		weight_sum += w
 	score /= maxf(weight_sum, 0.001)
 	breakdown.append({"label": "Base da equipe (indicadores)", "text": "%d" % int(roundf(score)), "good": true})
+
+	# perfil da equipe para o serviço: a habilidade nos atributos que o serviço pede soma ou tira
+	if not team_members(p).is_empty():
+		var fit := team_fit(p)
+		var fb := clampf((fit - FIT_NEUTRAL) * FIT_PER_POINT, -FIT_PENALTY_MAX, FIT_BONUS_MAX)
+		if absf(fb) >= 0.5:
+			score += fb
+			var attr_names: Array = key_attrs(p.services).map(func(a): return Employee.ATTR_NAMES.get(a, a))
+			breakdown.append({"label": "Perfil da equipe (%s: média %d)" % [", ".join(attr_names), int(roundf(fit))],
+				"text": "%s%d" % ["+" if fb > 0 else "", int(roundf(fb))], "good": fb > 0})
 
 	var mult: float = game.services.match_multiplier(p.match_quality)
 	if mult != 1.0:
@@ -560,6 +632,11 @@ func predict(c: Client, services: Array, team_ids: Array, kind: int) -> Dictiona
 			missing.append(game.content.service_name(sid))
 	if not missing.is_empty():
 		hints.append("Especialista em %s na equipe: +%d por serviço." % [", ".join(missing), int(BONUS_SPECIALIST)])
+	if not team_ids.is_empty() and not services.is_empty():
+		var fit := team_fit(tmp)
+		var attr_names: Array = key_attrs(services).map(func(a): return Employee.ATTR_NAMES.get(a, a))
+		if fit < FIT_NEUTRAL - 4.0:
+			hints.append("Esse trabalho pede %s: a equipe tem média %d nisso (%d de nota). Escale alguém forte nesses atributos ou treine." % [", ".join(attr_names), int(roundf(fit)), int(roundf(clampf((fit - FIT_NEUTRAL) * FIT_PER_POINT, -FIT_PENALTY_MAX, 0.0)))])
 	var already_trending: bool = services.any(func(sid): return game.era.is_trending(sid))
 	if not already_trending and not game.era.trending_names().is_empty():
 		hints.append("Em alta agora: %s (+%d na nota)." % [", ".join(game.era.trending_names()), int(BONUS_TRENDING)])

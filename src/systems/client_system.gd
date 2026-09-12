@@ -3,8 +3,20 @@ extends RefCounted
 ## Prospecção, fechamento, diagnóstico e relacionamento com clientes.
 
 const MAX_PROSPECTS := 3
+const MAX_PROSPECTS_PAID := 6        # mídia paga pode passar do teto orgânico
 const PROSPECT_INTERVAL := 15
 const IDLE_DAYS_BEFORE_DECAY := 45
+
+## Mídia paga: campanhas de captação. Custo escala com a região da sede (leads maiores custam
+## mais). O orgânico (prospects que chegam sozinhos) continua igual.
+const CAMPAIGNS := [
+	{"id": "boost", "name": "Impulsionar", "icon": "📢", "cost": 1500, "prospects": 1, "days": [2, 4], "tier_bonus": 0,
+	 "desc": "Anúncio simples. 1 lead em 2–4 dias."},
+	{"id": "campaign", "name": "Campanha", "icon": "🎯", "cost": 4000, "prospects": 2, "days": [3, 6], "tier_bonus": 0,
+	 "desc": "Funil completo. 2 leads em 3–6 dias."},
+	{"id": "launch", "name": "Lançamento", "icon": "🚀", "cost": 10000, "prospects": 3, "days": [4, 8], "tier_bonus": 1,
+	 "desc": "Campanha grande. 3 leads em 4–8 dias, um deles pode ser um tier acima."},
+]
 
 const PROCEDURAL_NAMES := {
 	"alimentacao": ["Cantina da {n}", "Burger {n}", "Padaria {n}", "Sushi {n}", "Café {n}"],
@@ -77,8 +89,74 @@ func spawn_prospect(tier_bonus: int = 0) -> Client:
 	c.relationship = 40.0 + float(game.content.client_personalities.get(c.personality, {}).get("relationship_mod", 0))
 	st.clients.append(c)
 	game.add_log("Novo prospect: %s (%s)." % [c.name, segment_name(c)], "client")
+	EventBus.prospect_arrived.emit(c)
 	EventBus.state_changed.emit()
 	return c
+
+
+# --- Mídia paga ------------------------------------------------------------------
+
+func campaign_by_id(id: String) -> Dictionary:
+	for c in CAMPAIGNS:
+		if String(c["id"]) == id:
+			return c
+	return {}
+
+
+## Custo da campanha na região atual: ×1 no Bairro, ×1,5 no Centro … ×3 no Hub Global.
+func campaign_cost(c: Dictionary) -> float:
+	var region: int = game.office.region()
+	return float(c.get("cost", 0)) * (1.0 + 0.5 * float(region - 1))
+
+
+func can_start_campaign(c: Dictionary) -> Dictionary:
+	if c.is_empty():
+		return {"ok": false, "reason": "Campanha desconhecida."}
+	if game.state.money < campaign_cost(c):
+		return {"ok": false, "reason": "Caixa insuficiente."}
+	if pending_leads() + game.state.prospects().size() >= MAX_PROSPECTS_PAID:
+		return {"ok": false, "reason": "Muitos leads na fila. Atenda os prospects primeiro."}
+	return {"ok": true, "reason": ""}
+
+
+## Leads comprados que ainda não chegaram.
+func pending_leads() -> int:
+	var total := 0
+	for camp in game.state.campaigns:
+		total += int(camp.get("prospects", 0))
+	return total
+
+
+func start_campaign(id: String) -> Dictionary:
+	var c := campaign_by_id(id)
+	var check := can_start_campaign(c)
+	if not check.ok:
+		return check
+	var st: GameState = game.state
+	game.finance.add_money(-campaign_cost(c), "Mídia paga: %s" % String(c["name"]), "expense")
+	var days: Array = c.get("days", [3, 5])
+	var n: int = int(c.get("prospects", 1))
+	for k in n:
+		# cada lead chega num dia diferente dentro da janela; o bônus de tier vai só para um
+		st.campaigns.append({"id": id, "arrive_day": st.day + st.rng.randi_range(int(days[0]), int(days[1])),
+			"prospects": 1, "tier_bonus": int(c.get("tier_bonus", 0)) if k == 0 else 0})
+	st.stats["campaigns"] = int(st.stats.get("campaigns", 0)) + 1
+	game.add_log("%s Mídia paga: %s no ar. %d lead(s) a caminho." % [String(c.get("icon", "📣")), String(c["name"]), n], "client")
+	EventBus.state_changed.emit()
+	return {"ok": true, "reason": ""}
+
+
+func _tick_campaigns() -> void:
+	var st: GameState = game.state
+	var due: Array = st.campaigns.filter(func(camp): return int(camp.get("arrive_day", 0)) <= st.day)
+	if due.is_empty():
+		return
+	st.campaigns = st.campaigns.filter(func(camp): return int(camp.get("arrive_day", 0)) > st.day)
+	for camp in due:
+		for k in int(camp.get("prospects", 1)):
+			var c := spawn_prospect(int(camp.get("tier_bonus", 0)))
+			c.paid = true
+			game.add_log("📣 Lead da mídia paga: %s." % c.name, "client")
 
 
 func _fill_procedural(c: Client, tier_cap: int) -> void:
@@ -121,6 +199,8 @@ func proposal_chance(c: Client, price_factor: float = 1.0) -> float:
 		if e.personality == "vendedor":
 			seller_bonus = 10.0
 	var chance := 45.0 + best_comm * 0.35 + st.reputation * 0.3 - c.difficulty * 8.0 - c.proposal_attempts * 12.0 + seller_bonus
+	if game.calendar.has_focus("vendas"):
+		chance += 8.0
 	chance += (1.0 - clampf(price_factor, PRICE_MIN, PRICE_MAX)) * 100.0 * PRICE_CHANCE_PER_PERCENT
 	return clampf(chance, 5.0, 95.0)
 
@@ -240,6 +320,7 @@ func retainer_available(c: Client) -> bool:
 
 func on_day() -> void:
 	var st: GameState = game.state
+	_tick_campaigns()
 	for c in st.clients:
 		if c.diagnosis_days_left > 0:
 			c.diagnosis_days_left -= 1
@@ -256,5 +337,8 @@ func on_day() -> void:
 					lose_client(c, "cansou de esperar e foi embora")
 	# Agência desconhecida recebe poucos contatos; reputação traz mais prospects.
 	var max_prospects: int = 2 if st.reputation < 20.0 else MAX_PROSPECTS
-	if st.day % PROSPECT_INTERVAL == 0 and st.prospects().size() < max_prospects and st.rng.randf() < 0.15 + st.reputation / 160.0:
+	var organic_chance := 0.15 + st.reputation / 160.0
+	if game.calendar.has_focus("vendas"):
+		organic_chance += 0.08
+	if st.day % PROSPECT_INTERVAL == 0 and st.prospects().size() < max_prospects and st.rng.randf() < organic_chance:
 		spawn_prospect()

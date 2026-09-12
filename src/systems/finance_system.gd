@@ -34,6 +34,9 @@ func monthly_costs() -> Dictionary:
 	var rent: float = game.office.rent()
 	var tools := TOOLS_PER_EMPLOYEE * st.employees.size()
 	var hr: float = game.hr.salary()
+	if game.calendar.has_focus("caixa"):
+		rent *= 0.9
+		tools *= 0.9
 	return {"salaries": salaries, "rent": rent, "tools": tools, "hr": hr, "total": salaries + rent + tools + hr}
 
 

@@ -857,6 +857,75 @@ def cat():
     return hstack(frames)
 
 
+def rabbit():
+    """Coelho branco (24x22, 2 quadros: orelhas e patas)."""
+    frames = []
+    for k in range(2):
+        c = canvas(24, 22)
+        rect(c, 4, 10, 14, 8, "metal_hi"); rect(c, 5, 10, 12, 2, "mug"); rect(c, 4, 16, 14, 2, "metal")
+        rect(c, 14, 6, 8, 8, "metal_hi"); rect(c, 15, 6, 6, 1, "mug")
+        rect(c, 16, 0 + k, 2, 7 - k, "metal_hi"); rect(c, 19, 1 - k, 2, 6 + k, "metal_hi")
+        put(c, 16, 2 + k, "blush"); put(c, 19, 2, "blush")
+        put(c, 19, 8, "eye"); put(c, 21, 10, "blush")
+        put(c, 3, 11, "mug"); put(c, 2, 12, "metal_hi")
+        rect(c, 6, 18, 3, 3 - k, "metal"); rect(c, 13, 18, 3, 2 + k, "metal")
+        rect(c, 3, 21, 18, 1, "shadow")
+        outline(c)
+        frames.append(c)
+    return hstack(frames)
+
+
+def turtle():
+    """Tartaruga (26x16, 2 quadros: patas alternadas)."""
+    frames = []
+    for k in range(2):
+        c = canvas(26, 16)
+        rect(c, 6, 4, 14, 8, "iso_tree"); rect(c, 8, 4, 10, 2, "iso_tree_hi"); rect(c, 6, 10, 14, 2, "iso_tree_lo")
+        for x in (9, 13, 17):
+            put(c, x, 7, "iso_tree_lo"); put(c, x + 1, 7, "iso_tree_lo")
+        rect(c, 19, 8, 5, 4, "sand"); put(c, 22, 9, "eye"); put(c, 23, 11, "sand_lo")
+        rect(c, 7 + k, 12, 3, 3, "sand_lo"); rect(c, 15 - k, 12, 3, 3, "sand_lo")
+        put(c, 5, 11, "sand")
+        rect(c, 5, 15, 16, 1, "shadow")
+        outline(c)
+        frames.append(c)
+    return hstack(frames)
+
+
+def parrot():
+    """Papagaio verde de cabeca vermelha (20x26, 2 quadros: asa sobe e desce)."""
+    frames = []
+    for k in range(2):
+        c = canvas(20, 26)
+        rect(c, 3, 18, 4, 5, "screen"); rect(c, 3, 18, 2, 5, "screen_hi")
+        rect(c, 6, 10, 9, 10, "leaf_hi"); rect(c, 7, 10, 7, 2, "b_win")
+        rect(c, 5, 12 - 2 * k, 6, 6, "iso_tree"); rect(c, 5, 12 - 2 * k, 6, 1, "iso_tree_hi")
+        rect(c, 9, 4, 7, 7, "red"); rect(c, 10, 4, 5, 1, "onair")
+        rect(c, 16, 7, 3, 2, "b_win"); put(c, 17, 9, "wood_lo")
+        put(c, 13, 6, "eye"); put(c, 14, 6, "mug")
+        rect(c, 8, 20, 2, 4, "wood_lo"); rect(c, 12, 20, 2, 4, "wood_lo")
+        rect(c, 4, 25, 12, 1, "shadow")
+        outline(c)
+        frames.append(c)
+    return hstack(frames)
+
+
+def capybara():
+    """Capivara (36x26, 2 quadros: patas alternadas), a mascote mais tranquila do escritorio."""
+    frames = []
+    for k in range(2):
+        c = canvas(36, 26)
+        rect(c, 4, 8, 26, 12, "wood_lo"); rect(c, 6, 8, 22, 2, "wood"); rect(c, 4, 18, 26, 2, "iso_trunk")
+        rect(c, 24, 4, 10, 10, "wood_lo"); rect(c, 25, 4, 8, 1, "wood")
+        rect(c, 31, 9, 4, 4, "wood"); put(c, 34, 10, "eye")
+        put(c, 29, 7, "eye"); put(c, 26, 3, "wood"); put(c, 30, 3, "wood")
+        rect(c, 7, 20, 4, 5 - k, "wood_lo"); rect(c, 14, 20, 4, 4 + k, "wood_lo"); rect(c, 22, 20, 4, 5 - k, "wood_lo")
+        rect(c, 5, 25, 26, 1, "shadow")
+        outline(c)
+        frames.append(c)
+    return hstack(frames)
+
+
 def hstack(frames):
     return [sum((f[y] for f in frames), []) for y in range(len(frames[0]))]
 
@@ -916,7 +985,7 @@ def export_characters(out_dir):
             write_png(os.path.join(out_dir, f"outline_{tag}.png"), ol)
             write_png(os.path.join(out_dir, f"hair_{tag}.png"), _split(sheet, ["hair"]))
             if style_idx == 0 and not glasses:
-                write_png(os.path.join(out_dir, "skin.png"), _split(sheet, ["skin"]))
+                write_png(os.path.join(out_dir, "skin.png"), _split(sheet, ["news_skin"]))
                 write_png(os.path.join(out_dir, "shirt.png"), _split(sheet, ["shirt"]))
                 write_png(os.path.join(out_dir, "legs.png"), _split(sheet, ["pants", "shoe"]))
 
@@ -1453,6 +1522,7 @@ def world_map(regions_pos, meta=None):
         else:
             if r < 0.15:
                 boxes.append((i + j, ("box", i, j, 1, 1, rng.randint(34, 58), rng.choice(["b_glass", "b_white", "b_navy"]))))
+    terrain = [row[:] for row in c]   # antes dos predios: o que mudar depois vira a camada de cobertura
     faces = {"b_gray": ("b_gray", "b_gray_l", "b_gray_r"), "b_beige": ("b_beige", "b_beige_l", "b_beige_r"), "b_brick": ("b_brick", "b_brick_l", "b_brick_r"),
              "b_glass": ("b_glass", "b_glass_l", "b_glass_r"), "b_navy": ("b_navy", "b_navy_l", "b_navy_r"), "b_white": ("b_white", "b_white_l", "b_white_r")}
     for _, item in sorted(boxes, key=lambda t: t[0]):
@@ -1478,6 +1548,12 @@ def world_map(regions_pos, meta=None):
     outline_region(c, 0, 0, MAP_W, MAP_H)
     if meta is not None:
         meta.update(_map_meta(tiles, ox, oy, regions_pos, c))
+        cover = canvas(MAP_W, MAP_H)
+        for y in range(MAP_H):
+            for x in range(MAP_W):
+                if c[y][x] != terrain[y][x]:
+                    cover[y][x] = c[y][x]
+        meta["_cover"] = cover
     return c
 
 
@@ -1620,6 +1696,8 @@ def export_map(root, regions_pos):
     out = os.path.join(root, "assets", "art", "map")
     meta = {}
     write_png(os.path.join(out, "world.png"), world_map(regions_pos, meta))
+    # cobertura: so os predios/arvores/farol, desenhada por cima dos carros para eles passarem atras
+    write_png(os.path.join(out, "world_cover.png"), meta.pop("_cover"))
     with open(os.path.join(root, "data", "map_life.json"), "w", encoding="utf-8") as fh:
         json.dump(dict(comment="Gerado por tools/gen_art.py (--export): rotas e pontos da camada viva do World Map, em px 1x.", **meta), fh, ensure_ascii=False, separators=(",", ":"))
         fh.write("\n")
@@ -1763,6 +1841,7 @@ def export_all(root):
                      ("door", door), ("pingpong", pingpong), ("partition", partition_tile),
                      ("partition_top", partition_cap), ("hr_sign", hr_sign), ("projector", projector_screen),
                      ("meeting_table", meeting_table), ("dog", dog), ("cat", cat),
+                     ("rabbit", rabbit), ("turtle", turtle), ("parrot", parrot), ("capybara", capybara),
                      ("reception", reception), ("glass_room", glass_room), ("studio", studio), ("kitchen", kitchen),
                      ("gym", gym), ("server_rack", server_rack), ("terrace", terrace)):
         write_png(os.path.join(art, "furniture", f"{name}.png"), fn())
@@ -1772,12 +1851,194 @@ def export_all(root):
     export_seasons(root)
     export_moods(root)
     export_map(root, _regions_pos(root))
+    export_news(root)
+
+
+# --- Ilustracoes das noticias (banca comica) ------------------------------------------------
+PAL.update({"news_bg": hx("#e8e2d4"), "news_bg2": hx("#d8d1c0"), "news_ink": hx("#3a3630"), "news_sky": hx("#9fc4e6"),
+            "suit": hx("#39405a"), "suit_hi": hx("#4c5678"), "gold_n": hx("#f2c744"), "podium": hx("#8c5a32"),
+            "news_skin": hx("#e8b58a")})
+NEWS_W, NEWS_H = 120, 72
+
+
+def _news_base(sky="news_sky"):
+    c = canvas(NEWS_W, NEWS_H, "news_bg")
+    rect(c, 0, 0, NEWS_W, 40, sky)
+    rect(c, 0, 38, NEWS_W, 2, "news_bg2")
+    return c
+
+
+def news_office():
+    """Predio da agencia com janelas acesas e uma placa."""
+    c = _news_base()
+    for x, w, h in ((8, 24, 34), (38, 20, 44), (62, 26, 28), (92, 20, 38)):
+        rect(c, x, 40 - h, w, h, "b_gray" if x % 3 else "b_beige")
+        rect(c, x, 40 - h, w, 2, "b_gray_l")
+        for yy in range(40 - h + 5, 38, 7):
+            for xx in range(x + 3, x + w - 3, 6):
+                rect(c, xx, yy, 3, 3, "b_win" if (xx + yy) % 3 else "b_win_d")
+    rect(c, 30, 44, 60, 14, "news_bg2"); rect(c, 32, 46, 56, 10, "screen")
+    for xx in range(36, 84, 8):
+        rect(c, xx, 49, 5, 2, "news_bg")
+    rect(c, 0, 58, NEWS_W, 14, "news_bg2")
+    for xx in range(4, NEWS_W - 4, 10):
+        rect(c, xx, 62, 6, 2, "news_ink")
+    return c
+
+
+def news_trophy():
+    """Trofeu no palco com holofotes."""
+    c = _news_base("suit")
+    for x in (16, 60, 100):
+        fill_poly(c, [(x, 0), (x + 10, 0), (x + 22, 40), (x - 12, 40)], "suit_hi")
+    rect(c, 50, 20, 20, 16, "gold_n"); rect(c, 52, 22, 16, 4, "b_win")
+    rect(c, 46, 24, 4, 8, "gold_n"); rect(c, 70, 24, 4, 8, "gold_n")
+    rect(c, 56, 36, 8, 8, "gold_n"); rect(c, 50, 44, 20, 4, "podium")
+    rect(c, 0, 48, NEWS_W, 24, "news_bg2")
+    rect(c, 40, 52, 40, 16, "podium"); rect(c, 42, 54, 36, 3, "wood_hi")
+    return c
+
+
+def news_guru():
+    """Guru de terno em frente a um grafico que so sobe."""
+    c = _news_base("news_bg2")
+    rect(c, 60, 6, 52, 34, "news_bg"); rect(c, 60, 6, 52, 2, "news_ink")
+    prev = 36
+    for i, y in enumerate((34, 30, 26, 18, 12)):
+        rect(c, 64 + i * 9, 6 + y, 7, 34 - y, "iso_tree")
+        prev = y
+    rect(c, 16, 14, 20, 26, "suit"); rect(c, 18, 16, 16, 3, "suit_hi")
+    rect(c, 20, 2, 12, 12, "news_skin"); rect(c, 20, 2, 12, 3, "news_ink")
+    put(c, 23, 8, "eye"); put(c, 29, 8, "eye"); rect(c, 24, 11, 5, 1, "news_ink")
+    rect(c, 34, 18, 12, 4, "news_skin")   # braco apontando
+    rect(c, 0, 40, NEWS_W, 32, "news_bg2")
+    rect(c, 14, 40, 24, 22, "suit")
+    for xx in range(6, NEWS_W - 6, 12):
+        rect(c, xx, 66, 8, 2, "news_ink")
+    return c
+
+
+def news_chart():
+    """Planilha gigante com uma seta e um numero duvidoso."""
+    c = _news_base("news_bg2")
+    rect(c, 8, 6, 104, 54, "news_bg"); rect(c, 8, 6, 104, 3, "screen")
+    for y in range(12, 58, 8):
+        hline(c, 10, 109, y, "news_bg2")
+    for x in range(20, 110, 14):
+        vline(c, x, 10, 58, "news_bg2")
+    pts = [(14, 52), (30, 44), (44, 48), (58, 32), (72, 36), (88, 18), (104, 12)]
+    for i in range(len(pts) - 1):
+        x0, y0 = pts[i]; x1, y1 = pts[i + 1]
+        steps = max(abs(x1 - x0), abs(y1 - y0))
+        for t in range(steps + 1):
+            put(c, int(x0 + (x1 - x0) * t / steps), int(y0 + (y1 - y0) * t / steps), "red")
+            put(c, int(x0 + (x1 - x0) * t / steps), int(y0 + (y1 - y0) * t / steps) + 1, "red")
+    rect(c, 100, 8, 10, 10, "red"); put(c, 104, 10, "news_bg")
+    rect(c, 0, 60, NEWS_W, 12, "news_bg2")
+    for xx in range(6, NEWS_W - 6, 11):
+        rect(c, xx, 64, 7, 2, "news_ink")
+    return c
+
+
+def news_politics():
+    """Palanque com bandeirinhas e um microfone."""
+    c = _news_base()
+    rect(c, 0, 26, NEWS_W, 14, "news_bg2")
+    for i, x in enumerate(range(4, NEWS_W - 4, 16)):
+        fill_poly(c, [(x, 4), (x + 12, 4), (x + 6, 16)], ["red", "screen", "iso_tree", "gold_n"][i % 4])
+        hline(c, x, x + 12, 4, "news_ink")
+    rect(c, 36, 30, 48, 26, "podium"); rect(c, 36, 30, 48, 3, "wood_hi")
+    rect(c, 44, 34, 32, 14, "news_bg"); 
+    for yy in range(37, 47, 4):
+        rect(c, 47, yy, 26, 2, "news_ink")
+    rect(c, 58, 18, 4, 12, "metal_lo"); rect(c, 55, 12, 10, 8, "metal"); rect(c, 57, 14, 6, 4, "metal_hi")
+    rect(c, 0, 56, NEWS_W, 16, "news_bg2")
+    for xx in range(6, NEWS_W - 6, 10):
+        rect(c, xx, 62, 6, 2, "news_ink")
+    return c
+
+
+def news_phone():
+    """Celular gigante com um post e um coracao caindo."""
+    c = _news_base("news_bg2")
+    rect(c, 36, 4, 48, 64, "frame"); rect(c, 39, 9, 42, 54, "screen_hi")
+    rect(c, 52, 5, 16, 2, "metal_lo")
+    rect(c, 42, 12, 36, 18, "news_bg"); 
+    for yy in range(15, 28, 5):
+        rect(c, 45, yy, 28, 2, "news_ink")
+    rect(c, 42, 33, 36, 22, "screen")
+    rect(c, 46, 37, 12, 12, "b_win"); rect(c, 62, 37, 12, 6, "news_bg")
+    for i, (x, y) in enumerate(((16, 18), (96, 30), (22, 46))):
+        rect(c, x, y, 6, 5, "red"); put(c, x - 1, y + 1, "red"); put(c, x + 6, y + 1, "red"); put(c, x + 2, y + 6, "red")
+    rect(c, 0, 66, NEWS_W, 6, "news_bg2")
+    return c
+
+
+def news_robot():
+    """Robo de terno digitando num teclado."""
+    c = _news_base("news_bg2")
+    rect(c, 40, 6, 34, 26, "metal"); rect(c, 42, 8, 30, 3, "metal_hi")
+    rect(c, 46, 14, 22, 10, "screen"); rect(c, 50, 17, 4, 4, "b_win"); rect(c, 60, 17, 4, 4, "b_win")
+    rect(c, 54, 26, 8, 2, "metal_lo")
+    rect(c, 55, 0, 4, 6, "metal_lo"); rect(c, 53, 0, 8, 3, "red")
+    rect(c, 34, 32, 46, 22, "suit"); rect(c, 36, 34, 42, 3, "suit_hi")
+    rect(c, 24, 36, 12, 6, "metal"); rect(c, 78, 36, 12, 6, "metal")
+    rect(c, 16, 54, 88, 8, "metal_lo")
+    for xx in range(20, 100, 7):
+        rect(c, xx, 56, 5, 3, "metal_hi")
+    rect(c, 0, 62, NEWS_W, 10, "news_bg2")
+    return c
+
+
+def news_shop():
+    """Vitrine com etiquetas de promocao e uma fila."""
+    c = _news_base()
+    rect(c, 6, 8, 108, 34, "b_beige"); rect(c, 6, 8, 108, 4, "b_beige_l")
+    rect(c, 12, 16, 40, 22, "glass"); rect(c, 60, 16, 46, 22, "glass")
+    for x in (18, 30, 42, 66, 80, 94):
+        rect(c, x, 20, 8, 12, "red" if x % 3 else "screen")
+    rect(c, 76, 4, 34, 16, "gold_n"); rect(c, 78, 6, 30, 12, "red")
+    for yy in (9, 13):
+        rect(c, 82, yy, 22, 2, "news_bg")
+    rect(c, 0, 42, NEWS_W, 30, "news_bg2")
+    for i, x in enumerate(range(10, 100, 16)):
+        rect(c, x, 46, 8, 16, ["suit", "screen", "iso_tree", "red"][i % 4])
+        rect(c, x + 1, 40, 6, 6, "news_skin")
+    return c
+
+
+def news_mic():
+    """Estudio de podcast: dois microfones e o sinal ON AIR."""
+    c = _news_base("news_bg2")
+    rect(c, 8, 4, 104, 30, "foam")
+    for y in range(7, 32, 7):
+        for x in range(11, 108, 7):
+            rect(c, x, y, 4, 4, "foam_hi")
+    rect(c, 40, 0, 40, 10, "onair_lo"); rect(c, 43, 2, 34, 6, "onair")
+    for x in (28, 84):
+        rect(c, x - 2, 42, 4, 18, "metal_lo"); rect(c, x - 7, 34, 14, 10, "metal")
+        rect(c, x - 5, 36, 10, 6, "metal_hi"); rect(c, x - 9, 58, 18, 4, "metal_lo")
+    rect(c, 0, 60, NEWS_W, 12, "news_bg2")
+    for xx in range(6, NEWS_W - 6, 12):
+        rect(c, xx, 65, 8, 2, "news_ink")
+    return c
+
+
+NEWS_ART = {"office": news_office, "trophy": news_trophy, "guru": news_guru, "chart": news_chart,
+            "politics": news_politics, "phone": news_phone, "robot": news_robot, "shop": news_shop, "mic": news_mic}
+
+
+def export_news(root):
+    out = os.path.join(root, "assets", "art", "news")
+    os.makedirs(out, exist_ok=True)
+    for name, fn in NEWS_ART.items():
+        write_png(os.path.join(out, f"{name}.png"), fn())
 
 
 def furniture_sheet(path, scale=2):
     items = [desk(), desk_wide(), chair(), chair_ergo(), sofa(), plant(), coffee_machine(), coffee_machine(True),
              water_cooler(), shelf(), window(), whiteboard(), goals_board(), door(), pingpong(), partition_tile(),
-             partition_cap(), hr_sign(), projector_screen(), meeting_table(), dog(), cat(), wall_tile(), pillar()]
+             partition_cap(), hr_sign(), projector_screen(), meeting_table(), dog(), cat(), rabbit(), turtle(), parrot(), capybara(), wall_tile(), pillar()]
     c = canvas(560, 300, "floor")
     x, y, row_h = 6, 6, 0
     for it in items:
