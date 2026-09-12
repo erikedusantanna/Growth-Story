@@ -17,6 +17,14 @@ func build() -> void:
 			UIKit.muted(String(era.get("flavor", "")), 13),
 			UIKit.label("Projetos com %s rendem +%d na nota." % [", ".join(Game.era.trending_names()), int(ProjectSystem.BONUS_TRENDING)], 13, UIKit.COLOR_GREEN, true),
 		]))
+	var trends: Array = Game.era.market_trends()
+	if not trends.is_empty():
+		var lines: Array = [UIKit.label("📰 O mercado mexeu", 15, UIKit.COLOR_PURPLE, true)]
+		for t in trends:
+			var hot: bool = String(t.kind) == "hot"
+			lines.append(UIKit.label("%s %s por mais %d dia(s)%s" % ["🔥" if hot else "🧊", String(t.name), int(t.days_left),
+				(" · %s" % String(t.source)) if String(t.source) != "" else ""], 13, UIKit.COLOR_GREEN if hot else UIKit.COLOR_RED, true))
+		content.add_child(UIKit.card(lines))
 	var last_tier := ""
 	for id in Game.content.service_order:
 		var svc: Dictionary = Game.content.services[id]
@@ -133,7 +141,8 @@ func _service_card(svc: Dictionary) -> PanelContainer:
 	var card := UIKit.card()
 	var v := UIKit.card_content(card)
 	var top := UIKit.hbox()
-	var name := UIKit.label(("🔥 " if Game.era.is_trending(id) else "") + String(svc["name"]), 19, UIKit.COLOR_TEXT if unlocked else UIKit.COLOR_MUTED)
+	var prefix := "🔥 " if Game.era.is_trending(id) else ("🧊 " if Game.era.is_cold(id) else "")
+	var name := UIKit.label(prefix + String(svc["name"]), 19, UIKit.COLOR_TEXT if unlocked else UIKit.COLOR_MUTED)
 	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(name)
 	top.add_child(UIKit.label("ativo" if unlocked else "bloqueado", 13, UIKit.COLOR_GREEN if unlocked else UIKit.COLOR_MUTED))

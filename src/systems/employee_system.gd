@@ -135,7 +135,7 @@ func productivity(e: Employee) -> float:
 	var furniture: Dictionary = game.office.furniture_effects()
 	return base * (0.85 + e.motivation / 100.0 * 0.55) * (1.0 - e.stress / 220.0) \
 		* float(buffs["productivity"]) * float(furniture["productivity"]) * game.departments.productivity_multiplier(e) \
-		* game.office.moving_multiplier()
+		* game.office.moving_multiplier() * game.crisis.productivity_multiplier()
 
 
 ## Moral (campo `motivation`) com teto dado pela mobília do escritório.
@@ -278,6 +278,95 @@ func _finish_training(e: Employee) -> void:
 	add_journey(e, "Concluiu %s: %s" % [course["name"], ", ".join(parts)])
 	EventBus.office_feedback.emit(e.id, parts[0] if not parts.is_empty() else "+", "good")
 	game.add_log("%s concluiu %s (%s)." % [e.name, course["name"], ", ".join(parts)], "promo")
+	EventBus.state_changed.emit()
+
+
+# --- Especialização de carreira -------------------------------------------------
+
+## Virar especialista num serviço: custa dinheiro e dias, exige aptidão mínima e muda o cargo.
+## Especialista rende o bônus de especialista no projeto e ganha pontos nos atributos do serviço.
+const SPEC_COST := {"inicio": 3000.0, "intermediario": 6000.0, "avancado": 10000.0, "endgame": 15000.0}
+const SPEC_DAYS := {"inicio": 10, "intermediario": 14, "avancado": 18, "endgame": 21}
+const SPEC_MIN_SKILL := 50.0          # aptidão mínima no serviço para entrar na trilha
+const SPEC_MAIN_GAIN := 7.0           # pontos no atributo principal do serviço
+const SPEC_SECOND_GAIN := 4.0
+
+
+func spec_cost(service_id: String) -> float:
+	var tier := String(game.content.services.get(service_id, {}).get("tier", "inicio"))
+	return float(SPEC_COST.get(tier, 5000.0))
+
+
+func spec_days(service_id: String) -> int:
+	var tier := String(game.content.services.get(service_id, {}).get("tier", "inicio"))
+	return int(SPEC_DAYS.get(tier, 12))
+
+
+func spec_skill(e: Employee, service_id: String) -> float:
+	return e.skill_for(game.content.services.get(service_id, {}).get("weights", {}))
+
+
+## Serviços liberados em que a pessoa pode se especializar (ordenados pela aptidão dela).
+func spec_options(e: Employee) -> Array:
+	var ids: Array = game.state.unlocked_services.filter(func(sid): return sid != e.role)
+	ids.sort_custom(func(a, b): return spec_skill(e, a) > spec_skill(e, b))
+	return ids
+
+
+func can_specialize(e: Employee, service_id: String) -> Dictionary:
+	if e.is_founder:
+		return {"ok": false, "reason": "O fundador não troca de especialidade."}
+	if not game.services.is_unlocked(service_id):
+		return {"ok": false, "reason": "Serviço ainda não liberado."}
+	if e.role == service_id:
+		return {"ok": false, "reason": "Já é a especialidade dele(a)."}
+	if not e.is_available(game.state.day):
+		return {"ok": false, "reason": "Precisa estar livre."}
+	if spec_skill(e, service_id) < SPEC_MIN_SKILL:
+		return {"ok": false, "reason": "Aptidão baixa (%d de %d). Treine os atributos que o serviço pede." % [int(spec_skill(e, service_id)), int(SPEC_MIN_SKILL)]}
+	if game.state.money < spec_cost(service_id):
+		return {"ok": false, "reason": "Caixa insuficiente."}
+	return {"ok": true, "reason": ""}
+
+
+func specialize(e: Employee, service_id: String) -> Dictionary:
+	var check := can_specialize(e, service_id)
+	if not check.ok:
+		return check
+	game.finance.add_money(-spec_cost(service_id), "Especialização: %s" % game.content.service_name(service_id), "expense")
+	e.specializing = service_id
+	e.busy_until = game.state.day + spec_days(service_id)
+	e.busy_reason = "Em especialização"
+	game.state.stats["specializations"] = int(game.state.stats.get("specializations", 0)) + 1
+	game.add_log("%s entrou na trilha de %s." % [e.name, game.content.service_name(service_id)], "promo")
+	EventBus.state_changed.emit()
+	return {"ok": true, "reason": ""}
+
+
+func _finish_specialization(e: Employee) -> void:
+	var service_id := e.specializing
+	e.specializing = ""
+	e.busy_reason = ""
+	var weights: Dictionary = game.content.services.get(service_id, {}).get("weights", {})
+	if weights.is_empty():
+		return
+	var keys: Array = weights.keys()
+	keys.sort_custom(func(a, b): return float(weights[a]) > float(weights[b]))
+	var mult := 0.7 + e.potential * 0.15
+	var parts: Array = []
+	for i in keys.size():
+		var gain: float = (SPEC_MAIN_GAIN if i == 0 else (SPEC_SECOND_GAIN if i == 1 else 0.0)) * mult
+		if gain <= 0.0:
+			continue
+		e.attrs[keys[i]] = clampf(e.attr(String(keys[i])) + gain, 1.0, 100.0)
+		parts.append("+%d %s" % [int(roundf(gain)), Employee.ATTR_NAMES.get(keys[i], keys[i])])
+	e.role = service_id
+	change_morale(e, 8.0)
+	good_news(e)
+	var name: String = game.content.service_name(service_id)
+	add_journey(e, "Virou especialista em %s: %s" % [name, ", ".join(parts)])
+	EventBus.office_feedback.emit(e.id, "🎯 %s" % name, "good")
+	game.add_log("%s agora é especialista em %s (%s)." % [e.name, name, ", ".join(parts)], "promo")
 	EventBus.state_changed.emit()
 
 
@@ -464,6 +553,8 @@ func on_day() -> void:
 		e.motivation = clampf(e.motivation + delta, 0.0, cap)
 		if e.training_id != "" and e.busy_until < st.day:
 			_finish_training(e)
+		elif e.specializing != "" and e.busy_until < st.day:
+			_finish_specialization(e)
 		elif e.busy_reason != "" and e.training_id == "" and e.busy_until < st.day:
 			e.busy_reason = ""
 		if e.stress >= 100.0 and e.busy_until < st.day:

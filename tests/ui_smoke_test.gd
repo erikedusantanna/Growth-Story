@@ -7,6 +7,7 @@ var main: Control
 
 func _ready() -> void:
 	var training_seen := false
+	Game.save.delete_save()  # o teste sempre começa com os espaços de save vazios
 	main = load("res://src/ui/main.tscn").instantiate()
 	add_child(main)
 	await get_tree().process_frame
@@ -210,6 +211,64 @@ func _ready() -> void:
 	main.popups.close()
 	await get_tree().process_frame
 	print("  popup de missão: %s · popup de notícia: %s" % [quest_ok, news_ok])
+	# talento raro, crise e decisão de projeto abrem os popups novos
+	Game.state.money = 300000.0
+	var talent: Employee = Game.talent.spawn()
+	await get_tree().process_frame
+	var talent_ok: bool = talent != null and main.popups.is_open()
+	main.popups.close()
+	await get_tree().process_frame
+	main.show_screen("team")
+	await get_tree().process_frame
+	talent_ok = talent_ok and main.screens["team"].content.get_child_count() > 0 and Game.talent.can_hire(talent).ok
+	Game.crisis.start("apagao")
+	await get_tree().process_frame
+	var crisis_ok: bool = main.popups.is_open() and Game.crisis.is_active()
+	main.popups.close()
+	await get_tree().process_frame
+	main._refresh_objective()
+	await get_tree().process_frame
+	crisis_ok = crisis_ok and main.quest_label.visible and main.quest_label.text.contains("Apagão")
+	print("  popup de talento raro: %s · aviso de crise no topo: %s" % [talent_ok, crisis_ok])
+	# decisão no meio de um projeto em andamento
+	var dec_ok := false
+	if Game.state.running_projects().is_empty():
+		var dc: Client = Game.clients.spawn_prospect()
+		dc.status = Client.Status.ACTIVE
+		var free_ids: Array = Game.state.employees.filter(func(e): return e.is_available(Game.state.day)).map(func(e): return e.id)
+		if not free_ids.is_empty():
+			Game.projects.create_project(dc, [String(Game.state.unlocked_services[0])], [free_ids[0]])
+		await get_tree().process_frame
+		await _drain_popups(main)
+	var running: Array = Game.state.running_projects()
+	if not running.is_empty():
+		var proj: Project = running[0]
+		proj.decision_done = false
+		var dec: Dictionary = Game.projects.trigger_decision(proj, "pedido_ultima_hora")
+		await get_tree().process_frame
+		dec_ok = not dec.is_empty() and main.popups.is_open() and (dec.get("choices", []) as Array).size() >= 2
+		await _drain_popups(main)
+		dec_ok = dec_ok and not main.popups.is_open() and not Game.ui_blocking
+	print("  popup de decisão de projeto: %s" % dec_ok)
+	# especialização de carreira pela aba Equipe
+	var spec_ok := false
+	for e in Game.state.employees:
+		if e.is_founder:
+			continue
+		for key in Employee.ATTRS:
+			e.attrs[key] = 90.0
+		e.busy_until = -1
+		var options: Array = Game.employees.spec_options(e)
+		if options.is_empty():
+			break
+		main.popups.show_specialize(e)
+		await get_tree().process_frame
+		spec_ok = main.popups.is_open()
+		main.popups.close()
+		await get_tree().process_frame
+		spec_ok = spec_ok and Game.employees.can_specialize(e, String(options[0])).ok
+		break
+	print("  popup de especialização: %s" % spec_ok)
 	# pets novos andam pelo escritório
 	for kind in ["rabbit", "parrot", "capybara"]:
 		if not Game.state.pets.has(kind):
@@ -298,10 +357,23 @@ func _ready() -> void:
 	await get_tree().process_frame
 	reload_ok = reload_ok and Game.state.pending_event.is_empty() and Game.is_running()
 	print("  save com evento em aberto volta a rodar: %s" % reload_ok)
+	# tela inicial: escolher de qual espaço continuar
+	var workers_count: int = main.office_view.workers.size()
+	Game.save.delete_save()
+	Game.save.save(Game.state, 2)
+	var slots_ok: bool = Game.save.has_slot(2)
 	main.show_title()
 	await get_tree().process_frame
-	print("  workers no escritório: %d" % main.office_view.workers.size())
-	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene and mood_ok and leaving_ok and map_ok and rival_ok and cal_ok and quest_ok and news_ok and pets_ok and alert_ok and layout_ok and reload_ok
+	main.title_screen._on_continue()
+	await get_tree().process_frame
+	slots_ok = slots_ok and main.title_screen.slots_panel.visible and main.title_screen.slots_box.get_child_count() == SaveSystem.MAX_SLOTS
+	main.title_screen._pick_slot(2, true)
+	await get_tree().process_frame
+	slots_ok = slots_ok and Game.state != null and not main.title_screen.visible and Game.is_running()
+	print("  escolher espaço de save ao continuar: %s (%d espaços)" % [slots_ok, SaveSystem.MAX_SLOTS])
+	Game.save.delete_save()
+	print("  workers no escritório: %d" % workers_count)
+	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene and mood_ok and leaving_ok and map_ok and rival_ok and cal_ok and quest_ok and news_ok and pets_ok and alert_ok and layout_ok and reload_ok and talent_ok and crisis_ok and dec_ok and spec_ok and slots_ok
 	print("[%s] UI smoke" % ("OK" if ok else "FALHA"))
 	get_tree().quit(0 if ok else 1)
 

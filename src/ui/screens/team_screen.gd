@@ -141,6 +141,11 @@ func _employee_card(e: Employee) -> PanelContainer:
 	var train := UIKit.button("📚 Treinar", func(): popups().show_training(e))
 	train.disabled = not e.is_available(st.day)
 	actions.add_child(train)
+	if not e.is_founder:
+		var spec := UIKit.button("🎯 Especializar", func(): popups().show_specialize(e))
+		spec.disabled = not e.is_available(st.day)
+		spec.tooltip_text = "Vira especialista num serviço: bônus no projeto e cargo novo"
+		actions.add_child(spec)
 	actions.add_child(UIKit.button("🗺️ Jornada", func(): popups().show_journey(e)))
 	if not e.is_founder:
 		var raise_check := Game.employees.can_give_raise(e)
@@ -199,6 +204,9 @@ func _confirm_fire(e: Employee) -> void:
 func _candidate_card(c: Employee) -> PanelContainer:
 	var card := UIKit.card()
 	var v := UIKit.card_content(card)
+	if c.legendary:
+		v.add_child(UIKit.label("⭐ Talento raro do mercado · sai em %d dia(s)" % maxi(c.candidate_expires - Game.state.day, 0), 15, UIKit.COLOR_ACCENT, true))
+		v.add_child(UIKit.muted("Gente assim aparece de vez em quando e some rápido: se você não fechar, uma rival fecha. Além do salário, pede um bônus de contratação de %s." % UIKit.money(Game.talent.signing_bonus(c)), 12))
 	v.add_child(_person_header(c, "%d anos" % c.age, UIKit.COLOR_MUTED))
 	v.add_child(UIKit.attr_grid(c))
 	var meta := UIKit.hbox(14)
@@ -208,9 +216,9 @@ func _candidate_card(c: Employee) -> PanelContainer:
 	v.add_child(meta)
 	v.add_child(UIKit.muted("Sai da lista em %d dias" % maxi(0, c.candidate_expires - Game.state.day), 13))
 	var actions := UIKit.hbox()
-	var check := Game.employees.can_hire(c)
-	var hire := UIKit.button("✅ Contratar", func():
-		var r := Game.employees.hire(c)
+	var check: Dictionary = Game.talent.can_hire(c) if c.legendary else Game.employees.can_hire(c)
+	var hire := UIKit.button("⭐ Contratar (%s + bônus)" % UIKit.money(c.salary) if c.legendary else "✅ Contratar", func():
+		var r: Dictionary = Game.talent.hire(c) if c.legendary else Game.employees.hire(c)
 		if not r.ok:
 			popups().show_info("Não foi possível contratar", r.reason), true)
 	hire.disabled = not check.ok

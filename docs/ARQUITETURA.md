@@ -141,7 +141,9 @@ de reputação. Um jogador real tende a crescer mais devagar que o bot; a faixa 
 `QuestSystem` guarda as missões ativas em `state.quests` (`{id, start_day, deadline_day, start_stat,
 progress}`) e mede o progresso de quatro formas: delta de um contador de `state.stats`, entrega com N
 estrelas (via `project_completed`), dias seguidos de moral alta e valores instantâneos (caixa, tamanho
-da equipe). `check()` roda a cada mudança de estado e `on_day()` cuida de prazo e sorteio.
+da equipe). `check()` roda a cada mudança de estado e `on_day()` cuida de prazo e sorteio. Missões com `arc`
+formam um arco de três etapas: `_eligible()` recusa quem tem `step > 1`, então só a etapa 1 entra no
+sorteio, e `_complete()` chama `start(next)` na hora, encadeando a etapa seguinte com prêmio maior.
 
 `CalendarSystem` não guarda agenda própria: `upcoming()` monta a lista lendo os outros sistemas
 (fechamento do mês, temas sazonais, premiação, prazos de projeto e missão, leads de mídia paga,
@@ -150,8 +152,10 @@ aniversários, semana de mudança, cooldown de investida). O que é dele: o **fo
 **aniversário de contrato** com presente (`state.gifts_sent`).
 
 `NewsSystem` sorteia manchetes de `data/news.json`, guarda as últimas em `state.news_feed` para a banca
-do calendário e aplica o efeito declarado (`money_pct`, `money`, `reputation`, `morale`). As
-ilustrações ficam em `assets/art/news/` e são geradas por `tools/gen_art.py` (`NEWS_ART`).
+do calendário e aplica os efeitos declarados — um em `effect` ou vários em `effects`: `money_pct`,
+`money`, `reputation`, `morale`, `trend`/`cold` (tendência temporária de mercado), `client_budget`
+(verba dos clientes ativos) e `prospects`. As ilustrações ficam em `assets/art/news/` e são geradas
+por `tools/gen_art.py` (`NEWS_ART`).
 
 **Regra de layout:** nada na interface pode pedir mais largura que o viewport (540 px). O HUD e as
 telas são verificados pelo `ui_smoke_test`; passar disso empurra o layout inteiro e corta a tela.
@@ -209,6 +213,42 @@ ano que terminou com a do ano que começa e loga a virada ("O mercado mudou: ...
 Agência mostra um cartão com a era atual e marca os serviços em alta com 🔥; a aba Empresa
 mostra a era na lista de números.
 
+**Tendências temporárias** (as notícias que mexem no mercado): `add_market_trend(service, kind, days,
+source)` grava em `state.market` (`{service, kind, until_day, source}`) e `on_day()` limpa o que
+venceu, logando a volta ao normal. `is_trending()` soma a era e as tendências quentes; `is_cold()`
+vale só para as frias que a era não contradiz. Serviço frio leva `ProjectSystem.PENALTY_COLD` (−4) no
+`_score()`, com linha própria no detalhamento. A aba Agência mostra um cartão com as tendências
+temporárias e prefixa 🔥/🧊 nos serviços; o calendário agenda o fim de cada uma.
+
+## Especialização, decisões, talento raro e crises
+
+- **Especialização de carreira** (`EmployeeSystem`): `spec_options(e)` lista os serviços liberados
+  fora do cargo atual, ordenados pela aptidão. `can_specialize` exige aptidão ≥ `SPEC_MIN_SKILL` (50),
+  a pessoa livre, o serviço liberado e caixa; o fundador não entra. `specialize()` cobra `SPEC_COST`
+  por tier (R$ 3 mil a 15 mil), ocupa por `SPEC_DAYS` (10 a 21) e grava `e.specializing`. Quando o
+  prazo passa, `_finish_specialization` troca `e.role`, soma `SPEC_MAIN_GAIN` (+7) no atributo de
+  maior peso do serviço e `SPEC_SECOND_GAIN` (+4) no segundo, e registra a jornada.
+- **Decisões no projeto** (`ProjectSystem` + `data/decisions.json`): `_maybe_decision(p)` roda no
+  `on_day` de cada projeto com equipe; só entre `min_progress` (0,2) e `max_progress` (0,75), com
+  `chance_per_day` (0,07) e no máximo uma por projeto (`p.decision_done`). `trigger_decision()`
+  sorteia por `weight`, troca `{client}`/`{project}`/`{employee}` pelos nomes reais e emite
+  `EventBus.project_decision`. `apply_decision(p, d, index)` aplica os efeitos da escolha:
+  `indicator` (em `p.boosts`), `effort`, `deadline`, `budget`, `money`, `morale`, `stress`,
+  `relationship`, `reputation`, `log`.
+- **Talento raro** (`TalentSystem`): a partir do dia `MIN_DAY` (180), com `MIN_GAP_DAYS` (150) de
+  intervalo e `DAILY_CHANCE` (0,02), `spawn()` gera um candidato `high` com `ATTR_BONUS` (+16) em
+  todos os atributos, salário × `SALARY_MULT` (1,6) e `legendary = true`, válido por `WINDOW_DAYS`
+  (12). `hire()` cobra o bônus de contratação (`SIGNING_MULT` = 2 salários) antes da contratação
+  normal e rende +3 de reputação. Passado o prazo, `_lost_to_rival()` entrega a uma rival ativa, que
+  ganha `RIVAL_STRENGTH_GAIN` (+4) de força.
+- **Crises regionais** (`CrisisSystem` + `data/crises.json`): a partir do dia `min_day` (200), com
+  `gap_days` (210) e `daily_chance` (0,012), `start()` sorteia por `weight` entre as crises cuja faixa
+  `min_region`/`max_region` cobre a região atual e grava `state.crisis` (`{id, region, until_day,
+  start_day}`). Enquanto dura, `productivity_multiplier()` entra na produtividade do
+  `EmployeeSystem` e `prospect_multiplier()` na chance de prospect orgânico do `ClientSystem`; no
+  começo aplica `money` e `morale` uma vez e tira `rival_strength` das rivais da mesma região.
+  `headline()` alimenta a linha vermelha no topo do feed.
+
 ## Departamentos e concorrência (GDD §30-31, §35)
 
 - **Departamentos** (`department_system.gd`, `data/departments.json`): abrem em
@@ -263,8 +303,21 @@ chamadas rápidas e os recursos vazariam até o fim do processo.
 
 ## Save
 
-`GameState.to_dict()` → JSON em `user://savegame.json`. O estado do RNG é salvo como string
-para não perder precisão. Versão do save em `version` (1).
+`GameState.to_dict()` → JSON em `user://saves/slot_N.json`, com `MAX_SLOTS` = 5 espaços. O estado do
+RNG é salvo como string para não perder precisão. Versão do save em `version` (1); cada arquivo
+guarda também `saved_at` (unix) e `slot`.
+
+`SaveSystem.current_slot` é o espaço da partida em andamento: `save(state)` sem argumento grava nele
+(é o que o autosave mensal usa) e `new_game(..., slot)` o define — sem espaço indicado, vai para o
+primeiro livre. `slot_info(slot)` lê o arquivo sem carregar a partida e devolve o resumo que a tela
+inicial mostra (agência, data, caixa, reputação, pessoas, clientes ativos, nível do escritório, se
+terminou e quando foi salvo); `slots()` devolve os 5. `delete_slot()` apaga um espaço e
+`delete_save()` todos (usado pelos testes). Um `user://savegame.json` de versões antigas é migrado
+para o espaço 1 no `setup()`.
+
+Na tela inicial (`title_screen.gd`), "Continuar" abre a lista em modo `load` (espaços vazios
+desabilitados) e "Nova partida" só abre a lista, em modo `new`, quando não há espaço livre —
+sobrescrever pede confirmação em dois toques, e a lixeira de cada espaço também.
 
 ## Como adicionar conteúdo
 
@@ -278,5 +331,9 @@ para não perder precisão. Versão do save em `version` (1).
 - **Era**: `data/eras.json` (`year_start`/`year_end`, `trends` com ids de serviço existentes).
 - **Departamento**: `data/departments.json → departments` (`id`, `name`, `attr`).
 - **Agência concorrente**: `data/competitors.json → agencies` (só o nome, entra no sorteio).
+- **Decisão de projeto**: `data/decisions.json → decisions` (`weight`, `choices[].effects`); novos tipos de efeito em `ProjectSystem.apply_decision`.
+- **Crise**: `data/crises.json → crises` (`days`, `weight`, `productivity`, `prospects`, `morale`, `money`, `rival_strength`, `min_region`).
+- **Arco de missões**: em `data/quests.json`, três missões com o mesmo `arc`, `step` 1..3 e `next` apontando para a seguinte (só a etapa 1 pode ter `min_day`/`min_rep`).
+- **Notícia que mexe no mercado**: `data/news.json → effects` com `trend`/`cold` (`service`, `days`), `client_budget` ou `prospects`, e o `effect_text` que aparece no popup.
 - **Cenário de evento**: `data/scenes.json → scenes` (`backdrop`, `marks`, `front`, `hold`); para um evento ganhar cena, basta `"scene": "<kind>"` na entrada dele.
 - **Jornada**: chame `Game.employees.add_journey(e, texto)` em qualquer marco novo.

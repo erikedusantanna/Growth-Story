@@ -1,0 +1,153 @@
+{
+  "comment": "Decisões que aparecem no meio de alguns projetos (ProjectSystem). Não acontecem em todo projeto: a chance é diária, dentro da janela de progresso, e cada projeto só recebe uma. Efeitos: indicator (soma no indicador da entrega), effort (percentual de trabalho a mais), deadline (dias de prazo), budget (percentual no valor), money, morale, stress, relationship, reputation, log. Textos aceitam {client}, {project} e {employee}.",
+  "chance_per_day": 0.07,
+  "min_progress": 0.2,
+  "max_progress": 0.75,
+  "decisions": [
+    {
+      "id": "pedido_ultima_hora",
+      "icon": "📞",
+      "title": "Pedido de última hora",
+      "text": "{client} ligou: querem incluir mais uma peça no escopo de {project}. \"É rapidinho\", disseram.",
+      "weight": 3,
+      "choices": [
+        {"label": "Aceitar sem cobrar", "effects": [{"type": "effort", "value": 0.18}, {"type": "relationship", "value": 8}, {"type": "log", "text": "A equipe abraçou o escopo extra."}]},
+        {"label": "Aceitar e cobrar à parte", "effects": [{"type": "effort", "value": 0.18}, {"type": "budget", "value": 0.15}, {"type": "relationship", "value": -4}, {"type": "log", "text": "Escopo extra virou aditivo no contrato."}]},
+        {"label": "Segurar para a próxima fase", "effects": [{"type": "relationship", "value": -6}, {"type": "indicator", "key": "execution", "value": 5}, {"type": "log", "text": "O escopo ficou intacto e a entrega seguiu no prazo."}]}
+      ]
+    },
+    {
+      "id": "ideia_ousada",
+      "icon": "💡",
+      "title": "Ideia ousada na mesa",
+      "text": "No meio de {project}, {employee} propôs jogar fora o conceito aprovado e tentar algo bem mais ousado.",
+      "weight": 3,
+      "choices": [
+        {"label": "Vamos ousar", "effects": [{"type": "indicator", "key": "creativity", "value": 12}, {"type": "effort", "value": 0.12}, {"type": "morale", "value": 5}, {"type": "log", "text": "O conceito novo entrou em produção."}]},
+        {"label": "Manter o combinado", "effects": [{"type": "indicator", "key": "execution", "value": 6}, {"type": "morale", "value": -4}, {"type": "log", "text": "O time seguiu o roteiro aprovado."}]},
+        {"label": "Testar as duas versões", "effects": [{"type": "indicator", "key": "creativity", "value": 6}, {"type": "indicator", "key": "performance", "value": 4}, {"type": "money", "value": -1500}, {"type": "effort", "value": 0.08}, {"type": "log", "text": "Teste A/B entre os dois conceitos."}]}
+      ]
+    },
+    {
+      "id": "dado_estranho",
+      "icon": "📊",
+      "title": "Número estranho no painel",
+      "text": "Os dados de {project} não fecham. Pode ser erro de medição ou a campanha estar rendendo menos do que parece.",
+      "weight": 3,
+      "choices": [
+        {"label": "Parar e auditar o rastreamento", "effects": [{"type": "indicator", "key": "performance", "value": 10}, {"type": "deadline", "value": 2}, {"type": "effort", "value": 0.08}, {"type": "log", "text": "Auditoria achou o erro de medição."}]},
+        {"label": "Seguir e olhar no fim", "effects": [{"type": "indicator", "key": "performance", "value": -6}, {"type": "log", "text": "A equipe deixou para checar na entrega."}]},
+        {"label": "Chamar o cliente para decidir junto", "effects": [{"type": "relationship", "value": 6}, {"type": "indicator", "key": "strategy", "value": 5}, {"type": "deadline", "value": 1}, {"type": "log", "text": "Cliente entrou na conversa técnica."}]}
+      ]
+    },
+    {
+      "id": "virar_noite",
+      "icon": "🌙",
+      "title": "Virar a noite?",
+      "text": "Dá para adiantar {project} com uma madrugada de trabalho. A equipe topa, mas ninguém sai ileso.",
+      "weight": 2,
+      "choices": [
+        {"label": "Vira a noite", "effects": [{"type": "effort", "value": -0.15}, {"type": "stress", "value": 12}, {"type": "morale", "value": -8}, {"type": "log", "text": "A madrugada rendeu, mas cobrou o preço."}]},
+        {"label": "Ninguém vira nada", "effects": [{"type": "morale", "value": 6}, {"type": "stress", "value": -5}, {"type": "log", "text": "O time foi para casa no horário."}]},
+        {"label": "Contratar um freelancer", "effects": [{"type": "money", "value": -3000}, {"type": "effort", "value": -0.12}, {"type": "log", "text": "Um freelancer entrou para ajudar no pico."}]}
+      ]
+    },
+    {
+      "id": "aprovacao_travada",
+      "icon": "🧱",
+      "title": "Aprovação travada",
+      "text": "O material de {project} está parado há dias no jurídico de {client}.",
+      "weight": 3,
+      "choices": [
+        {"label": "Ligar para o diretor e destravar", "effects": [{"type": "relationship", "value": -5}, {"type": "deadline", "value": 0}, {"type": "indicator", "key": "execution", "value": 6}, {"type": "log", "text": "A ligação destravou a aprovação."}]},
+        {"label": "Esperar o processo", "effects": [{"type": "deadline", "value": 4}, {"type": "relationship", "value": 4}, {"type": "log", "text": "A agência respeitou o rito do cliente."}]},
+        {"label": "Adiantar o que não depende de aprovação", "effects": [{"type": "indicator", "key": "execution", "value": 4}, {"type": "effort", "value": -0.05}, {"type": "log", "text": "O time adiantou as frentes livres."}]}
+      ]
+    },
+    {
+      "id": "concorrente_copiou",
+      "icon": "⚔️",
+      "title": "Copiaram a campanha",
+      "text": "Uma agência rival publicou algo suspeitamente parecido com o que a equipe preparou para {client}.",
+      "weight": 2,
+      "choices": [
+        {"label": "Mudar o conceito na correria", "effects": [{"type": "indicator", "key": "creativity", "value": 8}, {"type": "effort", "value": 0.15}, {"type": "stress", "value": 6}, {"type": "log", "text": "Conceito novo, feito em tempo recorde."}]},
+        {"label": "Publicar antes deles", "effects": [{"type": "deadline", "value": -2}, {"type": "indicator", "key": "performance", "value": 5}, {"type": "stress", "value": 8}, {"type": "log", "text": "A corrida contra o relógio começou."}]},
+        {"label": "Expor a cópia nas redes", "effects": [{"type": "reputation", "value": 2}, {"type": "relationship", "value": -3}, {"type": "log", "text": "O caso virou assunto no mercado."}]}
+      ]
+    },
+    {
+      "id": "influencer_topa",
+      "icon": "🎤",
+      "title": "Um nome quer entrar",
+      "text": "Um criador de conteúdo com público relevante topou participar de {project}, mas quer cachê.",
+      "weight": 2,
+      "requires_service": ["social_media", "influencer", "content"],
+      "choices": [
+        {"label": "Pagar o cachê", "effects": [{"type": "money", "value": -4000}, {"type": "indicator", "key": "performance", "value": 10}, {"type": "reputation", "value": 1}, {"type": "log", "text": "O criador entrou na campanha."}]},
+        {"label": "Negociar permuta", "effects": [{"type": "indicator", "key": "communication", "value": 0}, {"type": "indicator", "key": "creativity", "value": 5}, {"type": "effort", "value": 0.05}, {"type": "log", "text": "Fechou por permuta, com mais trabalho de produção."}]},
+        {"label": "Agradecer e recusar", "effects": [{"type": "indicator", "key": "strategy", "value": 4}, {"type": "log", "text": "A campanha seguiu sem o nome de fora."}]}
+      ]
+    },
+    {
+      "id": "orcamento_cortado",
+      "icon": "✂️",
+      "title": "Corte no orçamento",
+      "text": "{client} avisou que precisa cortar a verba de mídia de {project} pela metade neste mês.",
+      "weight": 2,
+      "choices": [
+        {"label": "Reduzir escopo junto", "effects": [{"type": "budget", "value": -0.12}, {"type": "effort", "value": -0.1}, {"type": "relationship", "value": 4}, {"type": "log", "text": "Escopo e verba encolheram juntos."}]},
+        {"label": "Manter a entrega e absorver", "effects": [{"type": "budget", "value": -0.12}, {"type": "relationship", "value": 10}, {"type": "morale", "value": -4}, {"type": "log", "text": "A agência absorveu o corte."}]},
+        {"label": "Propor performance no lugar de mídia", "effects": [{"type": "indicator", "key": "performance", "value": 8}, {"type": "indicator", "key": "strategy", "value": 4}, {"type": "effort", "value": 0.08}, {"type": "log", "text": "A estratégia virou performance pura."}]}
+      ]
+    },
+    {
+      "id": "erro_publicado",
+      "icon": "😬",
+      "title": "Erro no ar",
+      "text": "Um material de {project} foi publicado com erro de texto. Já tem gente comentando.",
+      "weight": 2,
+      "choices": [
+        {"label": "Tirar do ar e refazer", "effects": [{"type": "effort", "value": 0.1}, {"type": "indicator", "key": "execution", "value": 4}, {"type": "log", "text": "Material corrigido e republicado."}]},
+        {"label": "Assumir com bom humor", "effects": [{"type": "reputation", "value": 1}, {"type": "indicator", "key": "creativity", "value": 6}, {"type": "relationship", "value": -2}, {"type": "log", "text": "O erro virou piada e rendeu alcance."}]},
+        {"label": "Fingir que não aconteceu", "effects": [{"type": "reputation", "value": -2}, {"type": "indicator", "key": "execution", "value": -4}, {"type": "log", "text": "Ninguém tocou no assunto. Quase ninguém."}]}
+      ]
+    },
+    {
+      "id": "cliente_quer_reuniao",
+      "icon": "📅",
+      "title": "Mais uma reunião",
+      "text": "{client} pediu uma reunião semanal de acompanhamento até o fim de {project}.",
+      "weight": 3,
+      "choices": [
+        {"label": "Aceitar todas", "effects": [{"type": "relationship", "value": 10}, {"type": "effort", "value": 0.1}, {"type": "log", "text": "A agenda encheu de calls."}]},
+        {"label": "Propor relatório em vez de reunião", "effects": [{"type": "relationship", "value": 2}, {"type": "indicator", "key": "strategy", "value": 5}, {"type": "log", "text": "Relatório semanal no lugar das calls."}]},
+        {"label": "Uma reunião só, na entrega", "effects": [{"type": "relationship", "value": -6}, {"type": "effort", "value": -0.05}, {"type": "morale", "value": 3}, {"type": "log", "text": "O time ganhou tempo de produção."}]}
+      ]
+    },
+    {
+      "id": "ferramenta_nova",
+      "icon": "🧰",
+      "title": "Ferramenta nova",
+      "text": "Surgiu uma ferramenta que promete acelerar a produção de {project}. A licença não é barata.",
+      "weight": 2,
+      "choices": [
+        {"label": "Assinar a licença", "effects": [{"type": "money", "value": -2500}, {"type": "effort", "value": -0.12}, {"type": "indicator", "key": "execution", "value": 5}, {"type": "log", "text": "A ferramenta entrou no fluxo."}]},
+        {"label": "Usar o teste gratuito", "effects": [{"type": "effort", "value": -0.05}, {"type": "stress", "value": 4}, {"type": "log", "text": "O teste acabou no meio do caminho."}]},
+        {"label": "Seguir com o que já existe", "effects": [{"type": "morale", "value": -2}, {"type": "log", "text": "Nada mudou no processo."}]}
+      ]
+    },
+    {
+      "id": "briefing_mudou",
+      "icon": "🔄",
+      "title": "O briefing mudou",
+      "text": "Depois de metade de {project} pronta, {client} decidiu mudar o público-alvo da campanha.",
+      "weight": 2,
+      "choices": [
+        {"label": "Refazer a estratégia", "effects": [{"type": "indicator", "key": "strategy", "value": 10}, {"type": "effort", "value": 0.2}, {"type": "deadline", "value": 3}, {"type": "log", "text": "Estratégia refeita para o público novo."}]},
+        {"label": "Adaptar só a comunicação", "effects": [{"type": "indicator", "key": "creativity", "value": 5}, {"type": "effort", "value": 0.08}, {"type": "log", "text": "As peças foram adaptadas."}]},
+        {"label": "Mostrar por que o plano original funciona", "effects": [{"type": "indicator", "key": "strategy", "value": 6}, {"type": "relationship", "value": -5}, {"type": "log", "text": "A agência defendeu o plano com dados."}]}
+      ]
+    }
+  ]
+}

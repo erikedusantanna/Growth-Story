@@ -319,6 +319,74 @@ func _ready() -> void:
 	main.screens["clients"].scroll_vertical = 460
 	await _frames(3)
 	await _shot("15f_midia_paga")
+	# especialização de carreira
+	var spec_target: Employee = null
+	for e in st.employees:
+		if not e.is_founder:
+			spec_target = e
+			break
+	if spec_target != null:
+		for key in Employee.ATTRS:
+			spec_target.attrs[key] = maxf(spec_target.attr(key), 78.0)
+		spec_target.busy_until = -1
+		main.popups.show_specialize(spec_target)
+		await _frames(3)
+		await _shot("15g_especializacao")
+		main.popups.close()
+		await _frames(2)
+	# decisão no meio de um projeto
+	if st.running_projects().is_empty():
+		var dclient := _second_client()
+		var free: Array = st.employees.filter(func(e): return e.is_available(st.day)).map(func(e): return e.id)
+		if not free.is_empty():
+			Game.projects.create_project(dclient, [String(st.unlocked_services[0])], [free[0]])
+			await _settle()
+	if not st.running_projects().is_empty():
+		var dp: Project = st.running_projects()[0]
+		dp.decision_done = false
+		Game.projects.trigger_decision(dp, "ideia_ousada")
+		await _frames(3)
+		await _shot("15h_decisao_projeto")
+		await _settle()
+	# talento raro no mercado
+	st.money = 400000.0
+	var rare: Employee = Game.talent.spawn()
+	if rare != null:
+		await _frames(3)
+		await _shot("15i_talento_raro")
+		main.popups.close()
+		await _frames(2)
+		main.show_screen("team")
+		main.screens["team"].scroll_vertical = 900
+		await _frames(3)
+		await _shot("15j_talento_na_equipe")
+	# crise na região
+	Game.crisis.start("enchente")
+	await _frames(3)
+	await _shot("15k_crise")
+	main.popups.close()
+	await _frames(3)
+	main.show_screen("clients")
+	await _frames(3)
+	await _shot("15l_crise_aviso")
+	# missões em arco
+	Game.quests.start("arco_case_1")
+	await _frames(3)
+	await _shot("15m_missao_arco")
+	main.popups.close()
+	await _frames(2)
+	# espaços de save na tela inicial
+	Game.save.delete_save()
+	Game.save.save(st, 1)
+	st.day += 380
+	st.money = 128000.0
+	Game.save.save(st, 3)
+	main.show_title()
+	await _frames(3)
+	main.title_screen._on_continue()
+	await _frames(3)
+	await _shot("15n_espacos_de_save")
+	Game.save.delete_save()
 	print("screenshots em %s" % ProjectSettings.globalize_path(out_dir))
 	get_tree().quit(0)
 

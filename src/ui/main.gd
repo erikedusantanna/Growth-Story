@@ -215,13 +215,17 @@ func _refresh_objective() -> void:
 	if not Game.has_game():
 		return
 	var quests: Array = Game.quests.active()
-	quest_label.visible = not quests.is_empty()
-	if not quests.is_empty():
+	var crisis_line: String = Game.crisis.headline()
+	quest_label.visible = not quests.is_empty() or crisis_line != ""
+	if quest_label.visible:
 		var parts: Array = []
+		if crisis_line != "":
+			parts.append(crisis_line)
 		for q in quests:
 			var t: Dictionary = Game.quests.template(String(q.get("id", "")))
 			parts.append("%s %s (%s · %d d)" % [String(t.get("icon", "📜")), String(t.get("title", "")), Game.quests.progress_text(q), Game.quests.days_left(q)])
-		quest_label.text = "📜 " + " · ".join(parts)
+		quest_label.text = " · ".join(parts)
+		quest_label.add_theme_color_override("font_color", UIKit.COLOR_RED if crisis_line != "" else UIKit.COLOR_PURPLE)
 	var obj := Game.objectives.current()
 	if obj.is_empty():
 		objective_label.text = "Todos os objetivos concluídos. Agora a história é sua."

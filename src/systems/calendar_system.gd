@@ -152,6 +152,24 @@ func upcoming(days: int = 120) -> Array:
 				"title": "Aniversário de contrato: %s" % c.name,
 				"detail": "%d ano(s) de casa. Um presente melhora a relação." % years})
 
+	# tendências de mercado criadas pelas notícias
+	for t in game.era.market_trends():
+		if int(t.until_day) <= limit:
+			out.append({"day": int(t.until_day), "icon": "🔥" if String(t.kind) == "hot" else "🧊", "kind": "season",
+				"title": "Fim da %s em %s" % ["alta" if String(t.kind) == "hot" else "baixa", String(t.name)],
+				"detail": "O mercado volta ao normal nesse serviço."})
+
+	# crise da região e talento raro
+	if game.crisis.is_active():
+		var c: Dictionary = game.crisis.current()
+		out.append({"day": game.crisis.until_day(), "icon": String(c.get("icon", "⚠️")), "kind": "rival",
+			"title": "Fim da crise: %s" % String(c.get("name", "")), "detail": "A região volta ao normal."})
+	var talent: Employee = game.talent.active()
+	if talent != null:
+		out.append({"day": talent.candidate_expires, "icon": "⭐", "kind": "quest",
+			"title": "Último dia do talento raro: %s" % talent.name,
+			"detail": "Depois disso uma rival leva. Contratar custa %s de bônus." % FinanceSystem.format_money(game.talent.signing_bonus(talent))})
+
 	# semana de mudança
 	if game.office.is_moving():
 		out.append({"day": st.moving_until_day, "icon": "🚚", "kind": "office",

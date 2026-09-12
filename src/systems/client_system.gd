@@ -340,5 +340,6 @@ func on_day() -> void:
 	var organic_chance := 0.15 + st.reputation / 160.0
 	if game.calendar.has_focus("vendas"):
 		organic_chance += 0.08
+	organic_chance *= game.crisis.prospect_multiplier()
 	if st.day % PROSPECT_INTERVAL == 0 and st.prospects().size() < max_prospects and st.rng.randf() < organic_chance:
 		spawn_prospect()
