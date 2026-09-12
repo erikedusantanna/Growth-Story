@@ -26,6 +26,8 @@ func _ready() -> void:
 	EventBus.awards_ceremony.connect(show_awards)
 	EventBus.project_completed.connect(show_result)
 	EventBus.game_over.connect(show_game_over)
+	EventBus.quest_started.connect(show_quest)
+	EventBus.news_published.connect(show_news)
 
 
 func is_open() -> bool:
@@ -126,6 +128,73 @@ func show_event(ev: Dictionary) -> void:
 			parts.buttons.add_child(UIKit.button("OK", func():
 				close()
 				Game.resolve_event(0), true))
+		return parts.panel)
+
+
+## Notícia do mercado: página de jornal ou post de rede social, com ilustração.
+## Só entretenimento — as marcas e pessoas são fictícias.
+func show_news(n: Dictionary) -> void:
+	_open(func():
+		var paper: bool = String(n.get("media", "jornal")) == "jornal"
+		var parts := _panel("%s %s" % ["📰" if paper else "📱", Game.news.outlet(n)])
+		var frame := PanelContainer.new()
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color("#e8e2d4") if paper else Color("#eef3fa")
+		style.border_color = Color("#3a3630") if paper else Color("#5b9ae0")
+		style.set_border_width_all(3)
+		style.set_corner_radius_all(4 if paper else 12)
+		style.content_margin_left = 10
+		style.content_margin_right = 10
+		style.content_margin_top = 8
+		style.content_margin_bottom = 10
+		frame.add_theme_stylebox_override("panel", style)
+		var fv := UIKit.vbox(6)
+		frame.add_child(fv)
+		if not paper:
+			var handle := UIKit.hbox(6)
+			var avatar := ColorRect.new()
+			avatar.color = Color("#5b9ae0")
+			avatar.custom_minimum_size = Vector2(22, 22)
+			handle.add_child(avatar)
+			handle.add_child(UIKit.label("@mercado.hoje · agora", 13, Color("#5c6473")))
+			fv.add_child(handle)
+		else:
+			var rule := ColorRect.new()
+			rule.color = Color("#3a3630")
+			rule.custom_minimum_size = Vector2(0, 2)
+			fv.add_child(rule)
+		var headline := UIKit.label(String(n.get("title", "")), 19 if paper else 17, Color("#26241f"), true)
+		headline.add_theme_font_override("font", UIKit.pixel_font() if paper else UIKit.bold_font())
+		fv.add_child(headline)
+		var art := TextureRect.new()
+		art.texture = load("res://assets/art/news/%s.png" % String(n.get("art", "office")))
+		art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.custom_minimum_size = Vector2(0, 132)
+		fv.add_child(art)
+		fv.add_child(UIKit.label(String(n.get("text", "")), 15, Color("#3a3630"), true))
+		var effect: Dictionary = n.get("effect", {})
+		if not effect.is_empty():
+			fv.add_child(UIKit.label(String(effect.get("text", "")), 14, Color("#8c3b2e"), true))
+		parts.body.add_child(frame)
+		parts.body.add_child(UIKit.muted("Ficção: empresas e pessoas citadas não existem.", 11))
+		parts.buttons.add_child(UIKit.button("📰 Fechar o jornal" if paper else "📱 Continuar rolando", close, true))
+		return parts.panel)
+
+
+## Missão nova: o que fazer, prazo e recompensa (e o custo de deixar passar).
+func show_quest(q: Dictionary) -> void:
+	_open(func():
+		var t: Dictionary = Game.quests.template(String(q.get("id", "")))
+		var parts := _panel("📜 Missão nova")
+		parts.body.add_child(UIKit.label("%s %s" % [String(t.get("icon", "📜")), String(t.get("title", ""))], 18, UIKit.COLOR_ACCENT, true))
+		parts.body.add_child(UIKit.label(String(t.get("desc", "")), 16, UIKit.COLOR_TEXT, true))
+		parts.body.add_child(UIKit.label("⏳ Prazo: %d dias (até %s)" % [int(t.get("days", 30)), GameState.date_text_for(int(q.get("deadline_day", 0)))], 15, UIKit.COLOR_BLUE))
+		parts.body.add_child(UIKit.label("🎁 Recompensa: %s" % Game.quests.reward_text(t), 15, UIKit.COLOR_GREEN))
+		parts.body.add_child(UIKit.label("⚠️ Se o prazo passar: −%d de reputação." % int(Game.quests.data().get("fail_rep", 1)), 14, UIKit.COLOR_RED))
+		parts.body.add_child(UIKit.muted("Acompanhe em 📅 Calendário (ao lado do mapa) e no feed.", 13))
+		parts.buttons.add_child(UIKit.button("📜 Combinado", close, true))
 		return parts.panel)
 
 

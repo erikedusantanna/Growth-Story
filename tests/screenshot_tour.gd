@@ -281,6 +281,44 @@ func _ready() -> void:
 		await _frames(2)
 		await _shot("14d_concorrente")
 		main.popups.close()
+	await _frames(2)
+	# notícia do mercado (banca cômica)
+	Game.news.publish("agencia_beta_premio")
+	await _frames(2)
+	main.popups.close()
+	await _frames(2)
+	Game.news.publish("fabio_augusto_curso")
+	await _frames(3)
+	await _shot("15_noticia")
+	main.popups.close()
+	await _frames(2)
+	# calendário: foco do mês, grade de 12 meses, agenda e banca
+	main.show_calendar()
+	await _frames(3)
+	await _shot("15b_calendario")
+	main.calendar_screen.scroll.scroll_vertical = 560
+	await _frames(3)
+	await _shot("15c_calendario_agenda")
+	main.calendar_screen.close()
+	await _frames(2)
+	# missão nova
+	Game.quests.start("entrega_4")
+	await _frames(3)
+	await _shot("15d_missao")
+	main.popups.close()
+	await _frames(2)
+	# escritório com todos os pets
+	for kind in ["dog", "cat", "rabbit", "turtle", "parrot", "capybara"]:
+		if not st.pets.has(kind):
+			st.pets.append(kind)
+	main.office_view.refresh()
+	main.show_screen("clients")
+	await get_tree().create_timer(1.2).timeout
+	await _shot("15e_escritorio_pets")
+	# mídia paga na aba Clientes
+	main.screens["clients"].scroll_vertical = 460
+	await _frames(3)
+	await _shot("15f_midia_paga")
 	print("screenshots em %s" % ProjectSettings.globalize_path(out_dir))
 	get_tree().quit(0)
 

@@ -1,9 +1,9 @@
 class_name Pet
 extends Node2D
-## Pet do escritório (cachorro ou gato): passeia pelo piso, para, olha em volta e segue.
+## Pet do escritório (cachorro, gato, coelho, tartaruga, papagaio ou capivara): passeia pelo piso, para, olha em volta e segue.
 ## A posição do nó é a pata do bicho (y-sort junto com os personagens).
 
-const SPEED := {"dog": 18.0, "cat": 12.0}
+const SPEED := {"dog": 18.0, "cat": 12.0, "rabbit": 26.0, "turtle": 5.0, "parrot": 22.0, "capybara": 9.0}
 const FRAME_TIME := 0.2
 
 var kind := "dog"

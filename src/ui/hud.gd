@@ -31,35 +31,41 @@ func _ready() -> void:
 	var date_box := UIKit.hbox(6)
 	date_box.size_flags_horizontal = 0
 	date_box.add_child(UIKit.icon("calendar"))
-	date_label = UIKit.number("01 Jan 2010  08:00", 17, UIKit.COLOR_TEXT)
+	date_label = UIKit.number("01 Jan 2010 08:00", 17, UIKit.COLOR_TEXT)
 	date_box.add_child(date_label)
 	top.add_child(date_box)
-	var map_button := _icon_button("map", func(): get_tree().call_group("main", "show_world_map"), 44)
-	map_button.tooltip_text = "Mapa: regiões, mudança de sede e concorrentes"
-	map_button.set_meta("tutorial", "map")
-	top.add_child(map_button)
 
-	var bottom := UIKit.hbox(6)
+	var bottom := UIKit.hbox(4)
 	v.add_child(bottom)
 	phase_label = UIKit.label("Freelancer", 15, UIKit.COLOR_MUTED)
 	phase_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	phase_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	phase_label.clip_text = true
+	phase_label.custom_minimum_size.x = 0
 	bottom.add_child(phase_label)
-	pause_button = _icon_button("pause", func(): Game.toggle_pause(), 48)
+	var agenda_button := _icon_button("agenda", func(): get_tree().call_group("main", "show_calendar"), 40)
+	agenda_button.tooltip_text = "Calendário: o que vem pela frente, missões e foco do mês"
+	agenda_button.set_meta("tutorial", "calendar")
+	bottom.add_child(agenda_button)
+	var map_button := _icon_button("map", func(): get_tree().call_group("main", "show_world_map"), 40)
+	map_button.tooltip_text = "Mapa: regiões, mudança de sede e concorrentes"
+	map_button.set_meta("tutorial", "map")
+	bottom.add_child(map_button)
+	pause_button = _icon_button("pause", func(): Game.toggle_pause(), 42)
 	pause_button.tooltip_text = "Pausar / continuar"
 	bottom.add_child(pause_button)
 	for i in 3:
 		var speed := i + 1
 		var b := UIKit.button("%dx" % speed, func(): Game.set_speed(speed), false, 36)
 		b.size_flags_horizontal = 0
-		b.custom_minimum_size.x = 48
+		b.custom_minimum_size.x = 46
 		if speed == 2:
 			b.set_meta("tutorial", "speed2")
 		bottom.add_child(b)
 		speed_buttons.append(b)
 	music_button = _icon_button("sound_on", func():
 		Audio.toggle_music()
-		refresh(), 44)
+		refresh(), 40)
 	music_button.tooltip_text = "Música ligada/desligada"
 	bottom.add_child(music_button)
 
@@ -90,7 +96,7 @@ static func clock_text() -> String:
 func _process(_delta: float) -> void:
 	if not Game.has_game():
 		return
-	var text := "%s  %s" % [Game.state.date_text(), clock_text()]
+	var text := "%s %s" % [Game.state.date_text(), clock_text()]
 	if text != date_label.text:
 		date_label.text = text
 
@@ -102,7 +108,7 @@ func refresh() -> void:
 	money_label.text = UIKit.money(st.money)
 	money_label.add_theme_color_override("font_color", UIKit.COLOR_NUMBER if st.money >= 0.0 else UIKit.COLOR_RED)
 	rep_label.text = "%d" % int(roundf(st.reputation))
-	date_label.text = "%s  %s" % [st.date_text(), clock_text()]
+	date_label.text = "%s %s" % [st.date_text(), clock_text()]
 	phase_label.text = "%s · %s" % [st.agency_name, Game.reputation.phase_name()]
 	pause_button.icon = UIKit.icon_texture("play" if st.paused else "pause")
 	music_button.icon = UIKit.icon_texture("sound_on" if Audio.music_enabled else "sound_off")

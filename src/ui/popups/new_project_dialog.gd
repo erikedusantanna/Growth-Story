@@ -7,6 +7,8 @@ var popups: Popups
 var kind: int = Project.Kind.PROJECT
 var services: Array = []
 var team: Array = []
+var team_labels: Dictionary = {}   # id -> Label com a habilidade para os serviços escolhidos
+var profile_label: Label
 var preview_box: VBoxContainer
 var start_button: Button
 var error_label: Label
@@ -109,6 +111,8 @@ func _ready() -> void:
 			_update_preview())
 		flow.add_child(t)
 	body.add_child(flow)
+	profile_label = UIKit.label("", 13, UIKit.COLOR_PURPLE, true)
+	body.add_child(profile_label)
 
 	# Equipe
 	body.add_child(UIKit.label("👥 Equipe", 17, UIKit.COLOR_ACCENT))
@@ -127,7 +131,9 @@ func _ready() -> void:
 				team.erase(e.id)
 			_update_preview())
 		row.add_child(t)
-		row.add_child(UIKit.label("%s · %s %d" % [Game.employees.title(e), UIKit.ATTR_SHORT[e.best_attr()], int(e.attr(e.best_attr()))], 13, UIKit.COLOR_MUTED))
+		var lbl := UIKit.label("%s · %s %d" % [Game.employees.title(e), UIKit.ATTR_SHORT[e.best_attr()], int(e.attr(e.best_attr()))], 13, UIKit.COLOR_MUTED)
+		row.add_child(lbl)
+		team_labels[e.id] = lbl
 		body.add_child(row)
 
 	# Prévia
@@ -147,6 +153,7 @@ func _ready() -> void:
 
 
 func _update_preview() -> void:
+	_update_team_labels()
 	UIKit.clear(preview_box)
 	if services.is_empty() or team.is_empty():
 		preview_box.add_child(UIKit.muted("Escolha serviços e equipe para ver a prévia."))
@@ -184,6 +191,30 @@ func _update_preview() -> void:
 			v.add_child(UIKit.label("• " + String(hint), 13, UIKit.COLOR_TEXT, true))
 	preview_box.add_child(card)
 	start_button.disabled = false
+
+
+## Mostra o que os serviços escolhidos pedem e quanto cada pessoa rende neles.
+func _update_team_labels() -> void:
+	if services.is_empty():
+		profile_label.text = "Escolha os serviços: cada um pede atributos diferentes (tráfego pago pede Performance, design pede Criatividade…)."
+	else:
+		var attrs: Array = Game.projects.key_attrs(services, 3).map(func(a): return Employee.ATTR_NAMES.get(a, a))
+		profile_label.text = "🎯 Este trabalho pede: %s. A média da equipe nesses atributos soma ou tira até %d pontos da nota." % [", ".join(attrs), int(ProjectSystem.FIT_BONUS_MAX)]
+	for id in team_labels:
+		var e: Employee = Game.state.employee_by_id(id)
+		var lbl: Label = team_labels[id]
+		if e == null or lbl == null:
+			continue
+		if services.is_empty():
+			lbl.text = "%s · %s %d" % [Game.employees.title(e), UIKit.ATTR_SHORT[e.best_attr()], int(e.attr(e.best_attr()))]
+			lbl.add_theme_color_override("font_color", UIKit.COLOR_MUTED)
+		else:
+			var skill := 0.0
+			for sid in services:
+				skill += e.skill_for(Game.content.services.get(sid, {}).get("weights", {}))
+			skill /= float(services.size())
+			lbl.text = "%s · aptidão %d" % [Game.employees.title(e), int(roundf(skill))]
+			lbl.add_theme_color_override("font_color", UIKit.COLOR_GREEN if skill >= 60.0 else (UIKit.COLOR_MUTED if skill >= 45.0 else UIKit.COLOR_RED))
 
 
 func _start() -> void:

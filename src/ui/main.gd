@@ -9,6 +9,7 @@ var hud: Hud
 var office_view: OfficeView
 var feed: RichTextLabel
 var objective_label: Label
+var quest_label: Label
 var screens: Dictionary = {}
 var nav_buttons: Dictionary = {}
 var popups: Popups
@@ -16,7 +17,9 @@ var event_stage: EventStage
 var title_screen: TitleScreen
 var tutorial: TutorialOverlay
 var world_map: WorldMapScreen
+var calendar_screen: CalendarScreen
 var current_screen := "clients"
+var _blink_t := 0.0
 
 
 func _ready() -> void:
@@ -56,6 +59,11 @@ func _ready() -> void:
 	objective_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	objective_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	feed_box.add_child(objective_label)
+	quest_label = UIKit.label("", 13, UIKit.COLOR_PURPLE, true)
+	quest_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	quest_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	quest_label.visible = false
+	feed_box.add_child(quest_label)
 	feed = RichTextLabel.new()
 	feed.bbcode_enabled = true
 	feed.scroll_active = false
@@ -102,6 +110,8 @@ func _ready() -> void:
 	add_child(map_layer)
 	world_map = WorldMapScreen.new()
 	map_layer.add_child(world_map)
+	calendar_screen = CalendarScreen.new()
+	map_layer.add_child(calendar_screen)
 	var guide_layer := CanvasLayer.new()
 	guide_layer.layer = 12   # acima dos modais: destaca botões dentro deles também
 	add_child(guide_layer)
@@ -116,6 +126,25 @@ func _ready() -> void:
 	EventBus.game_started.connect(_refresh_feed)
 	EventBus.state_changed.connect(_refresh_objective)
 	title_screen.open()
+
+
+## Aba Clientes chama atenção enquanto houver prospects esperando resposta (badge + pulso).
+func _process(delta: float) -> void:
+	if not Game.has_game() or not nav_buttons.has("clients"):
+		return
+	var b: Button = nav_buttons["clients"]
+	var n: int = Game.state.prospects().size()
+	var label := "%s\n%s" % [SCREEN_ICONS["clients"], SCREEN_LABELS["clients"]]
+	if n > 0:
+		label = "%s %d\n%s" % [SCREEN_ICONS["clients"], n, SCREEN_LABELS["clients"]]
+	if b.text != label:
+		b.text = label
+	if n > 0 and current_screen != "clients":
+		_blink_t += delta
+		var k := 0.5 + 0.5 * sin(_blink_t * 5.0)
+		b.modulate = Color(1.0, 1.0 - 0.25 * k, 1.0 - 0.45 * k)
+	elif b.modulate != Color.WHITE:
+		b.modulate = Color.WHITE
 
 
 func show_screen(name: String) -> void:
@@ -150,12 +179,21 @@ func below_office_y() -> float:
 
 func show_world_map() -> void:
 	if Game.has_game():
+		calendar_screen.close()
 		world_map.open()
+
+
+func show_calendar() -> void:
+	if Game.has_game():
+		world_map.close()
+		calendar_screen.open()
 
 
 func show_title() -> void:
 	if world_map.visible:
 		world_map.close()
+	if calendar_screen.visible:
+		calendar_screen.close()
 	if Game.has_game():
 		Game.state.paused = true
 	Audio.stop_ambience()
@@ -176,6 +214,14 @@ func _on_game_started() -> void:
 func _refresh_objective() -> void:
 	if not Game.has_game():
 		return
+	var quests: Array = Game.quests.active()
+	quest_label.visible = not quests.is_empty()
+	if not quests.is_empty():
+		var parts: Array = []
+		for q in quests:
+			var t: Dictionary = Game.quests.template(String(q.get("id", "")))
+			parts.append("%s %s (%s · %d d)" % [String(t.get("icon", "📜")), String(t.get("title", "")), Game.quests.progress_text(q), Game.quests.days_left(q)])
+		quest_label.text = "📜 " + " · ".join(parts)
 	var obj := Game.objectives.current()
 	if obj.is_empty():
 		objective_label.text = "Todos os objetivos concluídos. Agora a história é sua."

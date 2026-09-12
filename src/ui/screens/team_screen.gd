@@ -170,6 +170,8 @@ func _person_header(e: Employee, right_text: String, right_color: Color) -> HBox
 	top.add_child(UIKit.label(right_text, 14, right_color))
 	v.add_child(top)
 	v.add_child(UIKit.label(Game.employees.title(e), 15, UIKit.COLOR_MUTED))
+	var best: Array = Game.employees.best_services(e).map(func(sid): return "%s %d" % [Game.content.service_name(sid), int(roundf(e.skill_for(Game.content.services.get(sid, {}).get("weights", {}))))])
+	v.add_child(UIKit.label("🎯 Rende mais em: %s" % ", ".join(best), 13, UIKit.COLOR_ACCENT.darkened(0.1), true))
 	v.add_child(UIKit.label("%s · %s" % [Game.employees.personality_name(e), Game.content.personalities.get(e.personality, {}).get("desc", "")], 13, UIKit.COLOR_BLUE, true))
 	var partners: Dictionary = Game.chemistry.partners_for(e.personality)
 	var parts: Array = []

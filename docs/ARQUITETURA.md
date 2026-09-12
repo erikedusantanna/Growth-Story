@@ -136,6 +136,26 @@ de reputação. Um jogador real tende a crescer mais devagar que o bot; a faixa 
   (as pessoas ficam com `busy_reason = "Em evento"` e saem pela porta). Ao terminar, aplicam `effects`:
   `reputation`, `prospects` (+`prospect_tier_bonus`), `candidates`, `money` (patrocínio), `morale`, `delay_days`.
 
+## Missões, calendário e notícias (`quest_system.gd`, `calendar_system.gd`, `news_system.gd`)
+
+`QuestSystem` guarda as missões ativas em `state.quests` (`{id, start_day, deadline_day, start_stat,
+progress}`) e mede o progresso de quatro formas: delta de um contador de `state.stats`, entrega com N
+estrelas (via `project_completed`), dias seguidos de moral alta e valores instantâneos (caixa, tamanho
+da equipe). `check()` roda a cada mudança de estado e `on_day()` cuida de prazo e sorteio.
+
+`CalendarSystem` não guarda agenda própria: `upcoming()` monta a lista lendo os outros sistemas
+(fechamento do mês, temas sazonais, premiação, prazos de projeto e missão, leads de mídia paga,
+aniversários, semana de mudança, cooldown de investida). O que é dele: o **foco do mês**
+(`state.focus`, consultado por `has_focus()` em clientes, projetos, pessoas e finanças) e o
+**aniversário de contrato** com presente (`state.gifts_sent`).
+
+`NewsSystem` sorteia manchetes de `data/news.json`, guarda as últimas em `state.news_feed` para a banca
+do calendário e aplica o efeito declarado (`money_pct`, `money`, `reputation`, `morale`). As
+ilustrações ficam em `assets/art/news/` e são geradas por `tools/gen_art.py` (`NEWS_ART`).
+
+**Regra de layout:** nada na interface pode pedir mais largura que o viewport (540 px). O HUD e as
+telas são verificados pelo `ui_smoke_test`; passar disso empurra o layout inteiro e corta a tela.
+
 ## World Map e regiões (`data/regions.json`, `data/offices.json`, `OfficeSystem`)
 
 - `state.office_level` é um índice **global** de 1 a 16 sobre `data/offices.json` (gerado por `tools/gen_layouts.py`:

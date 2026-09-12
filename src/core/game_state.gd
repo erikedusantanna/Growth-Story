@@ -42,12 +42,21 @@ var agency_events_last: Dictionary = {} # id -> último dia
 var awards: Array = []                  # [{year, category, status, title, detail}] Prêmios do Marketing
 var rivals: Dictionary = {}             # id -> {strength, aggressive_until, clients, staff, wins, losses}
 var last_raid_day: int = -999           # última investida contra uma rival (cooldown de 90 dias)
+var campaigns: Array = []               # mídia paga: [{id, arrive_day, prospects, tier_bonus}] leads a caminho
+var quests: Array = []                  # missões ativas: [{id, start_day, deadline_day, start_stat, progress}]
+var quests_done: Dictionary = {}        # id -> último dia em que terminou (cumprida ou perdida)
+var last_quest_day: int = -999
+var news_seen: Dictionary = {}          # id da notícia -> último dia em que saiu
+var news_feed: Array = []               # [{id, day}] últimas notícias, para a banca do calendário
+var last_news_day: int = -999
+var focus: Dictionary = {}              # foco do mês: {id, month_index}
+var gifts_sent: Dictionary = {}         # id do cliente -> dia do último presente de aniversário
 var pending_event: Dictionary = {}
 var cases: int = 0
 var speed: int = 1
 var paused: bool = false
 var game_over: bool = false
-var stats: Dictionary = {"projects_done": 0, "five_stars": 0, "hires": 0, "total_revenue": 0.0, "clients_signed": 0, "trainings": 0, "retainers": 0, "diagnoses": 0, "hr_actions": 0, "furniture": 0, "agency_events": 0, "awards": 0}
+var stats: Dictionary = {"projects_done": 0, "five_stars": 0, "hires": 0, "total_revenue": 0.0, "clients_signed": 0, "trainings": 0, "retainers": 0, "diagnoses": 0, "hr_actions": 0, "furniture": 0, "agency_events": 0, "awards": 0, "campaigns": 0, "quests_done": 0, "quests_failed": 0, "news": 0}
 
 
 func new_id() -> int:
@@ -168,6 +177,9 @@ func to_dict() -> Dictionary:
 		"hr_hired": hr_hired, "pets": pets.duplicate(),
 		"agency_events": agency_events.duplicate(true), "agency_events_last": agency_events_last.duplicate(),
 		"awards": awards.duplicate(true), "rivals": rivals.duplicate(true), "last_raid_day": last_raid_day,
+		"campaigns": campaigns.duplicate(true), "quests": quests.duplicate(true), "quests_done": quests_done.duplicate(), "last_quest_day": last_quest_day,
+		"news_seen": news_seen.duplicate(), "news_feed": news_feed.duplicate(true), "last_news_day": last_news_day,
+		"focus": focus.duplicate(), "gifts_sent": gifts_sent.duplicate(),
 		"pending_event": pending_event.duplicate(true), "cases": cases,
 		"speed": speed, "game_over": game_over, "stats": stats.duplicate(),
 	}
@@ -220,6 +232,15 @@ static func from_dict(d: Dictionary) -> GameState:
 	s.awards = Array(d.get("awards", []))
 	s.rivals = d.get("rivals", {})
 	s.last_raid_day = int(d.get("last_raid_day", -999))
+	s.campaigns = Array(d.get("campaigns", []))
+	s.quests = Array(d.get("quests", []))
+	s.quests_done = d.get("quests_done", {})
+	s.last_quest_day = int(d.get("last_quest_day", -999))
+	s.news_seen = d.get("news_seen", {})
+	s.news_feed = Array(d.get("news_feed", []))
+	s.last_news_day = int(d.get("last_news_day", -999))
+	s.focus = d.get("focus", {})
+	s.gifts_sent = d.get("gifts_sent", {})
 	s.pending_event = d.get("pending_event", {})
 	s.cases = int(d.get("cases", 0))
 	s.speed = int(d.get("speed", 1))

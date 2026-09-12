@@ -16,6 +16,7 @@ func build() -> void:
 		content.add_child(UIKit.muted("Nenhum prospect agora. Novos aparecem com o tempo e com reputação."))
 	for c in prospects:
 		content.add_child(_prospect_card(c))
+	content.add_child(_paid_media_card())
 	content.add_child(UIKit.spacer(4))
 	var actives := st.active_clients()
 	content.add_child(header("🤝 Clientes ativos", "%d" % actives.size()))
@@ -40,7 +41,7 @@ func _prospect_card(c: Client) -> PanelContainer:
 	var card := UIKit.card()
 	var v := UIKit.card_content(card)
 	_client_header(c, v)
-	v.add_child(UIKit.muted("Orçamento de referência: %s/mês" % UIKit.money(c.budget)))
+	v.add_child(UIKit.muted("Orçamento de referência: %s/mês%s" % [UIKit.money(c.budget), " · 📣 via mídia paga" if c.paid else ""]))
 	var chance := Game.clients.proposal_chance(c)
 	var actions := UIKit.hbox()
 	var propose := UIKit.button("🤝 Proposta (%d%%)" % int(chance), func(): popups().show_proposal(c), true)
@@ -50,6 +51,43 @@ func _prospect_card(c: Client) -> PanelContainer:
 	v.add_child(actions)
 	if c.proposal_attempts > 0:
 		v.add_child(UIKit.label("Tentativas: %d de 3" % c.proposal_attempts, 13, UIKit.COLOR_RED))
+	return card
+
+
+## Mídia paga: comprar leads além dos que chegam organicamente.
+func _paid_media_card() -> PanelContainer:
+	var card := UIKit.card()
+	var v := UIKit.card_content(card)
+	var top := UIKit.hbox()
+	var title := UIKit.label("📣 Mídia paga", 18, UIKit.COLOR_ACCENT)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(title)
+	var pending: int = Game.clients.pending_leads()
+	if pending > 0:
+		var soonest := 999
+		for camp in Game.state.campaigns:
+			soonest = mini(soonest, int(camp.get("arrive_day", 0)) - Game.state.day)
+		top.add_child(UIKit.label("%d lead(s) a caminho · %d dia(s)" % [pending, maxi(soonest, 0)], 13, UIKit.COLOR_GREEN))
+	v.add_child(top)
+	v.add_child(UIKit.muted("Leads comprados chegam em poucos dias, além dos que aparecem sozinhos. O custo sobe com a região da sede.", 13))
+	for camp in ClientSystem.CAMPAIGNS:
+		var row := UIKit.hbox(8)
+		var info := UIKit.vbox(0)
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info.add_child(UIKit.label("%s %s" % [String(camp["icon"]), String(camp["name"])], 15, UIKit.COLOR_TEXT))
+		info.add_child(UIKit.muted(String(camp["desc"]), 12))
+		row.add_child(info)
+		var check: Dictionary = Game.clients.can_start_campaign(camp)
+		var b := UIKit.button(UIKit.money(Game.clients.campaign_cost(camp)), func():
+			var r: Dictionary = Game.clients.start_campaign(String(camp["id"]))
+			if not r.ok:
+				popups().show_info("Mídia paga", r.reason), true, 40)
+		b.size_flags_horizontal = 0
+		b.custom_minimum_size.x = 118
+		b.disabled = not check.ok
+		b.tooltip_text = check.reason
+		row.add_child(b)
+		v.add_child(row)
 	return card
 
 

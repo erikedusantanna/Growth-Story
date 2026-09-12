@@ -128,6 +128,21 @@ def gen_sfx():
         note(G4, 0.07, "triangle", 0.5), note(C5, 0.07, "triangle", 0.5),
         note(E5, 0.07, "triangle", 0.5), note(G5, 0.16, "triangle", 0.55)))
 
+    # prospect novo: "campainha de loja" — duas notas brilhantes com repique
+    write_wav(os.path.join(OUT_SFX, "prospect.wav"), seq(
+        note(E6, 0.07, "triangle", 0.5), note(G6, 0.12, "triangle", 0.5), silence(0.04),
+        note(G6, 0.08, "triangle", 0.3)))
+
+    # missão nova: pergaminho — três notas curtas em escala descendente e volta
+    write_wav(os.path.join(OUT_SFX, "quest.wav"), seq(
+        note(A5, 0.06, "square", 0.4), note(F5, 0.06, "square", 0.4), note(D5, 0.06, "square", 0.4),
+        note(A5, 0.14, "triangle", 0.45)))
+
+    # notícia: "extra, extra" — dois toques de sino de jornal
+    write_wav(os.path.join(OUT_SFX, "news.wav"), seq(
+        note(C6, 0.05, "square", 0.35), silence(0.05), note(C6, 0.05, "square", 0.35), silence(0.05),
+        note(E6, 0.12, "triangle", 0.4)))
+
     # clique de interface: blip curto e discreto
     write_wav(os.path.join(OUT_SFX, "click.wav"),
               note(G5, 0.025, "square", 0.22, attack=0.002, release=0.015))

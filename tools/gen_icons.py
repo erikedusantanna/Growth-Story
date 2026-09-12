@@ -183,10 +183,14 @@ ICONS = {
         "..3.......", "..33......", "..333.....", "..3333....", "..33333...",
         "..33333...", "..3333....", "..333.....", "..33......", "..3.......",
     ],
+    "agenda": [  # calendário com marcações (botão do HUD)
+        ".1......1.", "1111111111", "1WWWWWWWW1", "1111111111", "1W1WW1WW11",
+        "1WWWWWWWW1", "1W11WW1WW1", "1WWWWWWWW1", "1W1WW11WW1", "1111111111",
+    ],
 }
 
 
-HUD_BUTTON_ICONS = ("map", "sound_on", "sound_off", "pause", "play")
+HUD_BUTTON_ICONS = ("map", "sound_on", "sound_off", "pause", "play", "agenda")
 
 
 def scale2(c):
