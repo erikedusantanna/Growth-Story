@@ -45,6 +45,8 @@ var last_raid_day: int = -999           # última investida contra uma rival (co
 var campaigns: Array = []               # mídia paga: [{id, arrive_day, prospects, tier_bonus}] leads a caminho
 var hunts: Array = []                   # recrutamento pago: [{id, arrive_day, candidates, quality, high_chance}]
 var recruiter_hired := false            # recrutadora interna (ocupa um lugar no escritório)
+var new_candidates := 0                 # currículos que chegaram e o jogador ainda não abriu (aviso na aba Equipe)
+var bankrupt_warnings := 0              # quantos avisos de falência já foram dados nesta queda
 var loans: Array = []                   # empréstimos do banco: [{id, amount, remaining, installment, months_left, rate, taken_day}]
 var quests: Array = []                  # missões ativas: [{id, start_day, deadline_day, start_stat, progress}]
 var quests_done: Dictionary = {}        # id -> último dia em que terminou (cumprida ou perdida)
@@ -183,6 +185,7 @@ func to_dict() -> Dictionary:
 		"furniture": furniture.duplicate(), "buffs": buffs.duplicate(true), "hr_last_used": hr_last_used.duplicate(),
 		"hr_hired": hr_hired, "pets": pets.duplicate(),
 		"hunts": hunts.duplicate(true), "recruiter_hired": recruiter_hired, "loans": loans.duplicate(true),
+		"new_candidates": new_candidates, "bankrupt_warnings": bankrupt_warnings,
 		"agency_events": agency_events.duplicate(true), "agency_events_last": agency_events_last.duplicate(),
 		"awards": awards.duplicate(true), "rivals": rivals.duplicate(true), "last_raid_day": last_raid_day,
 		"campaigns": campaigns.duplicate(true), "quests": quests.duplicate(true), "quests_done": quests_done.duplicate(), "last_quest_day": last_quest_day,
@@ -238,6 +241,8 @@ static func from_dict(d: Dictionary) -> GameState:
 	s.hr_hired = bool(d.get("hr_hired", false))
 	s.hunts = Array(d.get("hunts", []))
 	s.recruiter_hired = bool(d.get("recruiter_hired", false))
+	s.new_candidates = int(d.get("new_candidates", 0))
+	s.bankrupt_warnings = int(d.get("bankrupt_warnings", 0))
 	s.loans = Array(d.get("loans", []))
 	s.pets = Array(d.get("pets", []))
 	s.agency_events = Array(d.get("agency_events", []))

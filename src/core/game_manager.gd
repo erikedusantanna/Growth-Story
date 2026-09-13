@@ -27,6 +27,7 @@ var talent := TalentSystem.new()
 var crisis := CrisisSystem.new()
 var recruitment := RecruitmentSystem.new()
 var bank := BankSystem.new()
+var notifications := NotificationSystem.new()
 var save := SaveSystem.new()
 var time := TimeSystem.new()
 
@@ -39,7 +40,7 @@ var ui_blocking := false
 func _ready() -> void:
 	content = ContentDB.new()
 	content.load_all()
-	for system in [services, employees, clients, projects, finance, reputation, events, office, objectives, hr, agency_events, era, departments, competitors, seasons, chemistry, awards, quests, news, calendar, talent, crisis, recruitment, bank, save, time]:
+	for system in [services, employees, clients, projects, finance, reputation, events, office, objectives, hr, agency_events, era, departments, competitors, seasons, chemistry, awards, quests, news, calendar, talent, crisis, recruitment, bank, notifications, save, time]:
 		system.setup(self)
 	EventBus.state_changed.connect(func():
 		if state != null:

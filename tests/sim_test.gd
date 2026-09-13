@@ -43,6 +43,10 @@ func _ready() -> void:
 	_test_recruitment(game)
 	_test_recruiter(game)
 	_test_bank(game)
+	_test_candidate_alert(game)
+	_test_bankruptcy_alerts(game)
+	_test_hr_unlock(game)
+	_test_notifications(game)
 	if failures == 0:
 		print("\n[OK] Todos os testes passaram.")
 		get_tree().quit(0)
@@ -1350,3 +1354,109 @@ func _test_bank(game) -> void:
 	# as linhas grandes exigem região e reputação
 	st.reputation = 10.0
 	check(not game.bank.can_take(game.bank.offer_by_id("investidor")).ok, "a linha de investimento exige região e reputação")
+
+
+func _test_candidate_alert(game) -> void:
+	print("== Aviso de currículo novo ==")
+	game.new_game("Currículo", "Chefe", 94)
+	var st = game.state
+	st.new_candidates = 0
+	var fired := [0]
+	var cb := func(): fired[0] += 1
+	EventBus.candidates_arrived.connect(cb)
+	var before: int = st.candidates.size()
+	var e: Employee = game.employees.add_candidate("normal")
+	check(st.candidates.size() == before + 1, "o candidato entrou na lista")
+	check(st.new_candidates == 1, "o contador da aba Equipe subiu")
+	check(fired[0] == 1, "o sinal candidates_arrived disparou uma vez")
+	# a mesma porta serve para o talento raro: quem entra pela lista faz a aba piscar
+	game.talent.spawn()
+	check(st.new_candidates >= 1 and fired[0] >= 1, "o talento raro também avisa (%d aviso(s))" % fired[0])
+	EventBus.candidates_arrived.disconnect(cb)
+	check(GameState.from_dict(st.to_dict()).new_candidates == st.new_candidates, "o contador sobrevive ao save")
+	check(e != null and e.name != "", "o candidato gerado tem nome (%s)" % e.name)
+
+
+func _test_bankruptcy_alerts(game) -> void:
+	print("== Alertas de falência ==")
+	game.new_game("Falência", "Chefe", 95)
+	var st = game.state
+	var seen: Array = []
+	var cb := func(level, _status): seen.append(level)
+	EventBus.bankruptcy_warning.connect(cb)
+	st.money = 20000.0
+	game.finance.check_alerts()
+	check(int(game.finance.status().level) == 0 and seen.is_empty(), "caixa positivo: nenhum aviso")
+	st.money = -1000.0
+	game.finance.check_alerts()
+	check(int(game.finance.status().level) == 1 and seen.is_empty(), "negativo pequeno já aparece como 'No vermelho', mas ainda sem popup")
+	st.money = float(FinanceSystem.WARN_AT[0]) - 1.0
+	game.finance.check_alerts()
+	check(seen == [1], "primeiro alerta dispara ao passar de %s" % FinanceSystem.format_money(FinanceSystem.WARN_AT[0]))
+	game.finance.check_alerts()
+	check(seen == [1], "o mesmo alerta não repete a cada tique")
+	st.money = float(FinanceSystem.WARN_AT[1]) - 1.0
+	game.finance.check_alerts()
+	check(seen == [1, 2], "segundo alerta dispara ao passar de %s" % FinanceSystem.format_money(FinanceSystem.WARN_AT[1]))
+	var status: Dictionary = game.finance.status()
+	check(float(status.limit) == FinanceSystem.BANKRUPT_AT, "o status informa o limite exato da derrota")
+	check(float(status.room) == st.money - FinanceSystem.BANKRUPT_AT, "e quanto ainda falta para ele (%s)" % FinanceSystem.format_money(float(status.room)))
+	check(int(status.level) >= 2, "nível de alerta no status (%d — %s)" % [int(status.level), status.name])
+	st.money = 5000.0
+	game.finance.check_alerts()
+	check(st.bankrupt_warnings == 0, "voltar ao positivo rearma os avisos")
+	st.money = float(FinanceSystem.WARN_AT[0]) - 1.0
+	game.finance.check_alerts()
+	check(seen == [1, 2, 1], "e o primeiro alerta pode disparar de novo")
+	EventBus.bankruptcy_warning.disconnect(cb)
+
+
+func _test_hr_unlock(game) -> void:
+	print("== RH liberado mais cedo ==")
+	game.new_game("RH cedo", "Chefe", 96)
+	var st = game.state
+	st.money = 500000.0
+	st.reputation = 60.0
+	var required: int = int(game.content.hr.get("hire", {}).get("requires_office", 99))
+	check(required <= 4, "o RH pede no máximo o escritório 4 (pede %d — %s)" % [required, game.office.level_data(required).get("name", "")])
+	check(int(game.office.level_data(required).get("region", 9)) <= 2, "e isso cai na região 2, não na capital")
+	check(not game.hr.can_hire().ok, "no escritório inicial ainda não dá")
+	check(game.office.move_to(2).ok, "mudou para a região 2")
+	check(st.office_level >= required, "a primeira sede da região 2 já é o escritório %d" % st.office_level)
+	check(game.hr.can_hire().ok, "com o escritório %d o RH abre (%s)" % [st.office_level, game.hr.can_hire().reason])
+	check(game.hr.hire().ok, "contratou o RH")
+	check(game.hr.is_unlocked(), "as ações de RH ficaram disponíveis")
+
+
+func _test_notifications(game) -> void:
+	print("== Central de notificações ==")
+	game.new_game("Assistente", "Chefe", 97)
+	var st = game.state
+	var ids := func() -> Array: return game.notifications.items().map(func(i): return String(i.id))
+	# prospect esperando resposta
+	game.clients.spawn_prospect()
+	check(ids.call().has("prospects"), "prospect esperando aparece na central")
+	# currículo novo
+	st.new_candidates = 0
+	game.employees.add_candidate("normal")
+	check(ids.call().has("candidatos"), "currículo novo aparece na central")
+	# caixa no vermelho
+	st.money = float(FinanceSystem.WARN_AT[1]) - 1.0
+	var caixa: Array = game.notifications.items().filter(func(i): return String(i.id) == "caixa")
+	check(caixa.size() == 1 and int(caixa[0].urgency) >= NotificationSystem.WARN, "caixa no vermelho entra como urgente")
+	check(String(caixa[0].screen) == "company", "e leva para a aba Empresa")
+	# ordenação: o mais urgente primeiro
+	var items: Array = game.notifications.items()
+	var ordered := true
+	for k in range(1, items.size()):
+		if int(items[k - 1].urgency) < int(items[k].urgency):
+			ordered = false
+	check(ordered, "a lista vem da mais urgente para a menos (%d itens)" % items.size())
+	check(game.notifications.count() == items.size(), "count() bate com a lista")
+	check(game.notifications.urgent_count() <= game.notifications.count(), "urgent_count() é um subconjunto")
+	# sem nada pendente a central fica vazia
+	game.new_game("Assistente 2", "Chefe", 98)
+	game.state.clients.clear()
+	game.state.candidates.clear()
+	game.state.new_candidates = 0
+	check(game.notifications.urgent_count() == 0, "sem prospect nem currículo parado, nada é urgente")

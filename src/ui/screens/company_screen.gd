@@ -9,6 +9,7 @@ extends BaseScreen
 func build() -> void:
 	var st: GameState = Game.state
 	content.add_child(header("🏢 %s" % st.agency_name, Game.reputation.phase_name()))
+	content.add_child(_status_card())
 	content.add_child(_focus_card())
 	content.add_child(_agenda_card())
 
@@ -227,4 +228,38 @@ func _agenda_card() -> PanelContainer:
 			if not r.ok:
 				popups().show_info("Presente", r.reason), true, 40)
 		v.add_child(gift)
+	return card
+
+
+## Situação do caixa em tempo real. O jogador perdeu de surpresa por não saber onde ficava a linha
+## da falência, então ela aparece aqui sempre: o limite exato, quanto falta e quanto o caixa dura.
+func _status_card() -> PanelContainer:
+	var st: GameState = Game.state
+	var status: Dictionary = Game.finance.status()
+	var colors := {"green": UIKit.COLOR_GREEN, "text": UIKit.COLOR_TEXT, "accent": UIKit.COLOR_ACCENT, "red": UIKit.COLOR_RED}
+	var color: Color = colors.get(String(status.get("color_kind", "text")), UIKit.COLOR_TEXT)
+	var icons := ["💚", "🟡", "⚠️", "🚨"]
+	var level: int = int(status.get("level", 0))
+	var card := UIKit.card()
+	var v := UIKit.card_content(card)
+	var top := UIKit.hbox()
+	var title := UIKit.label("%s Situação: %s" % [icons[level], String(status.get("name", ""))], 19, color)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(title)
+	top.add_child(UIKit.label(UIKit.money(st.money), 17, UIKit.COLOR_GREEN if st.money >= 0.0 else UIKit.COLOR_RED))
+	v.add_child(top)
+	v.add_child(UIKit.label("O jogo acaba se o caixa passar de %s." % UIKit.money(FinanceSystem.BANKRUPT_AT), 14, UIKit.COLOR_MUTED, true))
+	# barra da folga até o limite: cheia quando o caixa está positivo, vazia na falência
+	var room: float = float(status.get("room", 0))
+	var span: float = -FinanceSystem.BANKRUPT_AT
+	v.add_child(UIKit.bar(clampf(room, 0.0, span), span, color, 12))
+	v.add_child(UIKit.muted("Folga até o limite: %s" % UIKit.money(maxf(room, 0.0)), 13))
+	var months: float = float(status.get("months_left", -1.0))
+	if float(status.get("burn", 0.0)) <= 0.0:
+		v.add_child(UIKit.label("A receita recorrente cobre o custo fixo: o caixa tende a subir.", 14, UIKit.COLOR_GREEN, true))
+	elif months >= 0.0:
+		v.add_child(UIKit.label("No ritmo atual (queima de %s/mês), o caixa aguenta cerca de %d mês(es)." % [
+			UIKit.money(float(status.get("burn", 0))), int(months)], 14, color, true))
+	if level >= 2 and Game.bank.is_available():
+		v.add_child(UIKit.button("🏦 Pegar capital de giro no banco", func(): popups().show_bank(), true, 40))
 	return card

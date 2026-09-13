@@ -100,7 +100,6 @@ func _tick_hunts() -> void:
 			quality = "high"
 		var e: Employee = game.employees.add_candidate(quality)
 		game.add_log("📄 Currículo novo: %s (%s). Está na aba Equipe." % [e.name, game.employees.title(e)], "hire")
-	EventBus.candidates_arrived.emit()
 	EventBus.state_changed.emit()
 
 
@@ -187,5 +186,4 @@ func on_day() -> void:
 	if st.rng.randf() < float(recruiter_data().get("weekly_chance", 0.0)):
 		var e: Employee = game.employees.add_candidate("high" if st.rng.randf() < high_chance() else "normal")
 		game.add_log("🧑‍💼 A recrutadora trouxe %s para conversar." % e.name, "hire")
-		EventBus.candidates_arrived.emit()
 		EventBus.state_changed.emit()

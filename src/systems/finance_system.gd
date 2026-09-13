@@ -4,6 +4,9 @@ extends RefCounted
 
 const TOOLS_PER_EMPLOYEE := 250.0
 const BANKRUPT_AT := -30000.0
+## Dois avisos antes da derrota. O jogador reclamou de perder de surpresa: ficar no vermelho é
+## normal por um tempo, então o jogo precisa dizer em voz alta onde fica a linha.
+const WARN_AT := [-6000.0, -18000.0]
 
 var game
 
@@ -24,6 +27,52 @@ func add_money(delta: float, reason: String = "", kind: String = "other") -> voi
 		var sign := "+" if delta >= 0.0 else "-"
 		game.add_log("%s %s (%s)" % [sign, format_money(absf(delta)), reason], "money")
 	EventBus.money_changed.emit(st.money, delta)
+	check_alerts()
+
+
+## Situação do caixa, para a aba Empresa mostrar em tempo real e para os avisos decidirem a hora.
+## Devolve {level, name, color_kind, money, limit, room, months_left, warning}.
+## level: 0 saudável · 1 atenção (no vermelho) · 2 alerta · 3 risco de derrota.
+func status() -> Dictionary:
+	var st: GameState = game.state
+	var money: float = st.money
+	var level := 0
+	if money < BANKRUPT_AT * 0.6:          # passou do segundo aviso
+		level = 3
+	elif money < float(WARN_AT[0]):
+		level = 2
+	elif money < 0.0:
+		level = 1
+	var names := ["Saudável", "No vermelho", "Alerta", "Risco de falência"]
+	var kinds := ["green", "text", "accent", "red"]
+	# quantos meses o caixa aguenta no ritmo atual (receita recorrente menos custo fixo e parcelas)
+	var costs := monthly_costs()
+	var burn: float = float(costs.total_with_loans) - st.mrr()
+	var months := -1.0
+	if burn > 0.0:
+		months = (money - BANKRUPT_AT) / burn
+	return {
+		"level": level, "name": names[level], "color_kind": kinds[level],
+		"money": money, "limit": BANKRUPT_AT, "room": money - BANKRUPT_AT,
+		"months_left": months, "burn": burn,
+	}
+
+
+## Dispara os avisos de falência quando o caixa cruza cada linha, uma vez por queda.
+## Voltar para o positivo rearma os avisos.
+func check_alerts() -> void:
+	var st: GameState = game.state
+	if st.game_over:
+		return
+	if st.money >= 0.0:
+		if st.bankrupt_warnings != 0:
+			st.bankrupt_warnings = 0
+		return
+	for i in WARN_AT.size():
+		if st.money < float(WARN_AT[i]) and st.bankrupt_warnings <= i:
+			st.bankrupt_warnings = i + 1
+			EventBus.bankruptcy_warning.emit(i + 1, status())
+			return
 
 
 func monthly_costs() -> Dictionary:

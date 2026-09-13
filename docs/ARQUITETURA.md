@@ -191,6 +191,32 @@ telas são verificados pelo `ui_smoke_test`; passar disso empurra o layout intei
   as demais o cadeado. Concorrentes das regiões alcançadas aparecem como prédio com bandeira (painel no bloco C).
 - `OfficeView`: parede com `WALL_TINTS[região]` e vista da janela por região (morros, prédios, torres, mar).
 
+### Desenho da cidade (`tools/gen_art.py → world_map()`)
+
+O mapa é um losango isométrico de 16×8 px por tile (`iso_pt`, `iso_tile`, `iso_box`, `iso_tree`)
+num canvas de 270×640 em 1x. O terreno sai por faixa de altura (`_band_of`, 1 embaixo … 5 em cima),
+depois vêm, nesta ordem: praia (toda terra encostada no mar vira areia), profundidade do mar por
+BFS a partir da costa (`_sea_depth`: raso → `sea_hi` → `sea` → `sea_deep`), a avenida de progresso
+(tiles a menos de 9 px da polilinha entre os marcos das regiões), a grade de ruas secundárias, e as
+áreas de lazer — quatro **praças** com chafariz, um **lago** no bairro e um **campinho de futebol**
+com listras de corte e marcação. `free_spot(bands, dmin, dmax, keep_out, gap, size)` escolhe cada
+área num quarteirão inteiro livre de rua, longe da avenida e das outras.
+
+Duas regras de camada importam:
+
+- **Sombra no chão**: cada prédio escurece os tiles a leste dele, com o comprimento crescendo com a
+  altura. As cores `_sh` são geradas a partir de `MAP_GROUND` (a mesma cor 20% mais escura), e
+  `outline_region()` trata `_sh` como chão — então a sombra não ganha contorno.
+- **`world_cover.png`**: o canvas é copiado (`terrain`) **antes** dos prédios; a cobertura é a
+  diferença entre o desenho final e essa cópia. Tudo o que precisa ficar **atrás** dos carros
+  (sombra, faixa central, faixas de pedestre) tem de ser desenhado antes da cópia; tudo o que fica
+  **na frente** (prédios, árvores, chafarizes, postes, farol) depois.
+
+Os telhados ganham parapeito e um detalhe sorteado (`_roof_detail`): caixa d'água, casa de máquinas
+ou antena com luz de sinalização vermelha — esta só nos prédios de 34 px ou mais. As janelas novas
+entram sozinhas em `windows`/`dark_windows` do `map_life.json`, porque `_map_meta()` lê o canvas
+pronto; ou seja, prédio novo já acende à noite sem mexer em mais nada.
+
 ### Camada viva do mapa (`src/ui/world_map_life.gd`, `data/map_life.json`)
 
 `WorldMapLife` é um `Node2D` em coordenadas 1x (a tela aplica `MAP_SCALE`) entre a imagem da
@@ -310,6 +336,49 @@ temporárias e prefixa 🔥/🧊 nos serviços; a agenda da aba Empresa marca o 
   `GameManager` logo depois de `finance.on_month()`, debita cada parcela. Sem caixa, a parcela não
   sai: o saldo cresce `late_fee_rate` (8%) e a reputação cai `late_reputation` — encarece, mas não
   quebra a agência sozinho. `settle(id)` quita o saldo cheio, sem desconto.
+
+## Central de notificações (`notification_system.gd`)
+
+O jogo acumula coisas pedindo atenção ao mesmo tempo e dava para passar por tudo sem ver. O
+assistente resolve isso **sem guardar estado**: `items()` lê os outros sistemas na hora e monta a
+lista do que precisa do jogador agora, cada item no formato
+`{id, icon, title, detail, urgency, screen}` — `urgency` 2 age agora, 1 atenção, 0 informativo; e
+`screen` é a aba para onde o botão "Ir para…" leva. As fontes são caixa (`finance.status()`),
+parcela e capacidade do banco, prospects e diagnósticos, currículos novos, talento raro com prazo,
+estresse acima de 85 e gente parada há 10 dias, projeto sem equipe e prazo apertado, missões com 7
+dias ou menos, crise ativa, escritório lotado e RH liberado. Como nada é persistido, não há
+sincronizar nem migrar save: apagar a causa apaga o item.
+
+O sino fica no HUD (`hud.gd`, `_refresh_bell`): mostra `urgent_count()` e pulsa quando há algo
+urgente; `main.show_notifications()` abre a lista em `popups.gd`.
+
+## Aviso de falência (`finance_system.gd`)
+
+A derrota sempre existiu (`BANKRUPT_AT = −30.000`), mas era invisível até acontecer. Agora há dois
+pontos de apoio:
+
+- `status()` devolve `{level, name, color_kind, money, limit, room, months_left, burn}` — `level` 0
+  saudável, 1 no vermelho, 2 alerta, 3 risco de falência — e é o que a aba **Empresa** desenha no
+  topo, em tempo real, com a barra de folga até o limite e quantos meses o caixa aguenta no ritmo
+  atual (`burn = custo fixo com parcelas − MRR`).
+- `check_alerts()`, chamado no fim de todo `add_money()`, dispara
+  `EventBus.bankruptcy_warning(level, status)` ao cruzar cada linha de `WARN_AT`
+  (−6.000 e −18.000), uma vez por queda. `state.bankrupt_warnings` guarda qual já saiu e zera
+  quando o caixa volta ao positivo, então o mesmo aviso pode voltar numa crise nova. No segundo
+  aviso o popup oferece o banco, quando `BankSystem.is_available()`.
+
+## Navegação por ícones e abas piscando (`main.gd`, `employee_system.gd`)
+
+A barra de baixo usa `NAV_ICONS` (`assets/art/icons/nav_*.png`, desenhados em 10×10 e ampliados 2×
+por `tools/gen_icons.py`) e o rótulo antigo virou `tooltip_text`. `_alert_nav(key, count)` escreve o
+número no próprio botão e troca `icon_alignment` de centro para esquerda, para o ícone e o número
+caberem sem mudar a largura da barra.
+
+A aba **Equipe** pisca com `state.new_candidates`, zerado em `show_screen("team")`. Para o contador
+nunca ficar defasado, todo currículo entra por um caminho só —
+`EmployeeSystem.register_candidate(e)`, que anexa à lista, incrementa o contador e emite
+`EventBus.candidates_arrived` — usado pelo lote mensal, pelas buscas pagas, pela recrutadora e pelo
+talento raro.
 
 ## Marca: logo e ícone do app (`assets/brand/`, `tools/gen_brand.py`)
 

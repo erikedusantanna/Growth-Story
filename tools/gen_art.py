@@ -1349,7 +1349,23 @@ PAL.update({
     "b_navy": hx("#3e5f8f"), "b_navy_l": hx("#2f4a70"), "b_navy_r": hx("#233858"), "b_white": hx("#eef1f5"), "b_white_l": hx("#c9d0da"), "b_white_r": hx("#a6b0bd"),
     "b_win": hx("#f5e8a8"), "b_win_d": hx("#2c3a4e"), "iso_tree": hx("#4f9a4a"), "iso_tree_hi": hx("#7fc56a"), "iso_tree_lo": hx("#2f6b33"), "iso_trunk": hx("#7a4a25"),
     "light_w": hx("#fbfbfb"), "light_r": hx("#e04a3c"), "pin": hx("#3cc36a"), "gold2": hx("#f2c744"),
+    # mar com profundidade, praia, agua parada e areas verdes de lazer
+    "sea_deep": hx("#2b6296"), "sea_shal": hx("#86c8f0"), "pond": hx("#5fb0e0"), "pond_lo": hx("#3f8fc0"),
+    "plaza": hx("#efe6d0"), "plaza_lo": hx("#dbd0b6"), "turf": hx("#62b257"), "turf_lo": hx("#4f9a49"),
+    # detalhes de rua e de telhado
+    "lamp_p": hx("#4a515c"), "lamp_on": hx("#ffe9a8"), "tank": hx("#9aa3ae"), "ant": hx("#5b6470"),
+    "stone": hx("#e6e1d4"), "stone_lo": hx("#c4bdac"),
+    "iso_tree2": hx("#3f8f6a"), "iso_tree2_hi": hx("#63b98c"), "iso_tree2_lo": hx("#2a6a4c"),
 })
+# chao do mapa: tudo por onde carro/pedestre passam por cima (nao ganha contorno escuro)
+MAP_GROUND = ("g_sub", "g_sub_lo", "g_park", "g_park_lo", "g_urb", "g_urb_lo", "g_dist", "g_dist_lo",
+              "g_glob", "g_glob_lo", "sand", "sand_lo", "iso_road", "iso_road_lo", "iso_lane",
+              "path", "path_lo", "plaza", "plaza_lo", "turf", "turf_lo", "pond", "pond_lo")
+# sombra de cada piso: a mesma cor 20% mais escura, para os predios pousarem no chao
+for _k in MAP_GROUND:
+    _r, _g, _b, _a = PAL[_k]
+    PAL[_k + "_sh"] = (int(_r * 0.78), int(_g * 0.78), int(_b * 0.82), _a)
+MAP_SEA = ("sea", "sea_hi", "sea_lo", "sea_deep", "sea_shal", "foam2")
 ISO_TW, ISO_TH = 16, 8   # tile isometrico em 1x (losango 16x8)
 
 
@@ -1412,11 +1428,21 @@ def iso_box(c, i, j, a, b, h, ox, oy, top, left, right, win=None, win_rows=None)
                 rect(c, x, y, 2, 3, win)
 
 
-def iso_tree(c, x, y, size=5):
+def iso_tree(c, x, y, size=5, kind=0):
+    """kind 0 = copa conica (verde claro), kind 1 = copa redonda (verde escuro)."""
+    base, hi, lo = ("iso_tree", "iso_tree_hi", "iso_tree_lo") if kind == 0 else ("iso_tree2", "iso_tree2_hi", "iso_tree2_lo")
     rect(c, x - 1, y - 2, 2, 3, "iso_trunk")
-    fill_poly(c, [(x, y - size * 2 - 2), (x + size, y - size), (x, y - 2), (x - size, y - size)], "iso_tree")
-    fill_poly(c, [(x, y - size * 2 - 2), (x + size // 2, y - size - 1), (x, y - size), (x - size // 2, y - size - 1)], "iso_tree_hi")
-    put(c, x - size + 1, y - size, "iso_tree_lo"); put(c, x + 1, y - 3, "iso_tree_lo")
+    if kind == 1:
+        for dy in range(-size * 2 - 1, -1):
+            k = size - abs(dy + size + 1) // 2
+            hline(c, x - k, x + k, y + dy, base)
+        for dy in range(-size * 2, -size):
+            hline(c, x - size // 2, x, y + dy, hi)
+        put(c, x + size - 1, y - size, lo); put(c, x - 1, y - 3, lo)
+        return
+    fill_poly(c, [(x, y - size * 2 - 2), (x + size, y - size), (x, y - 2), (x - size, y - size)], base)
+    fill_poly(c, [(x, y - size * 2 - 2), (x + size // 2, y - size - 1), (x, y - size), (x - size // 2, y - size - 1)], hi)
+    put(c, x - size + 1, y - size, lo); put(c, x + 1, y - 3, lo)
 
 
 def _band_of(y):
@@ -1426,6 +1452,94 @@ def _band_of(y):
     if y >= 250: return 3
     if y >= 130: return 4
     return 5
+
+
+def _sea_depth(tiles):
+    """Distancia (em tiles) de cada tile de mar ate a terra mais proxima, para o mar ter profundidade."""
+    from collections import deque
+    dist, q = {}, deque()
+    for (i, j), ch in tiles.items():
+        if not ch.startswith("sea"):
+            continue
+        for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            n = tiles.get((i + di, j + dj))
+            if n is not None and not n.startswith("sea"):
+                dist[(i, j)] = 1
+                q.append((i, j))
+                break
+    while q:
+        i, j = q.popleft()
+        for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            n = (i + di, j + dj)
+            if n in dist or n not in tiles or not tiles[n].startswith("sea"):
+                continue
+            dist[n] = dist[(i, j)] + 1
+            q.append(n)
+    return dist
+
+
+def _walk(pts, step):
+    """Caminha a polilinha de ponto em ponto, devolvendo (x, y, dx, dy) com a direcao normalizada."""
+    acc = 0.0
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        seg = ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
+        if seg < 1e-6:
+            continue
+        dx, dy = (x1 - x0) / seg, (y1 - y0) / seg
+        t = acc
+        while t < seg:
+            yield (x0 + dx * t, y0 + dy * t, dx, dy)
+            t += step
+        acc = t - seg
+
+
+def _line(c, p0, p1, ch):
+    """Segmento de reta (usado nas marcacoes do campo de futebol)."""
+    x0, y0 = p0
+    x1, y1 = p1
+    steps = max(abs(x1 - x0), abs(y1 - y0), 1)
+    for t in range(steps + 1):
+        put(c, int(round(x0 + (x1 - x0) * t / steps)), int(round(y0 + (y1 - y0) * t / steps)), ch)
+
+
+def _draw_church(c, i, j, ox, oy):
+    """Igrejinha de bairro: o marco da regiao 1."""
+    iso_box(c, i, j, 1, 1, 11, ox, oy, "b_white", "b_white_l", "b_white_r", win="b_win_d")
+    x, y = iso_pt(i, j, ox, oy)
+    top = y + 4 - 11
+    fill_poly(c, [(x, top - 13), (x + 6, top - 1), (x - 6, top - 1)], "h_roof_b")
+    fill_poly(c, [(x, top - 12), (x + 2, top - 5), (x - 2, top - 5)], "b_white")
+    vline(c, x, top - 19, top - 14, "gold2"); hline(c, x - 2, x + 2, top - 17, "gold2")
+
+
+def _draw_bank(c, i, j, ox, oy):
+    """O banco do jogo tambem existe no mapa: fachada branca, colunas e frontao dourado."""
+    iso_box(c, i, j, 2, 2, 18, ox, oy, "b_white", "b_white_l", "b_white_r")
+    p3 = iso_pt(i, j + 2, ox, oy)
+    p2 = iso_pt(i + 2, j + 2, ox, oy)
+    for k in range(2, 15, 4):                       # colunas na face esquerda (voltada para o sul-oeste)
+        rect(c, p3[0] + k, p3[1] + k // 2 - 15, 2, 14, "stone")
+    for k in range(2, 15, 4):                       # e na face direita
+        rect(c, p2[0] + k, p2[1] - k // 2 - 15, 2, 14, "stone")
+    x, y = iso_pt(i, j, ox, oy)
+    hline(c, x - 15, x, y + 4 - 18 + 8, "gold2")
+    hline(c, x, x + 15, y + 4 - 18 + 8, "gold2")
+
+
+def _roof_detail(c, x, y, h, rng, shade):
+    """Caixa d'agua, antena ou ar-condicionado no topo: o que faz a linha do ceu deixar de ser lisa."""
+    cx, cy = x, y + 4 - h
+    for k in range(9):                              # parapeito: um fio mais escuro na borda do telhado
+        put(c, cx - 8 + k, cy - 4 + (k + 1) // 2, shade)
+        put(c, cx + 8 - k, cy - 4 + (k + 1) // 2, shade)
+    r = rng.random()
+    if r < 0.26:                                    # caixa d'agua
+        rect(c, cx - 3, cy - 4, 6, 5, "tank"); hline(c, cx - 3, cx + 2, cy - 2, "ant")
+    elif r < 0.46:                                  # casa de maquinas / ar-condicionado
+        rect(c, cx - 4, cy - 2, 8, 3, "tank"); rect(c, cx - 3, cy - 3, 3, 1, "ant")
+    elif r < 0.60 and h >= 34:                      # antena com luz de sinalizacao, so nos mais altos
+        vline(c, cx, cy - 7, cy, "ant"); put(c, cx, cy - 8, "light_r")
+        put(c, cx - 2, cy - 1, "ant"); put(c, cx + 2, cy - 1, "ant")
 
 
 def world_map(regions_pos, meta=None):
@@ -1450,10 +1564,26 @@ def world_map(regions_pos, meta=None):
             if island:
                 tiles[(i, j)] = "sand" if (x - 215) ** 2 / 900.0 + (y - 60) ** 2 / 300.0 > 0.55 else "g_park"
             elif sea:
-                tiles[(i, j)] = "sea_hi" if (i + j) % 7 == 0 else "sea"
+                tiles[(i, j)] = "sea"
             else:
                 g, glo = ground[band]
                 tiles[(i, j)] = glo if (i * 7 + j * 3) % 11 == 0 else g
+    # praia: a terra encostada no mar vira areia, para a costa nao cortar em linha reta
+    shore = [(i, j) for (i, j), ch in tiles.items() if not ch.startswith("sea") and ch != "sand"
+             and any(str(tiles.get((i + di, j + dj), "")).startswith("sea") for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1)))]
+    for (i, j) in shore:
+        tiles[(i, j)] = "sand" if (i + j) % 5 else "sand_lo"
+    # profundidade: raso perto da praia, azul escuro no alto-mar
+    depth = _sea_depth(tiles)
+    for (i, j), d in depth.items():
+        if d <= 1:
+            tiles[(i, j)] = "sea_shal"
+        elif d <= 3:
+            tiles[(i, j)] = "sea_hi"
+        elif d <= 9:
+            tiles[(i, j)] = "sea"
+        else:
+            tiles[(i, j)] = "sea_deep" if (i * 3 + j * 5) % 17 else "sea"
     # estrada de progresso: tiles proximos da polilinha entre os marcos
     def near_path(x, y):
         best = 1e9
@@ -1465,7 +1595,7 @@ def world_map(regions_pos, meta=None):
         return best
     for (i, j), ch in list(tiles.items()):
         x, y = iso_pt(i, j, ox, oy)
-        if ch.startswith("sea") or ch == "sand":
+        if ch.startswith("sea") or ch.startswith("sand"):
             continue
         d = near_path(x, y + 4)
         if d < 9:
@@ -1474,54 +1604,164 @@ def world_map(regions_pos, meta=None):
             tiles[(i, j)] = "path"
     # ruas secundarias em grade
     for (i, j), ch in list(tiles.items()):
-        if ch in ("sea", "sea_hi", "sand", "iso_road", "path"):
+        if ch in ("iso_road", "path") or ch.startswith("sea") or ch.startswith("sand"):
             continue
         x, y = iso_pt(i, j, ox, oy)
         band = _band_of(y + 4)
         if band >= 2 and (i % 9 == 0 or j % 9 == 0):
             tiles[(i, j)] = "iso_road_lo"
+    # --- areas de lazer: pracas na cidade, lago e campo de futebol no bairro -----------------
+    plain = ("g_sub", "g_sub_lo", "g_park", "g_park_lo", "g_urb", "g_urb_lo", "g_dist", "g_dist_lo", "g_glob", "g_glob_lo")
+
+    def free_spot(bands, dmin, dmax, keep_out, gap=64, size=(0, 0)):
+        """Um tile livre na faixa pedida, longe da avenida e das areas ja escolhidas.
+        size = (raio em i, raio em j) do quarteirao que precisa estar inteiro livre de rua."""
+        cand = []
+        ri, rj = size
+        for (i, j), ch in tiles.items():
+            if ch not in plain:
+                continue
+            x, y = iso_pt(i, j, ox, oy)
+            if x < 46 + ri * 8 or x > MAP_W - 46 - ri * 8 or _band_of(y + 4) not in bands:
+                continue
+            d = near_path(x, y + 4)
+            if d < dmin or d > dmax:
+                continue
+            if any(tiles.get((i + di, j + dj)) not in plain for di in range(-ri, ri + 2) for dj in range(-rj, rj + 2)):
+                continue
+            if any(((x - px) ** 2 + (y - py) ** 2) ** 0.5 < gap for px, py in keep_out):
+                continue
+            cand.append((i, j, x, y))
+        if not cand:
+            return None
+        i, j, x, y = cand[rng.randrange(len(cand))]
+        keep_out.append((x, y))
+        return (i, j)
+
+    taken = []
+    plazas = []
+    for _ in range(4):                              # pracas de piso claro com chafariz e arvores
+        spot = free_spot((2, 3, 4), 30, 90, taken, 80, (2, 2))
+        if spot is None:
+            continue
+        ci, cj = spot
+        for di in range(-2, 3):
+            for dj in range(-2, 3):
+                if (ci + di, cj + dj) in tiles:
+                    tiles[(ci + di, cj + dj)] = "plaza_lo" if (di + dj) % 2 else "plaza"
+        plazas.append((ci, cj))
+    pond = free_spot((1,), 30, 110, taken, 80, (3, 3))      # lago do parque, na regiao 1
+    if pond:
+        ci, cj = pond
+        for di in range(-3, 4):
+            for dj in range(-3, 4):
+                if abs(di) + abs(dj) > 4 or (ci + di, cj + dj) not in tiles:
+                    continue
+                tiles[(ci + di, cj + dj)] = "pond" if abs(di) + abs(dj) <= 2 else ("pond_lo" if abs(di) + abs(dj) == 3 else "sand_lo")
+    field = free_spot((1, 2), 30, 110, taken, 80, (3, 2))   # campinho de futebol, com listras de corte
+    if field:
+        ci, cj = field
+        for di in range(-3, 4):
+            for dj in range(-2, 3):
+                if (ci + di, cj + dj) in tiles:
+                    tiles[(ci + di, cj + dj)] = "turf_lo" if di % 2 else "turf"
     for (i, j) in sorted(tiles, key=lambda t: (t[0] + t[1], t[0])):
         ch = tiles[(i, j)]
         iso_tile(c, i, j, ox, oy, ch, edge=None)
-    # ondas
+    # ondas no mar aberto e espuma quebrando na praia
     for (i, j), ch in tiles.items():
+        x, y = iso_pt(i, j, ox, oy)
         if ch == "sea" and (i * 3 + j * 5) % 13 == 0:
-            x, y = iso_pt(i, j, ox, oy)
             hline(c, x - 3, x + 3, y + 4, "foam2")
+        elif ch == "sea_shal" and (i * 5 + j * 3) % 4 == 0:
+            hline(c, x - 4, x + 4, y + 4, "foam2")
+    # marcacao do campinho: linha de fundo, meio de campo e circulo central
+    if field:
+        ci, cj = field
+        corner = lambda a, b: (iso_pt(ci + a, cj + b, ox, oy)[0], iso_pt(ci + a, cj + b, ox, oy)[1] + 4)
+        pts = [corner(-3, -2), corner(4, -2), corner(4, 3), corner(-3, 3)]
+        for a, b in zip(pts, pts[1:] + pts[:1]):
+            _line(c, a, b, "b_white")
+        mid = lambda a, b: ((a[0] + b[0]) // 2, (a[1] + b[1]) // 2)
+        _line(c, mid(pts[0], pts[3]), mid(pts[1], pts[2]), "b_white")
+        fx, fy = corner(0, 0)
+        for dx, dy in ((-6, 0), (6, 0), (0, -3), (0, 3), (-4, -1), (4, -1), (-4, 1), (4, 1), (-2, -2), (2, -2), (-2, 2), (2, 2)):
+            put(c, fx + dx, fy + dy, "b_white")
+    # faixas centrais e faixas de pedestre da avenida (cai debaixo dos carros)
+    for k, (x, y, dx, dy) in enumerate(_walk(regions_pos, 11.0)):
+        for t in range(4):
+            px, py = int(round(x + dx * t)), int(round(y + dy * t))
+            if 0 <= px < MAP_W and 0 <= py < MAP_H and c[py][px] == "iso_road":
+                c[py][px] = "iso_lane"
+    for k, (x, y, dx, dy) in enumerate(_walk(regions_pos, 74.0)):
+        if k == 0:
+            continue
+        nx, ny = -dy, dx
+        for s in range(-4, 5, 2):
+            for t in range(-9, 10):
+                px = int(round(x + dx * s + nx * t)); py = int(round(y + dy * s + ny * t))
+                if 0 <= px < MAP_W and 0 <= py < MAP_H and c[py][px] in ("iso_road", "iso_lane"):
+                    c[py][px] = "path"
     # predios por faixa (ordenados por profundidade i+j)
     boxes = []
     for (i, j), ch in tiles.items():
         if ch not in ("g_sub", "g_sub_lo", "g_park", "g_park_lo", "g_urb", "g_urb_lo", "g_dist", "g_dist_lo", "g_glob", "g_glob_lo"):
             continue
         x, y = iso_pt(i, j, ox, oy)
-        if near_path(x, y + 4) < 20 or (i % 9 in (0, 8)) or (j % 9 in (0, 8)):
+        if near_path(x, y + 4) < 16 or (i % 9 in (0, 8)) or (j % 9 in (0, 8)):
             continue
         band = _band_of(y + 4)
         if x < 12 or x > MAP_W - 12:
             continue
         r = rng.random()
         if band == 1:
-            if r < 0.16:
+            if r < 0.19:
                 roof = rng.choice([("h_roof_r", "h_roof_r_lo"), ("h_roof_b", "h_roof_b_lo"), ("h_roof_g", "h_roof_g_lo")])
                 boxes.append((i + j, ("house", i, j, roof)))
-            elif r < 0.30:
-                boxes.append((i + j, ("tree", i, j)))
+            elif r < 0.34:
+                boxes.append((i + j, ("tree", i, j, rng.randint(3, 5), rng.randint(0, 1))))
         elif band == 2:
-            if r < 0.14:
-                boxes.append((i + j, ("box", i, j, 1, 1, rng.randint(10, 18), rng.choice(["b_beige", "b_brick", "b_gray"]))))
-            elif r < 0.24:
-                boxes.append((i + j, ("tree", i, j)))
+            if r < 0.17:
+                boxes.append((i + j, ("box", i, j, 1, 1, rng.randint(10, 20), rng.choice(["b_beige", "b_brick", "b_gray"]))))
+            elif r < 0.27:
+                boxes.append((i + j, ("tree", i, j, rng.randint(3, 5), rng.randint(0, 1))))
         elif band == 3:
-            if r < 0.15:
-                boxes.append((i + j, ("box", i, j, 1, 1, rng.randint(16, 30), rng.choice(["b_gray", "b_beige", "b_glass"]))))
-            elif r < 0.20:
-                boxes.append((i + j, ("tree", i, j)))
+            if r < 0.19:
+                boxes.append((i + j, ("box", i, j, 1, 1, rng.randint(16, 32), rng.choice(["b_gray", "b_beige", "b_glass"]))))
+            elif r < 0.24:
+                boxes.append((i + j, ("tree", i, j, 4, rng.randint(0, 1))))
         elif band == 4:
-            if r < 0.16:
-                boxes.append((i + j, ("box", i, j, 1, 1, rng.randint(26, 46), rng.choice(["b_glass", "b_navy", "b_gray"]))))
+            if r < 0.20:
+                boxes.append((i + j, ("box", i, j, 1, 1, rng.randint(26, 48), rng.choice(["b_glass", "b_navy", "b_gray"]))))
         else:
-            if r < 0.15:
-                boxes.append((i + j, ("box", i, j, 1, 1, rng.randint(34, 58), rng.choice(["b_glass", "b_white", "b_navy"]))))
+            if r < 0.19:
+                boxes.append((i + j, ("box", i, j, 1, 1, rng.randint(34, 60), rng.choice(["b_glass", "b_white", "b_navy"]))))
+    # arvores e chafariz das pracas, e os dois marcos construidos
+    for (ci, cj) in plazas:
+        boxes.append((ci + cj, ("fountain", ci, cj)))
+        for di, dj in ((-2, -2), (2, -2), (-2, 2), (2, 2)):
+            boxes.append((ci + di + cj + dj, ("tree", ci + di, cj + dj, 4, 1)))
+    church = free_spot((1,), 20, 40, taken, 70, (0, 0))
+    if church:
+        boxes.append((church[0] + church[1], ("church", church[0], church[1])))
+    bank = free_spot((3, 4), 22, 46, taken, 70, (1, 1))
+    if bank:
+        boxes.append((bank[0] + bank[1], ("bank", bank[0], bank[1])))
+    # sombras no chao: entram no terreno, entao os carros passam por cima delas
+    for _, item in boxes:
+        if item[0] not in ("box", "house", "church", "bank"):
+            continue
+        i, j = item[1], item[2]
+        a, b = (2, 2) if item[0] == "bank" else (1, 1)
+        h = item[5] if item[0] == "box" else (18 if item[0] == "bank" else 10)
+        for d in range(1, 2 + min(3, h // 18)):
+            for di in range(a):
+                for dj in range(b):
+                    key = (i + di + d, j + dj)
+                    ch = tiles.get(key)
+                    if ch is None or ch.startswith("sea") or ch + "_sh" not in PAL:
+                        continue
+                    iso_tile(c, key[0], key[1], ox, oy, ch + "_sh", edge=None)
     terrain = [row[:] for row in c]   # antes dos predios: o que mudar depois vira a camada de cobertura
     faces = {"b_gray": ("b_gray", "b_gray_l", "b_gray_r"), "b_beige": ("b_beige", "b_beige_l", "b_beige_r"), "b_brick": ("b_brick", "b_brick_l", "b_brick_r"),
              "b_glass": ("b_glass", "b_glass_l", "b_glass_r"), "b_navy": ("b_navy", "b_navy_l", "b_navy_r"), "b_white": ("b_white", "b_white_l", "b_white_r")}
@@ -1529,7 +1769,17 @@ def world_map(regions_pos, meta=None):
         kind = item[0]
         if kind == "tree":
             x, y = iso_pt(item[1], item[2], ox, oy)
-            iso_tree(c, x, y + 6, 4)
+            iso_tree(c, x, y + 6, item[3], item[4])
+        elif kind == "fountain":
+            x, y = iso_pt(item[1], item[2], ox, oy)
+            for dy, wd in ((0, 7), (-1, 6), (-2, 4)):
+                hline(c, x - wd, x + wd, y + 4 + dy, "stone")
+            hline(c, x - 4, x + 4, y + 3, "pond"); hline(c, x - 3, x + 3, y + 2, "pond_lo")
+            vline(c, x, y - 4, y + 1, "stone_lo"); put(c, x, y - 5, "sea_shal")
+        elif kind == "church":
+            _draw_church(c, item[1], item[2], ox, oy)
+        elif kind == "bank":
+            _draw_bank(c, item[1], item[2], ox, oy)
         elif kind == "house":
             _, i, j, roof = item
             iso_box(c, i, j, 1, 1, 7, ox, oy, roof[0], "h_wall", "h_wall_lo")
@@ -1539,6 +1789,21 @@ def world_map(regions_pos, meta=None):
             _, i, j, a, b, h, col = item
             top, left, right = faces[col]
             iso_box(c, i, j, a, b, h, ox, oy, top, left, right, win="b_win" if col in ("b_gray", "b_beige", "b_brick") else "b_win_d")
+            if h >= 14:
+                _roof_detail(c, *iso_pt(i, j, ox, oy), h, rng, left)
+    # postes de luz nas duas calcadas da avenida (o braco aponta para a pista)
+    for x, y, dx, dy in _walk(regions_pos, 52.0):
+        nx, ny = -dy, dx
+        for side in (-1, 1):
+            px, py = int(round(x + nx * 13 * side)), int(round(y + ny * 13 * side))
+            if not (4 <= px < MAP_W - 4 and 16 <= py < MAP_H - 4):
+                continue
+            if terrain[py][px] in MAP_SEA or terrain[py][px] is None:
+                continue
+            if any(c[py - t][px] != terrain[py - t][px] for t in range(0, 7)):
+                continue                            # tem predio ali: o poste ficaria flutuando
+            vline(c, px, py - 6, py, "lamp_p")
+            put(c, px - side, py - 6, "lamp_p"); put(c, px - side * 2, py - 6, "lamp_on")
     # farol na ilha
     fx, fy = 232, 52
     rect(c, fx - 3, fy - 22, 6, 22, "light_w")
@@ -1586,7 +1851,7 @@ def _map_meta(tiles, ox, oy, regions_pos, c):
     streets = [line for line in streets if len(line) >= 4]
     foam = []
     for (i, j), ch in tiles.items():
-        if ch == "sea" and (i * 3 + j * 5) % 13 == 0:
+        if ch in ("sea", "sea_hi", "sea_deep") and (i * 3 + j * 5) % 13 == 0:
             x, y = iso_pt(i, j, ox, oy)
             if inside((x, y + 4)):
                 foam.append([x, y + 4])
@@ -1611,8 +1876,7 @@ def _map_meta(tiles, ox, oy, regions_pos, c):
 
 def outline_region(c, x0, y0, w, h):
     """Contorno escuro so em volta dos predios (pixels nao-terreno) — mantem o mapa legivel em 2x."""
-    ground = {"g_sub", "g_sub_lo", "g_park", "g_park_lo", "g_urb", "g_urb_lo", "g_dist", "g_dist_lo", "g_glob", "g_glob_lo",
-              "sand", "sea", "sea_hi", "foam2", "iso_road", "iso_road_lo", "iso_lane", "path", "path_lo", None}
+    ground = set(MAP_GROUND) | {k + "_sh" for k in MAP_GROUND} | set(MAP_SEA) | {None}
     src = [row[:] for row in c]
     for y in range(y0 + 1, y0 + h - 1):
         for x in range(x0 + 1, x0 + w - 1):

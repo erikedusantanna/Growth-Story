@@ -170,13 +170,21 @@ func refresh_candidates() -> void:
 	for i in new_count:
 		if st.candidates.size() >= MAX_CANDIDATES:
 			break
-		st.candidates.append(generate_candidate("high" if st.rng.randf() < high_chance else "normal"))
+		register_candidate(generate_candidate("high" if st.rng.randf() < high_chance else "normal"))
 
 
 func add_candidate(quality: String = "normal") -> Employee:
 	var c := generate_candidate(quality)
-	game.state.candidates.append(c)
+	register_candidate(c)
 	return c
+
+
+## Único caminho para um currículo entrar na lista: assim o aviso da aba Equipe nunca fica
+## dessincronizado, venha o candidato do lote mensal, de uma busca paga ou do talento raro.
+func register_candidate(e: Employee) -> void:
+	game.state.candidates.append(e)
+	game.state.new_candidates += 1
+	EventBus.candidates_arrived.emit()
 
 
 func can_hire(candidate: Employee) -> Dictionary:

@@ -405,6 +405,32 @@ func _ready() -> void:
 	await _settle()
 	main.world_map.close()
 	await _frames(2)
+	# central de notificações: o assistente que junta tudo o que está pedindo atenção
+	Game.clients.spawn_prospect()
+	Game.employees.add_candidate("high")
+	await _frames(3)
+	await _settle()
+	main.show_notifications()
+	await _frames(3)
+	await _shot("15t_notificacoes")
+	await _settle()
+	# aviso de falência antes da derrota, com a saída do banco
+	var money_before: float = st.money
+	st.money = float(FinanceSystem.WARN_AT[1]) - 500.0
+	st.bankrupt_warnings = 1
+	Game.finance.check_alerts()
+	await _frames(3)
+	await _shot("15u_alerta_falencia")
+	await _settle()
+	# e o mesmo status em tempo real no topo da aba Empresa
+	main.show_screen("company")
+	await _frames(3)
+	main.screens["company"].scroll_vertical = 0
+	await _frames(3)
+	await _shot("15v_status_do_caixa")
+	st.money = money_before
+	Game.finance.check_alerts()
+	await _settle()
 	# espaços de save na tela inicial
 	Game.save.delete_save()
 	Game.save.save(st, 1)

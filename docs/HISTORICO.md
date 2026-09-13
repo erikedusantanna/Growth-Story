@@ -616,6 +616,52 @@ Onde cada parte foi parar:
 Lição que vale registrar: a grade era bonita e não fazia nada. Uma tela inteira para informação que
 se consulta de relance vira peso, não recurso.
 
+## 8l. Clareza: alertas, assistente, ícones e mapa mais rico (13/09)
+
+Lote pedido depois de uma partida perdida de surpresa. O fio condutor é o mesmo em todos os itens:
+**o jogo sabia coisas que não contava ao jogador**.
+
+1. **Aba Equipe piscando com currículo novo.** A aba Clientes já piscava com prospect esperando; a
+   Equipe não. O contador é `GameState.new_candidates`, zerado ao abrir a aba. Para ele nunca ficar
+   defasado, todo currículo passou a entrar por um caminho só — `EmployeeSystem.register_candidate()`
+   — usado pelo lote mensal, pelas buscas pagas, pela recrutadora e pelo talento raro, que antes
+   emitiam o sinal cada um do seu jeito (a recrutadora emitia duas vezes).
+
+2. **Critério de derrota evidente.** A queixa foi literal: *"já fiquei com algumas quantias
+   negativas e não tive problema, de repente perdi o jogo"*. O limite (−R$ 30.000) existia desde
+   sempre e nunca aparecia. Agora `FinanceSystem.status()` devolve nível, limite, folga e quantos
+   meses o caixa aguenta no ritmo atual, desenhado no topo da aba **Empresa**; e `check_alerts()`,
+   chamado no fim de todo `add_money()`, dispara dois avisos antes da derrota (−6.000 e −18.000),
+   uma vez por queda, rearmados quando o caixa volta ao positivo. No segundo aviso o popup oferece
+   **capital de giro no banco** — a mecânica do lote anterior virou a saída deste.
+
+3. **RH mais cedo.** `hire.requires_office` foi de **7 → 4**: o RH abre na *Sala no centro*, o
+   primeiro escritório da Região 2, em vez de esperar a capital. Quando abria no 7, o time já
+   estava grande e estressado havia meses.
+
+4. **Central de notificações (o assistente).** `NotificationSystem` **não guarda estado**: lê os
+   outros sistemas e monta na hora a lista do que pede atenção, ordenada por urgência, cada item
+   com um botão que leva à aba certa. O sino no HUD mostra a contagem e pulsa quando há algo
+   urgente. Não guardar estado foi decisão de projeto: sem sincronizar, sem migrar save, e resolver
+   a causa apaga o item sozinho.
+
+5. **Navegação por ícones.** A barra de baixo virou seis ícones pixel art com o nome no tooltip.
+   Os três primeiros desenhos (equipe, clientes, projetos) eram ilegíveis em 10×10 e foram
+   redesenhados — duas pessoas, balão de conversa, prancheta — e conferidos em 4× antes de entrar.
+
+6. **World Map mais rico.** Mar com profundidade por BFS a partir da costa, faixa de areia e espuma
+   quebrando, sombra no chão sob cada prédio, telhados com caixa d'água / casa de máquinas / antena
+   com luz, praças com chafariz, lago, campinho de futebol, igrejinha, prédio do banco, faixa
+   central e faixas de pedestre na avenida, postes de luz e dois tipos de árvore.
+
+   Três coisas custaram uma rodada de correção cada, e vale registrar: (a) os detalhes de telhado
+   saíram do losango porque foram posicionados em linhas onde o telhado é estreito — a largura
+   disponível é `(4 − |dy|)·2` de cada lado do centro; (b) as antenas de 12 px viraram agulhas
+   visíveis em todo o mapa, e só ficaram boas com 7 px e limitadas aos prédios de 34 px ou mais;
+   (c) um píer de madeira foi escrito, renderizado, olhado e **removido** — a busca por praia achou
+   uma enseada no meio da cidade e ele saiu atravessando arranha-céus. Olhar a imagem antes de
+   commitar é o que separou as três.
+
 ## 9. Checklist para retomar o projeto
 
 1. Ler este documento, depois `README.md` (tabela "O que já existe") e `docs/ARQUITETURA.md`;

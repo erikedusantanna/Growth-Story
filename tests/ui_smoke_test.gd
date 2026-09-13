@@ -420,6 +420,51 @@ func _ready() -> void:
 	main.world_map.close()
 	await get_tree().process_frame
 	print("  banco no mapa: %s · empréstimo contratado: %s (parcela %s)" % [bank_ok, loan_ok, UIKit.money(Game.bank.monthly_payment())])
+	# navegação de baixo por ícone, sem texto, e a aba Equipe piscando com currículo novo
+	var nav_ok := true
+	for key in main.SCREEN_ORDER:
+		var b: Button = main.nav_buttons[key]
+		nav_ok = nav_ok and b.icon != null and b.tooltip_text != ""
+	Game.state.new_candidates = 0
+	await get_tree().process_frame
+	nav_ok = nav_ok and main.nav_buttons["team"].text == ""
+	Game.employees.add_candidate()
+	await get_tree().create_timer(0.3).timeout
+	var team_badge: String = main.nav_buttons["team"].text
+	nav_ok = nav_ok and team_badge == "1"
+	main.show_screen("team")
+	await get_tree().create_timer(0.3).timeout
+	nav_ok = nav_ok and Game.state.new_candidates == 0 and main.nav_buttons["team"].text == ""
+	print("  navegação por ícones: %s (aba Equipe marcou '%s' com currículo novo)" % [nav_ok, team_badge])
+	# central de notificações: o sino do HUD conta o que está pendente e abre a lista
+	Game.clients.spawn_prospect()
+	await get_tree().create_timer(0.3).timeout
+	var notif_items: int = Game.notifications.count()
+	var notif_ok: bool = notif_items > 0 and main.hud.alert_button != null and main.hud.alert_button.text != ""
+	main.show_notifications()
+	await get_tree().create_timer(0.25).timeout
+	notif_ok = notif_ok and main.popups.is_open()
+	await _drain_popups(main)
+	print("  central de notificações: %s (%d item(ns), sino marcando '%s')" % [
+		notif_ok, notif_items, main.hud.alert_button.text if main.hud.alert_button else ""])
+	# alerta de falência: o popup avisa antes da derrota e a aba Empresa mostra o status em tempo real
+	Game.state.money = float(FinanceSystem.WARN_AT[1]) - 1.0
+	Game.state.bankrupt_warnings = 1
+	Game.finance.check_alerts()
+	await get_tree().create_timer(0.25).timeout
+	var warn_ok: bool = main.popups.is_open() and Game.state.bankrupt_warnings == 2
+	await _drain_popups(main)
+	main.show_screen("company")
+	await get_tree().create_timer(0.3).timeout
+	main.screens["company"].scroll_vertical = 0
+	var status: Dictionary = Game.finance.status()
+	warn_ok = warn_ok and int(status.level) >= 2 and float(status.limit) == FinanceSystem.BANKRUPT_AT
+	warn_ok = warn_ok and not Game.state.game_over
+	print("  alerta de falência antes da derrota: %s (nível %d, faltam %s para o limite)" % [
+		warn_ok, int(status.level), UIKit.money(float(status.room))])
+	Game.state.money = 400000.0
+	Game.finance.check_alerts()
+	await get_tree().process_frame
 	# tela inicial: escolher de qual espaço continuar
 	var workers_count: int = main.office_view.workers.size()
 	Game.save.delete_save()
@@ -436,7 +481,7 @@ func _ready() -> void:
 	print("  escolher espaço de save ao continuar: %s (%d espaços)" % [slots_ok, SaveSystem.MAX_SLOTS])
 	Game.save.delete_save()
 	print("  workers no escritório: %d" % workers_count)
-	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene and mood_ok and leaving_ok and map_ok and rival_ok and cal_ok and quest_ok and news_ok and pets_ok and alert_ok and layout_ok and reload_ok and talent_ok and crisis_ok and dec_ok and spec_ok and slots_ok and drag_ok and hire_ok and recruiter_ok and bank_ok and loan_ok
+	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene and mood_ok and leaving_ok and map_ok and rival_ok and cal_ok and quest_ok and news_ok and pets_ok and alert_ok and layout_ok and reload_ok and talent_ok and crisis_ok and dec_ok and spec_ok and slots_ok and drag_ok and hire_ok and recruiter_ok and bank_ok and loan_ok and nav_ok and notif_ok and warn_ok
 	print("[%s] UI smoke" % ("OK" if ok else "FALHA"))
 	get_tree().quit(0 if ok else 1)
 

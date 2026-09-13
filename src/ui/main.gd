@@ -3,6 +3,10 @@ extends Control
 
 const SCREEN_ORDER := ["team", "clients", "projects", "company", "hr", "unlocks"]
 const SCREEN_ICONS := {"team": "👥", "clients": "🤝", "projects": "📣", "company": "🏢", "hr": "❤️", "unlocks": "🏆"}
+## A barra de baixo usa ícones pixel art, sem texto: fica mais dinâmica e não depende de fonte de
+## emoji. O nome da aba vira tooltip, e o contador de aviso aparece ao lado do ícone.
+const NAV_ICONS := {"team": "nav_team", "clients": "nav_clients", "projects": "nav_projects",
+	"company": "nav_company", "hr": "nav_hr", "unlocks": "nav_agency"}
 const SCREEN_LABELS := {"team": "Equipe", "clients": "Clientes", "projects": "Projetos", "company": "Empresa", "hr": "RH", "unlocks": "Agência"}
 
 var hud: Hud
@@ -88,8 +92,10 @@ func _ready() -> void:
 	var nav := UIKit.hbox(4)
 	for key in SCREEN_ORDER:
 		var name: String = key
-		var b := UIKit.button("%s\n%s" % [SCREEN_ICONS[key], SCREEN_LABELS[key]], func(): show_screen(name), false, 56)
-		b.add_theme_font_size_override("font_size", 12)
+		var b := UIKit.button("", func(): show_screen(name), false, 56)
+		b.icon = UIKit.icon_texture(NAV_ICONS[key])
+		b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.add_theme_font_size_override("font_size", 14)
 		b.clip_text = true
 		b.tooltip_text = SCREEN_LABELS[key]
 		b.set_meta("tutorial", "nav:%s" % key)
@@ -125,19 +131,26 @@ func _ready() -> void:
 	title_screen.open()
 
 
-## Aba Clientes chama atenção enquanto houver prospects esperando resposta (badge + pulso).
+## Abas que chamam atenção: Clientes enquanto houver prospect esperando resposta, Equipe enquanto
+## houver currículo que o jogador ainda não abriu. As duas ganham contador e pulso.
 func _process(delta: float) -> void:
 	if not Game.has_game() or not nav_buttons.has("clients"):
 		return
-	var b: Button = nav_buttons["clients"]
-	var n: int = Game.state.prospects().size()
-	var label := "%s\n%s" % [SCREEN_ICONS["clients"], SCREEN_LABELS["clients"]]
-	if n > 0:
-		label = "%s %d\n%s" % [SCREEN_ICONS["clients"], n, SCREEN_LABELS["clients"]]
+	_blink_t += delta
+	_alert_nav("clients", Game.state.prospects().size())
+	_alert_nav("team", Game.state.new_candidates)
+
+
+func _alert_nav(key: String, count: int) -> void:
+	if not nav_buttons.has(key):
+		return
+	var b: Button = nav_buttons[key]
+	# o contador entra como texto ao lado do ícone; sem aviso, o botão fica só com o ícone
+	var label := "" if count <= 0 else "%d" % count
 	if b.text != label:
 		b.text = label
-	if n > 0 and current_screen != "clients":
-		_blink_t += delta
+		b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER if count <= 0 else HORIZONTAL_ALIGNMENT_LEFT
+	if count > 0 and current_screen != key:
 		var k := 0.5 + 0.5 * sin(_blink_t * 5.0)
 		b.modulate = Color(1.0, 1.0 - 0.25 * k, 1.0 - 0.45 * k)
 	elif b.modulate != Color.WHITE:
@@ -146,6 +159,8 @@ func _process(delta: float) -> void:
 
 func show_screen(name: String) -> void:
 	current_screen = name
+	if name == "team" and Game.has_game() and Game.state.new_candidates > 0:
+		Game.state.new_candidates = 0   # o jogador viu os currículos: o aviso apaga
 	for key in screens:
 		screens[key].visible = key == name
 		var b: Button = nav_buttons[key]
@@ -172,6 +187,11 @@ func hide_event_scene() -> void:
 ## Altura em que um popup deve começar para não cobrir a cena do evento.
 func below_office_y() -> float:
 	return office_view.global_position.y + office_view.size.y + 10.0
+
+
+func show_notifications() -> void:
+	if Game.has_game():
+		popups.show_notifications()
 
 
 func show_world_map() -> void:

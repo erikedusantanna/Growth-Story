@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dr60etul6simp"
-path="res://.godot/imported/agenda.png-c1752c45d5b0ce38adfd9aa4fb8a3be4.ctex"
+uid="uid://ept8puobsw1s"
+path="res://.godot/imported/bell.png-1c82b2db377b3e413fe9591649d7d31d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/icons/agenda.png"
-dest_files=["res://.godot/imported/agenda.png-c1752c45d5b0ce38adfd9aa4fb8a3be4.ctex"]
+source_file="res://assets/art/icons/bell.png"
+dest_files=["res://.godot/imported/bell.png-1c82b2db377b3e413fe9591649d7d31d.ctex"]
 
 [params]
 
