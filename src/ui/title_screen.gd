@@ -1,12 +1,16 @@
 class_name TitleScreen
 extends Control
 ## Tela inicial: a cidade da agência ao fundo, o logo, "Novo Jogo" / "Continuar" e um passo
-## seguinte para nomear a agência e o fundador. Pessoas do jogo passeiam na calçada e o
-## fundador observa de cima do logo. O botão de som liga/desliga a música desde aqui.
+## seguinte para nomear a agência e o fundador. Pessoas do jogo passeiam na calçada. O logo é
+## a arte de marca (assets/brand/logo_source.png), que já traz o fundador olhando a cidade.
+## O botão de som liga/desliga a música desde aqui.
 
 signal start_requested()
 
 const WORLD_SCALE := 2.0
+const LOGO_TOP := 24.0               # o logo ocupa a faixa de cima, acima dos botões
+const LOGO_HEIGHT := 430.0
+const LOGO_MARGIN := 14.0
 const SIDEWALK_Y := 828.0            # pés dos pedestres, em px de tela (as pessoas ficam em 1x, menores que o cenário)
 const WALK_SPEED := 32.0
 const FRAME_TIME := 0.2
@@ -43,14 +47,22 @@ func _ready() -> void:
 	world = Node2D.new()
 	world.scale = Vector2(WORLD_SCALE, WORLD_SCALE)
 	add_child(world)
-	var logo := Sprite2D.new()
+	# o logo vem pronto de assets/brand (tools/gen_brand.py) e já traz o fundador olhando a
+	# cidade, por isso fica em escala 1 por cima do cenário, sem a pessoa avulsa de antes
+	var logo := TextureRect.new()
 	logo.texture = preload("res://assets/art/title/logo.png")
-	logo.centered = false
-	logo.position = Vector2(15, 36)
-	world.add_child(logo)
+	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	logo.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	logo.anchor_left = 0.0
+	logo.anchor_right = 1.0
+	logo.offset_left = LOGO_MARGIN
+	logo.offset_right = -LOGO_MARGIN
+	logo.offset_top = LOGO_TOP
+	logo.offset_bottom = LOGO_TOP + LOGO_HEIGHT
+	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(logo)
 	people = Node2D.new()
 	add_child(people)
-	_add_founder()
 	_add_walkers()
 
 	# menu principal
@@ -136,20 +148,6 @@ func _ready() -> void:
 	version.add_theme_constant_override("outline_size", 3)
 	version.add_theme_color_override("font_outline_color", Color(0.12, 0.15, 0.2))
 	add_child(version)
-
-
-## O fundador em cima do logo, como na referência.
-func _add_founder() -> void:
-	var look := Employee.new()
-	look.id = 9101
-	look.skin = "#f0c49c"
-	look.hair_style = 0
-	look.hair_color = "#5b3a22"
-	look.color = "#f4f4f6"
-	var w := Worker.new()
-	w.setup(look, Vector2(452, 88), [], 1)   # em pé sobre a barra mais alta do gráfico
-	w.static_pose = true
-	people.add_child(w)
 
 
 ## Pedestres na calçada: aparências variadas, andando de um lado para o outro.
