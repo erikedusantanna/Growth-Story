@@ -76,6 +76,7 @@ func _build() -> void:
 	_build_months()
 	_build_agenda()
 	_build_news()
+	UIKit.allow_scroll_drag(body)
 
 
 # --- Foco do mês -----------------------------------------------------------------------------

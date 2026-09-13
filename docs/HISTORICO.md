@@ -541,6 +541,68 @@ o fundo é um degradê vertical amostrado do céu da própria arte. Conferido na
 As fontes em `assets/brand/` entraram no `exclude_filter` dos dois presets de exportação — são
 arquivos grandes e não têm uso em tempo de execução, não precisam ir no APK.
 
+## 8k. Rolagem no celular, recrutamento e banco (13/09)
+
+Lote vindo de quem estava jogando no celular. Quatro correções e duas mecânicas novas.
+
+### As correções
+
+1. **Carros parados na tela inicial.** Não era animação quebrada: os carros estavam *pintados
+   dentro* de `title_background()`, então nunca se moveram — só os pedestres, que são sprites. Os
+   carros saíram da imagem e viraram `assets/art/title/car_*.png`, animados pela tela inicial em
+   duas faixas de mão contrária (com a versão espelhada, para o farol ficar do lado certo).
+
+2. **Rolar a tela era quase impossível.** Dois problemas somados, os dois confirmados por
+   medição antes de mexer em qualquer coisa:
+   - `UIKit.card()` é um `PanelContainer`, e no Godot 4 ele nasce `MOUSE_FILTER_STOP`. O cartão
+     engolia o toque e o `ScrollContainer` nunca via o arraste — daí a queixa de "só rola nos
+     cantinhos que sobram de background". `UIKit.allow_scroll_drag()` passa tudo que não é botão,
+     campo ou slider para `MOUSE_FILTER_PASS`, chamado em `BaseScreen.refresh()`, em
+     `Popups._open()` (adiado, porque alguns painéis montam o conteúdo no próprio `_ready`) e no
+     calendário. `UIKit.spacer()` também virou `IGNORE` — era um `Control` vazio bloqueando.
+   - A barra de rolagem padrão do Godot tem **8 px**. Ganhou tema próprio com 16 px.
+
+3. **"Zoom" na aba Clientes.** Não consegui reproduzir o corte aqui, mas a medição achou a
+   fragilidade: o limite real não é 540 px e sim **524** (a raiz tem 8 px de margem de cada lado),
+   e o HUD chegava a **516** num jogo longo — 8 px de folga. O que cresce é o rótulo do caixa
+   ("R$ 99.998.499" ocupa 174 px contra 90 do início). Com uma fonte só um pouco mais larga, como
+   a do Android, isso estoura. Duas mudanças cortaram o topo para 470: `UIKit.money_short()` no
+   HUD (R$ 2,4 mi) e data e relógio em rótulos separados, o relógio menor. O `ui_smoke_test` agora
+   também mede o HUD com caixa de 8 dígitos.
+
+4. **Candidatos raros travando o avanço.** Era real: o lote saía uma vez por mês, com 1–2 pessoas.
+
+### Recrutamento (`recruitment_system.gd`, `data/recruitment.json`)
+
+Mesma lógica que resolveu a falta de clientes — uma saída paga para quem não quer esperar:
+
+- Lote mensal espontâneo subiu para 2–3, +1 com reputação 25 e +1 com 55; `MAX_CANDIDATES` de 5
+  para 7.
+- **Buscas pagas** na aba Equipe, no molde da mídia paga: anúncio em plataforma, recrutadora
+  freelancer e headhunter, com custo que sobe com a região e entrega em poucos dias.
+- **Recrutadora interna**, que foi o pedido explícito do jogador: custo único + salário mensal,
+  **ocupa um lugar no escritório** e soma candidatos ao lote todo mês. Para ela ocupar a vaga sem
+  espalhar condições pelo código, `OfficeSystem.capacity()` passou a devolver
+  `base_capacity() - staff_slots()` — assim toda checagem existente de "cabe mais alguém?" já
+  desconta. Dispensar libera a vaga e corta o salário.
+
+A régua do `sim_test` para o ano 1 subiu de 5 para 7 pessoas por causa disso: a agência cresce mais
+rápido agora, e o resto das faixas (receita, caixa, moral, reputação) continua dentro do previsto.
+
+### Banco (`bank_system.gd`, `data/loans.json`)
+
+Botão 🏦 no World Map a partir da Região 2, com quatro linhas liberadas por região e reputação. O
+dinheiro cai na hora; a parcela é fixa pela tabela Price e sai no fechamento do mês, junto com os
+custos. Sem caixa no dia do débito, a parcela não sai: o saldo ganha 8% de multa e a reputação cai
+— encarece a dívida sem quebrar a agência de imediato. Dá para quitar o saldo cheio a qualquer
+momento, e no máximo dois empréstimos ficam abertos ao mesmo tempo.
+
+### Calendário
+
+O jogador disse que ficou confuso e pouco útil. Nada foi mexido neste lote: a proposta de recorte
+(manter foco do mês e agenda, cortar a grade de 12 meses) está na conversa, aguardando a decisão
+dele antes de qualquer mudança.
+
 ## 9. Checklist para retomar o projeto
 
 1. Ler este documento, depois `README.md` (tabela "O que já existe") e `docs/ARQUITETURA.md`;

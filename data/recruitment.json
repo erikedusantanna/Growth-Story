@@ -1,0 +1,53 @@
+{
+  "comment": "Recrutamento pago (RecruitmentSystem), no mesmo espírito da mídia paga dos clientes. As buscas entregam candidatos depois de alguns dias; o custo sobe com a região da sede. 'quality' é a qualidade do candidato gerado (normal/high) e 'high_chance' a chance de um dos candidatos vir acima da média. A recrutadora contratada ocupa um lugar no escritório e aumenta o fluxo mensal de candidatos.",
+  "cost_per_region": 0.35,
+  "max_pending": 3,
+  "searches": [
+    {
+      "id": "plataforma",
+      "icon": "🌐",
+      "name": "Anúncio em plataforma",
+      "desc": "Vaga publicada num site de empregos. 1 currículo em 2 a 4 dias.",
+      "cost": 1200,
+      "candidates": 1,
+      "quality": "normal",
+      "high_chance": 0.15,
+      "days": [2, 4]
+    },
+    {
+      "id": "freela",
+      "icon": "🕵️",
+      "name": "Recrutadora freelancer",
+      "desc": "Alguém de fora vasculha o mercado por você. 2 currículos em 3 a 6 dias, um deles pode ser gente boa.",
+      "cost": 4500,
+      "candidates": 2,
+      "quality": "normal",
+      "high_chance": 0.5,
+      "days": [3, 6]
+    },
+    {
+      "id": "headhunter",
+      "icon": "🎯",
+      "name": "Headhunter",
+      "desc": "Caça a um profissional específico, já empregado. 1 currículo acima da média em 4 a 8 dias.",
+      "cost": 14000,
+      "candidates": 1,
+      "quality": "high",
+      "high_chance": 1.0,
+      "days": [4, 8],
+      "requires_rep": 25
+    }
+  ],
+  "recruiter": {
+    "name": "Recrutadora interna",
+    "icon": "🧑‍💼",
+    "desc": "Uma pessoa de recrutamento fixa na agência. Ocupa um lugar no escritório e mantém o funil de candidatos cheio todo mês, com gente melhor que a média. Dá para demitir depois para liberar a vaga.",
+    "cost": 6000,
+    "salary": 3200,
+    "requires_office": 2,
+    "requires_rep": 15,
+    "monthly_candidates": 2,
+    "high_chance": 0.35,
+    "weekly_chance": 0.25
+  }
+}

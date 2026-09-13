@@ -340,7 +340,31 @@ func _ready() -> void:
 	if hud_w > vp_w:
 		layout_ok = false
 		print("  LARGURA: HUD pede %.0f px (limite %.0f)" % [hud_w, vp_w])
-	print("  layout cabe na tela: %s (mais largo: %.0f de %.0f px)" % [layout_ok, widest, vp_w])
+	# fim de jogo: o caixa de 8 dígitos já empurrou o topo para 516 dos 524 px úteis
+	var money_before_check: float = Game.state.money
+	Game.state.money = 99999999.0
+	main.hud.refresh()
+	await get_tree().process_frame
+	var hud_rich: float = main.hud.get_combined_minimum_size().x
+	widest = maxf(widest, hud_rich)
+	if hud_rich > vp_w:
+		layout_ok = false
+		print("  LARGURA: HUD com caixa alto pede %.0f px (limite %.0f)" % [hud_rich, vp_w])
+	Game.state.money = money_before_check
+	main.hud.refresh()
+	await get_tree().process_frame
+	print("  layout cabe na tela: %s (mais largo: %.0f de %.0f px · topo com caixa alto %.0f)" % [layout_ok, widest, vp_w, hud_rich])
+	# rolagem no celular: nenhum bloco pode engolir o arraste e a barra precisa ser pegável
+	var drag_ok := true
+	var blockers := 0
+	for key in main.SCREEN_ORDER:
+		main.show_screen(key)
+		await get_tree().process_frame
+		blockers += _count_drag_blockers(main.screens[key].content)
+	var bar: VScrollBar = main.screens["team"].get_v_scroll_bar()
+	var bar_w: float = bar.get_combined_minimum_size().x
+	drag_ok = blockers == 0 and bar_w >= 14.0
+	print("  rolagem por arraste: %s (%d bloco(s) bloqueando · barra %.0f px)" % [drag_ok, blockers, bar_w])
 	# evento salvo em aberto: ao carregar precisa reaparecer, senão o tempo fica travado
 	await _drain_popups(main)   # começa sem nada na fila para o teste medir só o evento salvo
 	Game.events.trigger(Game.content.events[0])
@@ -357,6 +381,35 @@ func _ready() -> void:
 	await _drain_popups(main)   # o desfecho pode abrir outro popup; o tempo só volta com a fila vazia
 	reload_ok = reload_ok and Game.state.pending_event.is_empty() and Game.is_running()
 	print("  save com evento em aberto volta a rodar: %s" % reload_ok)
+	# recrutamento: busca paga, recrutadora interna e o banco no mapa
+	Game.state.money = 800000.0
+	Game.state.reputation = 60.0
+	EventBus.state_changed.emit()
+	main.show_screen("team")
+	await get_tree().create_timer(0.25).timeout
+	var hire_ok: bool = Game.recruitment.start("plataforma").ok and Game.recruitment.pending() > 0
+	Game.office.upgrade()
+	var capacity_before: int = Game.office.capacity()
+	var recruiter_ok: bool = Game.recruitment.hire_recruiter().ok
+	await get_tree().create_timer(0.25).timeout
+	recruiter_ok = recruiter_ok and Game.office.capacity() == capacity_before - 1
+	recruiter_ok = recruiter_ok and main.screens["team"].content.get_child_count() > 0
+	Game.recruitment.fire_recruiter()
+	await get_tree().process_frame
+	print("  recrutamento pago: %s · recrutadora ocupa e libera lugar: %s" % [hire_ok, recruiter_ok])
+	Game.state.reputation = 90.0
+	Game.office.move_to(2)
+	main.show_world_map()
+	await get_tree().create_timer(0.5).timeout
+	var bank_ok: bool = Game.bank.is_available() and main.world_map.bank_button.visible
+	main.popups.show_bank()
+	await get_tree().create_timer(0.25).timeout
+	bank_ok = bank_ok and main.popups.is_open()
+	var loan_ok: bool = Game.bank.take("giro_curto").ok and Game.bank.monthly_payment() > 0.0
+	await _drain_popups(main)
+	main.world_map.close()
+	await get_tree().process_frame
+	print("  banco no mapa: %s · empréstimo contratado: %s (parcela %s)" % [bank_ok, loan_ok, UIKit.money(Game.bank.monthly_payment())])
 	# tela inicial: escolher de qual espaço continuar
 	var workers_count: int = main.office_view.workers.size()
 	Game.save.delete_save()
@@ -373,7 +426,7 @@ func _ready() -> void:
 	print("  escolher espaço de save ao continuar: %s (%d espaços)" % [slots_ok, SaveSystem.MAX_SLOTS])
 	Game.save.delete_save()
 	print("  workers no escritório: %d" % workers_count)
-	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene and mood_ok and leaving_ok and map_ok and rival_ok and cal_ok and quest_ok and news_ok and pets_ok and alert_ok and layout_ok and reload_ok and talent_ok and crisis_ok and dec_ok and spec_ok and slots_ok
+	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene and mood_ok and leaving_ok and map_ok and rival_ok and cal_ok and quest_ok and news_ok and pets_ok and alert_ok and layout_ok and reload_ok and talent_ok and crisis_ok and dec_ok and spec_ok and slots_ok and drag_ok and hire_ok and recruiter_ok and bank_ok and loan_ok
 	print("[%s] UI smoke" % ("OK" if ok else "FALHA"))
 	get_tree().quit(0 if ok else 1)
 
@@ -387,3 +440,16 @@ func _drain_popups(main) -> void:
 			Game.resolve_event(0)
 		await get_tree().process_frame
 		guard += 1
+
+
+## Blocos que engolem o arraste do dedo e impedem rolar a tela (painéis, imagens, espaçadores).
+func _count_drag_blockers(node: Node) -> int:
+	var n := 0
+	for child in node.get_children():
+		if child is Control:
+			var c: Control = child
+			var interactive: bool = c is BaseButton or c is LineEdit or c is TextEdit or c is Range or c is ScrollContainer
+			if not interactive and c.mouse_filter == Control.MOUSE_FILTER_STOP:
+				n += 1
+		n += _count_drag_blockers(child)
+	return n

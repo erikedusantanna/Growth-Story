@@ -10,6 +10,7 @@ const MAP_SCALE := 2.0
 const MARKER_W := 230.0
 
 var scroll: ScrollContainer
+var bank_button: Button
 var board: Control
 var map: TextureRect
 var life: WorldMapLife
@@ -65,9 +66,17 @@ func _ready() -> void:
 	header_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	row.add_child(header_title)
-	var close_btn := UIKit.button("✖️ Fechar", close, false, 40)
+	# o banco abre a partir da região 2: capital de giro sem precisar sair do mapa
+	bank_button = UIKit.button("🏦 Banco", func(): _popups().show_bank(), false, 40)
+	bank_button.size_flags_horizontal = 0
+	bank_button.custom_minimum_size.x = 116
+	bank_button.tooltip_text = "Banco: capital de giro"
+	row.add_child(bank_button)
+	# fechar fica só com o ícone: com o banco ao lado não cabem dois rótulos na mesma linha
+	var close_btn := UIKit.button("✖️", close, false, 40)
 	close_btn.size_flags_horizontal = 0
-	close_btn.custom_minimum_size.x = 110
+	close_btn.custom_minimum_size.x = 52
+	close_btn.tooltip_text = "Fechar o mapa"
 	row.add_child(close_btn)
 	# legenda fixa embaixo
 	var legend := PanelContainer.new()
@@ -83,8 +92,25 @@ func _ready() -> void:
 	lg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lg.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	legend.add_child(lg)
-	EventBus.state_changed.connect(func(): if visible: _build_markers())
+	EventBus.state_changed.connect(func():
+		if visible:
+			_build_markers()
+			_refresh_bank_button())
 	set_process(false)
+
+
+func _refresh_bank_button() -> void:
+	if bank_button == null:
+		return
+	bank_button.visible = Game.bank.is_available()
+	# com dívida o botão mostra quanto falta, em milhares, para caber ao lado do título
+	var debt: float = Game.bank.debt()
+	if debt <= 0.0:
+		bank_button.text = "🏦 Banco"
+	elif debt >= 1000000.0:
+		bank_button.text = "🏦 %s" % UIKit.money_short(debt)
+	else:
+		bank_button.text = "🏦 R$ %d mil" % int(roundf(debt / 1000.0))
 
 
 func open() -> void:
@@ -92,6 +118,7 @@ func open() -> void:
 	Game.ui_blocking = true
 	set_process(true)
 	_build_markers()
+	_refresh_bank_button()
 	await get_tree().process_frame
 	var target := _scroll_for(_hq_map_pos())
 	# começa um pouco acima e desce até a sede: a cidade "chega" em vez de aparecer pronta

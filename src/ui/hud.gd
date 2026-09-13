@@ -5,6 +5,7 @@ extends PanelContainer
 var money_label: Label
 var rep_label: Label
 var date_label: Label
+var clock_label: Label
 var phase_label: Label
 var speed_buttons: Array = []
 var pause_button: Button
@@ -28,11 +29,14 @@ func _ready() -> void:
 	rep_label = UIKit.number("0", 20)
 	rep_box.add_child(rep_label)
 	top.add_child(rep_box)
-	var date_box := UIKit.hbox(6)
+	# data e relógio em rótulos separados: o relógio vem menor e o topo fica mais estreito
+	var date_box := UIKit.hbox(4)
 	date_box.size_flags_horizontal = 0
 	date_box.add_child(UIKit.icon("calendar"))
-	date_label = UIKit.number("01 Jan 2010 08:00", 17, UIKit.COLOR_TEXT)
+	date_label = UIKit.number("01 Jan 2010", 17, UIKit.COLOR_TEXT)
 	date_box.add_child(date_label)
+	clock_label = UIKit.number("08:00", 14, UIKit.COLOR_MUTED)
+	date_box.add_child(clock_label)
 	top.add_child(date_box)
 
 	var bottom := UIKit.hbox(4)
@@ -96,19 +100,23 @@ static func clock_text() -> String:
 func _process(_delta: float) -> void:
 	if not Game.has_game():
 		return
-	var text := "%s %s" % [Game.state.date_text(), clock_text()]
+	var text: String = Game.state.date_text()
 	if text != date_label.text:
 		date_label.text = text
+	var clock: String = clock_text()
+	if clock != clock_label.text:
+		clock_label.text = clock
 
 
 func refresh() -> void:
 	if not Game.has_game():
 		return
 	var st: GameState = Game.state
-	money_label.text = UIKit.money(st.money)
+	money_label.text = UIKit.money_short(st.money)   # abreviado: o topo não pode crescer com o caixa
 	money_label.add_theme_color_override("font_color", UIKit.COLOR_NUMBER if st.money >= 0.0 else UIKit.COLOR_RED)
 	rep_label.text = "%d" % int(roundf(st.reputation))
-	date_label.text = "%s %s" % [st.date_text(), clock_text()]
+	date_label.text = st.date_text()
+	clock_label.text = clock_text()
 	phase_label.text = "%s · %s" % [st.agency_name, Game.reputation.phase_name()]
 	pause_button.icon = UIKit.icon_texture("play" if st.paused else "pause")
 	music_button.icon = UIKit.icon_texture("sound_on" if Audio.music_enabled else "sound_off")

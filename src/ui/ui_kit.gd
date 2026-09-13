@@ -148,6 +148,26 @@ static func build_theme() -> Theme:
 	theme.set_color("font_color", "LineEdit", COLOR_TEXT)
 	theme.set_color("font_placeholder_color", "LineEdit", COLOR_MUTED)
 
+	# barra de rolagem: a padrão do Godot tem 8 px e é impossível de pegar no celular
+	var scroll_bg := _rounded(COLOR_PANEL_LIGHT.darkened(0.05), Color.TRANSPARENT, 6)
+	scroll_bg.content_margin_left = SCROLLBAR_WIDTH / 2.0
+	scroll_bg.content_margin_right = SCROLLBAR_WIDTH / 2.0
+	scroll_bg.content_margin_top = 0
+	scroll_bg.content_margin_bottom = 0
+	var grabber := _rounded(COLOR_MUTED, Color.TRANSPARENT, 6)
+	grabber.content_margin_left = SCROLLBAR_WIDTH / 2.0
+	grabber.content_margin_right = SCROLLBAR_WIDTH / 2.0
+	grabber.content_margin_top = 0
+	grabber.content_margin_bottom = 0
+	var grabber_on := grabber.duplicate()
+	grabber_on.bg_color = COLOR_ACCENT
+	for bar_type in ["VScrollBar", "HScrollBar"]:
+		theme.set_stylebox("scroll", bar_type, scroll_bg)
+		theme.set_stylebox("scroll_focus", bar_type, scroll_bg)
+		theme.set_stylebox("grabber", bar_type, grabber)
+		theme.set_stylebox("grabber_highlight", bar_type, grabber_on)
+		theme.set_stylebox("grabber_pressed", bar_type, grabber_on)
+
 	var slider_bg := _rounded(COLOR_PANEL_LIGHT, Color.TRANSPARENT, 4)
 	slider_bg.content_margin_top = 4
 	slider_bg.content_margin_bottom = 4
@@ -206,6 +226,7 @@ static func portrait(e: Employee, scale: int = 4) -> Control:
 	box.add_theme_stylebox_override("panel", style)
 	box.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	var holder := Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	holder.custom_minimum_size = Vector2(16 * scale, 16 * scale)
 	box.add_child(holder)
 	var region := Rect2(3, 0, 26, 26)   # cabeça do quadro parado de frente
@@ -279,6 +300,25 @@ static func toggle(text: String, pressed: bool, callback: Callable) -> Button:
 	b.add_theme_stylebox_override("pressed", on)
 	b.add_theme_color_override("font_pressed_color", COLOR_BLUE.darkened(0.2))
 	return b
+
+
+## Largura da barra de rolagem. A padrão do Godot (8 px) é fina demais para o dedo.
+const SCROLLBAR_WIDTH := 16.0
+
+
+## Deixa o arraste do dedo chegar ao ScrollContainer: painéis e imagens vêm com MOUSE_FILTER_STOP
+## e engolem o toque, então rolar só funcionava nos cantos vazios do fundo. Botões, campos de
+## texto e sliders continuam como estão, senão parariam de responder.
+static func allow_scroll_drag(node: Node) -> void:
+	for child in node.get_children():
+		if child is Control:
+			var c: Control = child
+			var interactive: bool = c is BaseButton or c is LineEdit or c is TextEdit or c is Range or c is ScrollContainer
+			if not interactive and c.mouse_filter == Control.MOUSE_FILTER_STOP:
+				c.mouse_filter = Control.MOUSE_FILTER_PASS
+			if c is ScrollContainer:
+				continue
+		allow_scroll_drag(child)
 
 
 static func hbox(spacing: int = 8) -> HBoxContainer:
@@ -392,6 +432,7 @@ static func indicator_color(key: String) -> Color:
 static func spacer(height: int = 8) -> Control:
 	var c := Control.new()
 	c.custom_minimum_size.y = height
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE   # espaço vazio não pode engolir o arraste
 	return c
 
 
@@ -406,6 +447,11 @@ static func signed(value: float) -> String:
 
 static func money(value: float) -> String:
 	return FinanceSystem.format_money(value)
+
+
+## Valor abreviado, para o HUD e outros cantos estreitos.
+static func money_short(value: float) -> String:
+	return FinanceSystem.format_money_short(value)
 
 
 static func _has_glyph(code: int) -> bool:

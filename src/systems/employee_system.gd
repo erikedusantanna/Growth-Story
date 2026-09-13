@@ -4,7 +4,7 @@ extends RefCounted
 
 const BURNOUT_DAYS := 10
 const JOURNEY_MAX := 40
-const MAX_CANDIDATES := 5
+const MAX_CANDIDATES := 7
 const CANDIDATE_LIFETIME := 45
 
 var game
@@ -155,16 +155,22 @@ func morale_average() -> float:
 
 # --- Candidatos ----------------------------------------------------------------
 
+## Lote mensal de currículos espontâneos. Era baixo demais e travava o crescimento da agência,
+## então subiu de base e passou a crescer com a reputação; a recrutadora interna soma o dela.
 func refresh_candidates() -> void:
 	var st: GameState = game.state
 	st.candidates = st.candidates.filter(func(c): return c.candidate_expires > st.day)
-	var new_count := st.rng.randi_range(1, 2)
-	if st.reputation >= 30:
+	var new_count := st.rng.randi_range(2, 3)
+	if st.reputation >= 25:
 		new_count += 1
+	if st.reputation >= 55:
+		new_count += 1
+	new_count += game.recruitment.monthly_bonus()
+	var high_chance: float = game.recruitment.high_chance()
 	for i in new_count:
 		if st.candidates.size() >= MAX_CANDIDATES:
 			break
-		st.candidates.append(generate_candidate())
+		st.candidates.append(generate_candidate("high" if st.rng.randf() < high_chance else "normal"))
 
 
 func add_candidate(quality: String = "normal") -> Employee:

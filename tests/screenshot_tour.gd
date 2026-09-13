@@ -375,6 +375,33 @@ func _ready() -> void:
 	await _shot("15m_missao_arco")
 	main.popups.close()
 	await _frames(2)
+	# recrutamento: buscas pagas e a recrutadora interna
+	st.money = 900000.0
+	main.show_screen("team")
+	await _frames(3)
+	main.screens["team"].scroll_vertical = 99999
+	await _frames(3)
+	await _shot("15o_recrutamento")
+	Game.recruitment.hire_recruiter()
+	await _frames(3)
+	main.screens["team"].scroll_vertical = 99999
+	await _frames(3)
+	await _shot("15p_recrutadora_contratada")
+	# banco no mapa (região 3 já alcançada antes)
+	main.show_world_map()
+	await get_tree().create_timer(0.7).timeout
+	await _shot("15q_mapa_com_banco")
+	main.popups.show_bank()
+	await _frames(3)
+	await _shot("15r_banco")
+	Game.bank.take("giro_medio")
+	await _settle()
+	main.popups.show_bank()
+	await _frames(3)
+	await _shot("15s_banco_com_divida")
+	await _settle()
+	main.world_map.close()
+	await _frames(2)
 	# espaços de save na tela inicial
 	Game.save.delete_save()
 	Game.save.save(st, 1)

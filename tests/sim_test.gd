@@ -40,6 +40,9 @@ func _ready() -> void:
 	_test_talent(game)
 	_test_crisis(game)
 	_test_save_slots(game)
+	_test_recruitment(game)
+	_test_recruiter(game)
+	_test_bank(game)
 	if failures == 0:
 		print("\n[OK] Todos os testes passaram.")
 		get_tree().quit(0)
@@ -346,7 +349,9 @@ func _run_simulation(game, seed: int, years: int) -> void:
 		check(y3.rep >= 20.0 and y3.rep <= 90.0, "ano 3: reputação entre 20 e 90 (%.0f)" % y3.rep)
 	if year_report.size() >= 1:
 		var y1: Dictionary = year_report[0]
-		check(y1.employees >= 2 and y1.employees <= 5, "ano 1: equipe entre 2 e 5 (%d)" % y1.employees)
+		# a faixa subiu de 5 para 7 quando o fluxo de candidatos aumentou: antes a agência ficava
+		# parada esperando currículo, o que travava o primeiro ano (retorno do jogador)
+		check(y1.employees >= 2 and y1.employees <= 7, "ano 1: equipe entre 2 e 7 (%d)" % y1.employees)
 		check(y1.rep >= 8.0 and y1.rep <= 62.0, "ano 1: reputação entre 8 e 62 (%.0f)" % y1.rep)
 	check(not st.game_over, "não faliu com política simples")
 	check(completed >= 6, "concluiu pelo menos 6 projetos/ciclos (%d)" % completed)
@@ -1242,3 +1247,106 @@ func _test_save_slots(game) -> void:
 	check(game.save.current_slot == 1, "sem espaço indicado, a partida nova usa o primeiro livre")
 	game.save.delete_save()
 	check(not game.save.has_save(), "limpeza final")
+
+
+func _test_recruitment(game) -> void:
+	print("== Recrutamento ==")
+	game.new_game("Recruta", "Chefe", 91)
+	var st = game.state
+	st.money = 500000.0
+	st.reputation = 40.0
+	# lote mensal maior que o de antes (era 1–2, +1 acima de 30 de reputação)
+	st.candidates.clear()
+	game.employees.refresh_candidates()
+	check(st.candidates.size() >= 3, "lote mensal traz pelo menos 3 candidatos (%d)" % st.candidates.size())
+	# busca paga
+	st.candidates.clear()
+	var s: Dictionary = game.recruitment.search_by_id("freela")
+	check(not s.is_empty() and game.recruitment.cost(s) > 0.0, "busca paga existe e tem custo")
+	var money_before: float = st.money
+	check(game.recruitment.start("freela").ok, "começou a busca paga")
+	check(st.money < money_before and game.recruitment.pending() == 2, "pagou e tem 2 currículos a caminho")
+	check(int(st.stats.get("searches", 0)) == 1, "estatística de buscas conta")
+	for i in 10:
+		st.day += 1
+		game.recruitment.on_day()
+	check(st.candidates.size() >= 2, "os currículos chegaram (%d candidatos)" % st.candidates.size())
+	check(game.recruitment.pending() == 0, "fila de currículos esvaziou")
+	var restored = GameState.from_dict(st.to_dict())
+	check(restored.hunts.size() == 0, "buscas sobrevivem ao save")
+	# headhunter exige reputação
+	st.reputation = 5.0
+	check(not game.recruitment.can_start(game.recruitment.search_by_id("headhunter")).ok, "headhunter exige reputação")
+
+
+func _test_recruiter(game) -> void:
+	print("== Recrutadora interna ==")
+	game.new_game("Recrutadora", "Chefe", 92)
+	var st = game.state
+	st.money = 500000.0
+	st.reputation = 40.0
+	check(not game.recruitment.has_recruiter(), "começa sem recrutadora")
+	var base_capacity: int = game.office.capacity()
+	check(not game.recruitment.can_hire_recruiter().ok, "exige escritório melhor no começo")
+	game.office.upgrade()
+	check(game.recruitment.can_hire_recruiter().ok, "libera com o escritório maior (%s)" % game.recruitment.can_hire_recruiter().reason)
+	var money_before: float = st.money
+	var capacity_before: int = game.office.capacity()
+	check(game.recruitment.hire_recruiter().ok, "contratou a recrutadora")
+	check(st.money < money_before, "a contratação custou dinheiro")
+	check(game.office.capacity() == capacity_before - 1, "ela ocupa um lugar do escritório (%d → %d)" % [capacity_before, game.office.capacity()])
+	check(game.recruitment.salary() > 0.0 and game.finance.monthly_costs().hr >= game.recruitment.salary(), "o salário dela entra nos custos do mês")
+	check(game.recruitment.monthly_bonus() > 0, "ela soma candidatos ao lote mensal")
+	st.candidates.clear()
+	game.employees.refresh_candidates()
+	var with_recruiter: int = st.candidates.size()
+	check(GameState.from_dict(st.to_dict()).recruiter_hired, "a recrutadora sobrevive ao save")
+	check(game.recruitment.fire_recruiter().ok, "dispensou a recrutadora")
+	check(game.office.capacity() == capacity_before and game.recruitment.salary() == 0.0, "o lugar e o salário voltaram")
+	st.candidates.clear()
+	game.employees.refresh_candidates()
+	check(with_recruiter >= st.candidates.size(), "com ela o lote é maior ou igual (%d vs %d)" % [with_recruiter, st.candidates.size()])
+	check(base_capacity > 0, "capacidade base consultável (%d)" % base_capacity)
+
+
+func _test_bank(game) -> void:
+	print("== Banco ==")
+	game.new_game("Banco", "Chefe", 93)
+	var st = game.state
+	st.money = 300000.0
+	st.reputation = 70.0
+	check(not game.bank.is_available(), "o banco não atende na região 1")
+	check(game.office.move_to(2).ok, "mudou para a região 2")
+	check(game.bank.is_available(), "o banco abre na região 2")
+	var offers: Array = game.bank.offers()
+	check(offers.size() >= 2, "há linhas disponíveis (%d)" % offers.size())
+	var o: Dictionary = game.bank.offer_by_id("giro_medio")
+	var parcel: float = game.bank.installment(o)
+	check(parcel > 0.0 and game.bank.total_cost(o) > float(o["amount"]), "a parcela cobre juros: devolve %s por %s" % [
+		FinanceSystem.format_money(game.bank.total_cost(o)), FinanceSystem.format_money(float(o["amount"]))])
+	var money_before: float = st.money
+	check(game.bank.take("giro_medio").ok, "empréstimo aprovado")
+	check(st.money == money_before + float(o["amount"]), "o dinheiro caiu na conta na hora")
+	check(game.bank.active().size() == 1 and game.bank.monthly_payment() == parcel, "parcela mensal registrada")
+	check(int(st.stats.get("loans", 0)) == 1, "estatística de empréstimos conta")
+	check(not game.bank.take("giro_medio").ok, "não dá para pegar a mesma linha duas vezes")
+	check(GameState.from_dict(st.to_dict()).loans.size() == 1, "o empréstimo sobrevive ao save")
+	# uma parcela sai no fechamento do mês
+	var before_month: float = st.money
+	var months_before: int = int(game.bank.active()[0]["months_left"])
+	game.bank.on_month()
+	check(st.money == before_month - parcel, "a parcela saiu no fechamento")
+	check(int(game.bank.active()[0]["months_left"]) == months_before - 1, "faltou um mês a menos")
+	# sem caixa, a dívida cresce e a reputação cai
+	st.money = 10.0
+	var debt_before: float = game.bank.debt()
+	var rep_before: float = st.reputation
+	game.bank.on_month()
+	check(game.bank.debt() > debt_before and st.reputation < rep_before, "atrasar gera multa e custa reputação")
+	# quitar de uma vez
+	st.money = 500000.0
+	check(game.bank.settle("giro_medio").ok, "quitou o empréstimo")
+	check(game.bank.active().is_empty() and game.bank.debt() == 0.0, "dívida zerada")
+	# as linhas grandes exigem região e reputação
+	st.reputation = 10.0
+	check(not game.bank.can_take(game.bank.offer_by_id("investidor")).ok, "a linha de investimento exige região e reputação")

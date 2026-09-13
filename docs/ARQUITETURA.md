@@ -157,7 +157,17 @@ do calendário e aplica os efeitos declarados — um em `effect` ou vários em `
 (verba dos clientes ativos) e `prospects`. As ilustrações ficam em `assets/art/news/` e são geradas
 por `tools/gen_art.py` (`NEWS_ART`).
 
-**Regra de layout:** nada na interface pode pedir mais largura que o viewport (540 px). O HUD e as
+**Regra de layout:** nada na interface pode pedir mais largura que o viewport. O limite real é
+**524 px**: a raiz (`main.gd`) tem 8 px de margem de cada lado. O `ui_smoke_test` confere cada tela,
+o HUD e o HUD com caixa de 8 dígitos — foi o caixa que quase estourou o topo (516 de 524), o que
+levou o HUD a usar `UIKit.money_short()` (R$ 2,4 mi) e a separar data e relógio em dois rótulos.
+
+**Rolagem no celular:** painéis e imagens nascem com `MOUSE_FILTER_STOP` e engolem o toque, então
+arrastar o dedo sobre um cartão não rolava a tela — só funcionava nos cantos vazios do fundo.
+`UIKit.allow_scroll_drag(node)` percorre o que foi montado e passa tudo que não é botão, campo ou
+slider para `MOUSE_FILTER_PASS`; é chamado no `BaseScreen.refresh()`, no `Popups._open()` (adiado,
+porque alguns painéis montam o conteúdo no próprio `_ready`) e no calendário. A barra de rolagem
+também ganhou tema próprio: `UIKit.SCROLLBAR_WIDTH` (16 px) no lugar dos 8 px padrão do Godot. O HUD e as
 telas são verificados pelo `ui_smoke_test`; passar disso empurra o layout inteiro e corta a tela.
 
 ## World Map e regiões (`data/regions.json`, `data/offices.json`, `OfficeSystem`)
@@ -274,6 +284,26 @@ temporárias e prefixa 🔥/🧊 nos serviços; o calendário agenda o fim de ca
   de ser fechado por uma agência rival (nome sorteado de `agencies`), via
   `ClientSystem.lose_client()` — reaproveita o mesmo caminho de perda de cliente (log, som de
   crise). Complementa os eventos que já existiam (`proposta_concorrente`, `concorrente_cresce`).
+
+## Recrutamento e banco (`recruitment_system.gd`, `bank_system.gd`)
+
+- **Recrutamento** (`data/recruitment.json`): o lote mensal de `EmployeeSystem.refresh_candidates()`
+  subiu para 2–3 (+1 com reputação 25, +1 com 55) e `MAX_CANDIDATES` foi de 5 para 7. As **buscas
+  pagas** funcionam como a mídia paga: `start(id)` cobra o custo (que sobe com a região, igual às
+  campanhas) e empilha entradas em `state.hunts` com `arrive_day`; `on_day()` entrega os currículos
+  como candidatos, sorteando `high_chance` para um deles. A **recrutadora interna**
+  (`state.recruiter_hired`) é um vínculo fixo no mesmo molde do RH: custo único, salário mensal
+  somado em `monthly_costs().hr`, e ocupa um lugar — `OfficeSystem.capacity()` passou a devolver
+  `base_capacity() - staff_slots()`, então toda checagem de "cabe mais alguém?" já conta com ela
+  sem precisar mudar cada chamada. Enquanto está na equipe, soma `monthly_candidates` ao lote e tem
+  `weekly_chance` de trazer alguém fora dele.
+- **Banco** (`data/loans.json`): `is_available()` exige região ≥ `min_region` (2). A parcela é fixa,
+  pela tabela Price — `installment_for(amount, months, rate) = P·i / (1 − (1+i)^−n)` — e o saldo
+  devedor (`remaining`) começa em `parcela × meses`, então `total_cost()` mostra ao jogador quanto
+  ele devolve antes de assinar. `take(id)` credita o valor na hora; `on_month()`, chamado pelo
+  `GameManager` logo depois de `finance.on_month()`, debita cada parcela. Sem caixa, a parcela não
+  sai: o saldo cresce `late_fee_rate` (8%) e a reputação cai `late_reputation` — encarece, mas não
+  quebra a agência sozinho. `settle(id)` quita o saldo cheio, sem desconto.
 
 ## Marca: logo e ícone do app (`assets/brand/`, `tools/gen_brand.py`)
 

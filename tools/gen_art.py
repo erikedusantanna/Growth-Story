@@ -2469,8 +2469,17 @@ def title_background():
     for x in (130, 236):
         rect(c, x, 372, 2, 28, "metal_lo"); rect(c, x - 2, 370, 6, 3, "metal_hi"); rect(c, x - 1, 368, 4, 2, "win_lit")
     rect(c, 150, 380, 34, 3, "metal"); rect(c, 150, 383, 2, 17, "metal_lo"); rect(c, 182, 383, 2, 17, "metal_lo"); rect(c, 154, 384, 26, 8, "glass")
-    # carros
-    _car(c, 30, 432, "car_y"); _car(c, 120, 452, "car_b", True); _car(c, 210, 434, "car_r"); _car(c, 236, 460, "car_w", True)
+    # os carros não entram aqui: a tela inicial os anima por cima (assets/art/title/car_*.png)
+    return c
+
+
+TITLE_CAR_COLORS = {"car_y": "y", "car_b": "b", "car_r": "r", "car_w": "w"}
+
+
+def title_car(col, flip=False):
+    """Um carro solto, para a tela inicial animar na avenida."""
+    c = canvas(22, 13)
+    _car(c, 0, 0, col, flip)
     return c
 
 
@@ -2514,11 +2523,16 @@ def export_title(root):
     """Só o cenário: o logo da tela inicial vem da arte de marca, por tools/gen_brand.py."""
     out = os.path.join(root, "assets", "art", "title")
     write_png(os.path.join(out, "background.png"), title_background())
+    for col, name in TITLE_CAR_COLORS.items():
+        write_png(os.path.join(out, "car_%s.png" % name), title_car(col))
+        write_png(os.path.join(out, "car_%s_flip.png" % name), title_car(col, True))
 
 
 def title_sheet(path, scale=2):
     c = canvas(TITLE_W, TITLE_H)
     blit(c, title_background(), 0, 0)
+    blit(c, title_car("car_y"), 30, 432)
+    blit(c, title_car("car_b", True), 120, 452)
     blit(c, title_logo(), 15, 40)
     write_png(path, c, scale)
 

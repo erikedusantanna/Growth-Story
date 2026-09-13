@@ -36,6 +36,8 @@ var quests: Dictionary = {}          # missões (data/quests.json)
 var news: Dictionary = {}            # notícias cômicas (data/news.json)
 var decisions: Dictionary = {}       # decisões no meio do projeto (data/decisions.json)
 var crises: Dictionary = {}          # crises da região (data/crises.json)
+var recruitment: Dictionary = {}     # recrutamento pago e recrutadora (data/recruitment.json)
+var loans: Dictionary = {}           # empréstimos do banco (data/loans.json)
 
 
 func load_all() -> void:
@@ -81,6 +83,8 @@ func load_all() -> void:
 	news = _load_json("res://data/news.json")
 	decisions = _load_json("res://data/decisions.json")
 	crises = _load_json("res://data/crises.json")
+	recruitment = _load_json("res://data/recruitment.json")
+	loans = _load_json("res://data/loans.json")
 
 
 func _load_json(path: String) -> Dictionary:

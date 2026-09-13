@@ -43,6 +43,8 @@ func _open(builder: Callable) -> void:
 		return
 	current = builder.call()
 	holder.add_child(current)
+	# adiado: alguns painéis montam o conteúdo no próprio _ready, e aí ainda não existe aqui
+	UIKit.allow_scroll_drag.call_deferred(current)   # arrastar o dedo rola o popup, não só a borda
 	dim.visible = true
 	Game.ui_blocking = true
 
@@ -503,6 +505,65 @@ func show_specialize(e: Employee) -> void:
 
 
 ## Proposta comercial com slider de preço: desconto aumenta a chance, prêmio reduz e eleva a expectativa.
+## Banco: capital de giro. O valor cai na conta na hora e a parcela sai todo mês no fechamento.
+func show_bank() -> void:
+	_open(func():
+		var parts := _panel("🏦 Banco")
+		var active: Array = Game.bank.active()
+		if not active.is_empty():
+			parts.body.add_child(UIKit.label("Suas dívidas", 17, UIKit.COLOR_ACCENT))
+			for loan in active:
+				var o: Dictionary = Game.bank.offer_by_id(String(loan.get("id", "")))
+				var card := UIKit.card()
+				var cv := UIKit.card_content(card)
+				cv.add_child(UIKit.label("%s %s" % [String(o.get("icon", "🏦")), String(o.get("name", "Empréstimo"))], 16))
+				cv.add_child(UIKit.label("Faltam %s em %d parcela(s) de %s" % [
+					UIKit.money(float(loan.get("remaining", 0))), int(loan.get("months_left", 0)),
+					UIKit.money(float(loan.get("installment", 0)))], 14, UIKit.COLOR_RED))
+				var id := String(loan.get("id", ""))
+				var remaining := float(loan.get("remaining", 0))
+				var settle := UIKit.button("Quitar por %s" % UIKit.money(remaining), func():
+					var r: Dictionary = Game.bank.settle(id)
+					close()
+					if not r.ok:
+						show_info("Banco", r.reason)
+					else:
+						show_bank(), false, 38)
+				settle.disabled = Game.state.money < remaining
+				cv.add_child(settle)
+				parts.body.add_child(card)
+			parts.body.add_child(UIKit.muted("Parcelas saem no fechamento do mês. Sem caixa na hora, a dívida ganha multa e a reputação cai.", 12))
+			parts.body.add_child(UIKit.spacer(4))
+		var offers: Array = Game.bank.offers()
+		parts.body.add_child(UIKit.label("Linhas disponíveis", 17, UIKit.COLOR_ACCENT))
+		if offers.is_empty():
+			parts.body.add_child(UIKit.muted("O gerente ainda não tem nada para a sua agência. Volte com mais reputação."))
+		for o in offers:
+			var card := UIKit.card()
+			var cv := UIKit.card_content(card)
+			cv.add_child(UIKit.label("%s %s" % [String(o.get("icon", "🏦")), String(o.get("name", ""))], 16, UIKit.COLOR_TEXT))
+			cv.add_child(UIKit.label(String(o.get("desc", "")), 13, UIKit.COLOR_MUTED, true))
+			var parcel: float = Game.bank.installment(o)
+			cv.add_child(UIKit.label("%s na conta agora" % UIKit.money(float(o.get("amount", 0))), 15, UIKit.COLOR_GREEN))
+			cv.add_child(UIKit.muted("%d parcelas de %s · juros de %.1f%% ao mês · você devolve %s" % [
+				int(o.get("months", 12)), UIKit.money(parcel), float(o.get("monthly_rate", 0)) * 100.0,
+				UIKit.money(Game.bank.total_cost(o))], 12))
+			var check: Dictionary = Game.bank.can_take(o)
+			var id := String(o.get("id", ""))
+			var take := UIKit.button("Pegar %s" % UIKit.money(float(o.get("amount", 0))), func():
+				var r: Dictionary = Game.bank.take(id)
+				close()
+				if not r.ok:
+					show_info("Banco", r.reason), true, 40)
+			take.disabled = not check.ok
+			cv.add_child(take)
+			if not check.ok:
+				cv.add_child(UIKit.muted(check.reason, 12))
+			parts.body.add_child(card)
+		parts.buttons.add_child(UIKit.button("Fechar", close))
+		return parts.panel)
+
+
 func show_proposal(c: Client) -> void:
 	_open(func():
 		var parts := _panel("🤝 Proposta para %s" % c.name)
