@@ -2475,7 +2475,11 @@ def title_background():
 
 
 def title_logo():
-    """'A GROWTH STORY' em blocos: A e STORY em branco com sombra azul, GROWTH em amarelo com contorno."""
+    """Logo antigo, em blocos, desenhado por código.
+
+    Não é mais o logo do jogo (a tela inicial usa a arte de marca, ver tools/gen_brand.py).
+    Fica aqui porque a prova de estilo `--title` ainda monta a tela com ele.
+    """
     g = _glyphs()
     c = canvas(240, 118)
     # 'A' pequeno
@@ -2507,9 +2511,9 @@ def title_logo():
 
 
 def export_title(root):
+    """Só o cenário: o logo da tela inicial vem da arte de marca, por tools/gen_brand.py."""
     out = os.path.join(root, "assets", "art", "title")
     write_png(os.path.join(out, "background.png"), title_background())
-    write_png(os.path.join(out, "logo.png"), title_logo())
 
 
 def title_sheet(path, scale=2):

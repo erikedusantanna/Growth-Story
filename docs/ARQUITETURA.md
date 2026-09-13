@@ -275,6 +275,33 @@ temporárias e prefixa 🔥/🧊 nos serviços; o calendário agenda o fim de ca
   `ClientSystem.lose_client()` — reaproveita o mesmo caminho de perda de cliente (log, som de
   crise). Complementa os eventos que já existiam (`proposta_concorrente`, `concorrente_cresce`).
 
+## Marca: logo e ícone do app (`assets/brand/`, `tools/gen_brand.py`)
+
+Toda a arte do jogo é desenhada por código, com uma exceção: o **logo** e o **ícone do app**, que
+vêm prontos como imagem. Os dois originais moram em `assets/brand/` (`logo_source.png` e
+`icon_source.png`) e ficam fora do APK pelo `exclude_filter` do `export_presets.cfg`.
+
+`tools/gen_brand.py` deriva deles tudo o que é usado de fato — corta a margem transparente,
+redimensiona com LANCZOS e grava:
+
+| Saída | Uso |
+|---|---|
+| `assets/art/title/logo.png` (512 px de largura) | tela inicial (`title_screen.gd`), em escala 1 por cima do cenário |
+| `icon.png` (128×128) | `config/icon` do `project.godot`: janela e editor |
+| `assets/icons/launcher_192.png` | ícone legado do Android (aparelhos antigos), com a moldura arredondada da própria arte |
+| `assets/icons/adaptive_foreground_432.png` | ícone adaptativo, primeiro plano |
+| `assets/icons/adaptive_background_432.png` | ícone adaptativo, fundo |
+
+O **ícone adaptativo** merece explicação: o Android recorta o canvas de 432 px com a máscara do
+aparelho (círculo, quadrado arredondado, gota…) e só garante os ~66% centrais. Se a arte inteira
+fosse para o fundo sangrando até a borda, a máscara comeria as pontas do título. Por isso a arte
+entra reduzida (`ICON_ART`, 306 px) no primeiro plano, já sem a moldura arredondada, e o fundo é
+um degradê vertical amostrado do céu da própria arte — o resultado fecha em qualquer máscara.
+
+Para trocar a marca: substitua os dois arquivos em `assets/brand/`, rode `python3
+tools/gen_brand.py` e confira a tela inicial no tour de screenshots. `title_logo()` do
+`gen_art.py` é o logo antigo, feito em blocos; continua lá só para a prova de estilo `--title`.
+
 ## Fonte pixel art (`tools/gen_font.py`, `assets/fonts/pixel.fnt`)
 
 Bitmap font 5×7 (matriz de pontos), com 2 linhas extras acima para acento — cobre A-Z, a-z,

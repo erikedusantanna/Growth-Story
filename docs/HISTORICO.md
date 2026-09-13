@@ -512,6 +512,35 @@ Pedido do usuário em seis itens, todos entregues neste lote:
 - As agências rivais só existem nas regiões 2–4. Testes que medem força de rival precisam mover a
   sede para a região 2 e chamar `ensure_rivals()` antes.
 
+## 8j. Logo e ícone de app definitivos (13/09)
+
+O usuário enviou duas artes prontas — o logo (lettering "A GROWTH STORY" sobre a cidade, com o
+fundador de costas) e o ícone de app (a mesma cena num quadrado arredondado). São a **primeira
+arte do projeto que não é desenhada por código**; por isso ganharam um lugar próprio,
+`assets/brand/`, e um script só delas, `tools/gen_brand.py`, que deriva todas as variações a
+partir das fontes. Trocar a marca no futuro é substituir os dois arquivos e rodar o script.
+
+O que mudou:
+
+- `assets/art/title/logo.png` passou a ser a arte de marca (512 px de largura), e o
+  `export_title()` do `gen_art.py` não grava mais esse arquivo — só o cenário. O `title_logo()`
+  em blocos continua no código, usado apenas pela prova de estilo `--title`.
+- Na tela inicial, o logo saiu do nó `world` (escala 2×) e virou um `TextureRect` em escala 1,
+  ancorado na faixa de cima. O **fundador avulso** que ficava em pé sobre o logo antigo foi
+  removido: a arte nova já traz um, e dois personagens na mesma composição ficavam estranhos.
+- `icon.png` (janela/editor) subiu de 32×32 para 128×128.
+- Ícone do Android: `launcher_192.png` usa a arte com a moldura arredondada dela mesma.
+
+**O detalhe do ícone adaptativo**, que é onde dá errado se feito sem cuidado: o Android recorta
+o canvas de 432 px com a máscara do aparelho e só garante os ~66% centrais. Jogar a arte inteira
+no fundo, sangrando até a borda, faria a máscara comer as pontas de "GROWTH" e "STORY". A solução
+foi separar: a arte entra **reduzida** (306 px), já sem a moldura arredondada, no primeiro plano;
+o fundo é um degradê vertical amostrado do céu da própria arte. Conferido nas três formas
+(quadrado cheio, círculo e quadrado arredondado) antes de fechar.
+
+As fontes em `assets/brand/` entraram no `exclude_filter` dos dois presets de exportação — são
+arquivos grandes e não têm uso em tempo de execução, não precisam ir no APK.
+
 ## 9. Checklist para retomar o projeto
 
 1. Ler este documento, depois `README.md` (tabela "O que já existe") e `docs/ARQUITETURA.md`;
