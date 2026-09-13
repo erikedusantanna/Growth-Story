@@ -189,15 +189,15 @@ func _ready() -> void:
 	await get_tree().process_frame
 	print("  destaque da rival no mapa: %s (%d anel)" % [rival_marks >= 1, rival_marks])
 	rival_ok = rival_ok and rival_marks >= 1
-	# calendário: abre com os 12 meses, agenda e foco do mês
-	main.show_calendar()
-	await get_tree().process_frame
-	await get_tree().process_frame
-	var cal_ok: bool = main.calendar_screen.visible and Game.ui_blocking and main.calendar_screen.body.get_child_count() > 4
-	main.calendar_screen.close()
-	await get_tree().process_frame
-	cal_ok = cal_ok and not main.calendar_screen.visible and not Game.ui_blocking
-	print("  calendário abre e fecha: %s" % cal_ok)
+	# a tela de calendário foi cortada: o foco do mês e a agenda vivem na aba Empresa agora
+	main.show_screen("company")
+	await get_tree().create_timer(0.25).timeout
+	var cal_ok: bool = Game.calendar.focus().is_empty()
+	cal_ok = cal_ok and Game.calendar.set_focus("vendas").ok and not Game.calendar.focus().is_empty()
+	await get_tree().create_timer(0.25).timeout
+	cal_ok = cal_ok and main.screens["company"].content.get_child_count() > 3
+	cal_ok = cal_ok and not Game.calendar.upcoming(45).is_empty()
+	print("  foco do mês e agenda na aba Empresa: %s (%d itens na agenda)" % [cal_ok, Game.calendar.upcoming(45).size()])
 	# missão nova e notícia abrem o popup com a arte
 	Game.state.day = 300
 	Game.quests.start("dois_projetos")

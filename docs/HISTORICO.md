@@ -597,11 +597,24 @@ custos. Sem caixa no dia do débito, a parcela não sai: o saldo ganha 8% de mul
 — encarece a dívida sem quebrar a agência de imediato. Dá para quitar o saldo cheio a qualquer
 momento, e no máximo dois empréstimos ficam abertos ao mesmo tempo.
 
-### Calendário
+### Calendário cortado
 
-O jogador disse que ficou confuso e pouco útil. Nada foi mexido neste lote: a proposta de recorte
-(manter foco do mês e agenda, cortar a grade de 12 meses) está na conversa, aguardando a decisão
-dele antes de qualquer mudança.
+O jogador disse que ficou confuso e pouco útil, pedi uma decisão e ele respondeu "cortar
+calendário". A tela saiu inteira (`src/ui/calendar_screen.gd` deletado, botão 📅 fora do HUD), mas
+o `CalendarSystem` ficou: o problema era a tela, não a mecânica.
+
+Onde cada parte foi parar:
+
+| Parte | Destino |
+|---|---|
+| Foco do mês | topo da aba **Empresa** (é o que se usa de verdade) |
+| Agenda | aba **Empresa**, curta: `upcoming(45)` com 5 itens, em vez de 18 |
+| Presente de aniversário | junto da agenda, que era a única ação que a tela tinha |
+| Banca de notícias | aba **Agência**, ao lado das tendências que as manchetes mexem |
+| Grade de 12 meses | **removida** — foi o que motivou a queixa; `month_markers()` segue no sistema, sem uso |
+
+Lição que vale registrar: a grade era bonita e não fazia nada. Uma tela inteira para informação que
+se consulta de relance vira peso, não recurso.
 
 ## 9. Checklist para retomar o projeto
 

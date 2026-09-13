@@ -292,15 +292,18 @@ func _ready() -> void:
 	await _shot("15_noticia")
 	main.popups.close()
 	await _frames(2)
-	# calendário: foco do mês, grade de 12 meses, agenda e banca
-	main.show_calendar()
+	# foco do mês e agenda, agora no topo da aba Empresa (a tela de calendário foi cortada).
+	# a rolagem fica guardada entre visitas, então volta para o topo antes de capturar
+	main.show_screen("company")
 	await _frames(3)
-	await _shot("15b_calendario")
-	main.calendar_screen.scroll.scroll_vertical = 560
+	main.screens["company"].scroll_vertical = 0
 	await _frames(3)
-	await _shot("15c_calendario_agenda")
-	main.calendar_screen.close()
-	await _frames(2)
+	await _shot("15b_foco_e_agenda")
+	Game.calendar.set_focus("entrega")
+	await _frames(3)
+	main.screens["company"].scroll_vertical = 0
+	await _frames(3)
+	await _shot("15c_foco_escolhido")
 	# missão nova
 	Game.quests.start("entrega_4")
 	await _frames(3)

@@ -47,10 +47,6 @@ func _ready() -> void:
 	phase_label.clip_text = true
 	phase_label.custom_minimum_size.x = 0
 	bottom.add_child(phase_label)
-	var agenda_button := _icon_button("agenda", func(): get_tree().call_group("main", "show_calendar"), 40)
-	agenda_button.tooltip_text = "Calendário: o que vem pela frente, missões e foco do mês"
-	agenda_button.set_meta("tutorial", "calendar")
-	bottom.add_child(agenda_button)
 	var map_button := _icon_button("map", func(): get_tree().call_group("main", "show_world_map"), 40)
 	map_button.tooltip_text = "Mapa: regiões, mudança de sede e concorrentes"
 	map_button.set_meta("tutorial", "map")

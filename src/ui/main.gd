@@ -17,7 +17,6 @@ var event_stage: EventStage
 var title_screen: TitleScreen
 var tutorial: TutorialOverlay
 var world_map: WorldMapScreen
-var calendar_screen: CalendarScreen
 var current_screen := "clients"
 var _blink_t := 0.0
 
@@ -110,8 +109,6 @@ func _ready() -> void:
 	add_child(map_layer)
 	world_map = WorldMapScreen.new()
 	map_layer.add_child(world_map)
-	calendar_screen = CalendarScreen.new()
-	map_layer.add_child(calendar_screen)
 	var guide_layer := CanvasLayer.new()
 	guide_layer.layer = 12   # acima dos modais: destaca botões dentro deles também
 	add_child(guide_layer)
@@ -179,21 +176,12 @@ func below_office_y() -> float:
 
 func show_world_map() -> void:
 	if Game.has_game():
-		calendar_screen.close()
 		world_map.open()
-
-
-func show_calendar() -> void:
-	if Game.has_game():
-		world_map.close()
-		calendar_screen.open()
 
 
 func show_title() -> void:
 	if world_map.visible:
 		world_map.close()
-	if calendar_screen.visible:
-		calendar_screen.close()
 	if Game.has_game():
 		Game.state.paused = true
 	Audio.stop_ambience()

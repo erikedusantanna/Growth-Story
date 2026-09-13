@@ -145,14 +145,20 @@ da equipe). `check()` roda a cada mudança de estado e `on_day()` cuida de prazo
 formam um arco de três etapas: `_eligible()` recusa quem tem `step > 1`, então só a etapa 1 entra no
 sorteio, e `_complete()` chama `start(next)` na hora, encadeando a etapa seguinte com prêmio maior.
 
-`CalendarSystem` não guarda agenda própria: `upcoming()` monta a lista lendo os outros sistemas
+`CalendarSystem` sobreviveu à remoção da tela de calendário — o sistema era útil, a tela é que não
+era. Ele não guarda agenda própria: `upcoming(days)` monta a lista lendo os outros sistemas
 (fechamento do mês, temas sazonais, premiação, prazos de projeto e missão, leads de mídia paga,
 aniversários, semana de mudança, cooldown de investida). O que é dele: o **foco do mês**
 (`state.focus`, consultado por `has_focus()` em clientes, projetos, pessoas e finanças) e o
 **aniversário de contrato** com presente (`state.gifts_sent`).
 
+**Onde isso aparece hoje:** o foco e uma agenda curta (`upcoming(45)`, cinco itens) ficam no topo da
+aba **Empresa**; a banca de manchetes foi para a aba **Agência**, ao lado das tendências de mercado
+que as notícias mexem. `month_markers()` continua no sistema, sem uso na interface — era a grade de
+12 meses, que foi o que motivou o corte.
+
 `NewsSystem` sorteia manchetes de `data/news.json`, guarda as últimas em `state.news_feed` para a banca
-do calendário e aplica os efeitos declarados — um em `effect` ou vários em `effects`: `money_pct`,
+da aba Agência e aplica os efeitos declarados — um em `effect` ou vários em `effects`: `money_pct`,
 `money`, `reputation`, `morale`, `trend`/`cold` (tendência temporária de mercado), `client_budget`
 (verba dos clientes ativos) e `prospects`. As ilustrações ficam em `assets/art/news/` e são geradas
 por `tools/gen_art.py` (`NEWS_ART`).
@@ -228,7 +234,7 @@ source)` grava em `state.market` (`{service, kind, until_day, source}`) e `on_da
 venceu, logando a volta ao normal. `is_trending()` soma a era e as tendências quentes; `is_cold()`
 vale só para as frias que a era não contradiz. Serviço frio leva `ProjectSystem.PENALTY_COLD` (−4) no
 `_score()`, com linha própria no detalhamento. A aba Agência mostra um cartão com as tendências
-temporárias e prefixa 🔥/🧊 nos serviços; o calendário agenda o fim de cada uma.
+temporárias e prefixa 🔥/🧊 nos serviços; a agenda da aba Empresa marca o fim de cada uma.
 
 ## Especialização, decisões, talento raro e crises
 

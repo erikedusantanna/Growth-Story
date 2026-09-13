@@ -146,7 +146,7 @@ func _test_news(game) -> void:
 
 
 func _test_calendar(game) -> void:
-	print("== Calendário e agenda ==")
+	print("== Foco do mês e agenda ==")
 	game.new_game("Agenda", "Chefe", 46)
 	var st = game.state
 	st.money = 200000.0
