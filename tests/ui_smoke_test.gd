@@ -387,7 +387,17 @@ func _ready() -> void:
 	EventBus.state_changed.emit()
 	main.show_screen("team")
 	await get_tree().create_timer(0.25).timeout
-	var hire_ok: bool = Game.recruitment.start("plataforma").ok and Game.recruitment.pending() > 0
+	# com a lista cheia a busca é recusada de propósito — é o que acontecia no CI, onde os 30 dias
+	# simulados já tinham enchido a lista de candidatos
+	while Game.state.candidates.size() < EmployeeSystem.MAX_CANDIDATES:
+		Game.employees.add_candidate()
+	var full_ok: bool = not Game.recruitment.can_start(Game.recruitment.search_by_id("plataforma")).ok
+	Game.state.candidates.clear()
+	await get_tree().process_frame
+	var start_result: Dictionary = Game.recruitment.start("plataforma")
+	var hire_ok: bool = start_result.ok and Game.recruitment.pending() > 0 and full_ok
+	if not start_result.ok:
+		print("    busca paga recusada: %s" % start_result.reason)
 	Game.office.upgrade()
 	var capacity_before: int = Game.office.capacity()
 	var recruiter_ok: bool = Game.recruitment.hire_recruiter().ok
@@ -396,7 +406,7 @@ func _ready() -> void:
 	recruiter_ok = recruiter_ok and main.screens["team"].content.get_child_count() > 0
 	Game.recruitment.fire_recruiter()
 	await get_tree().process_frame
-	print("  recrutamento pago: %s · recrutadora ocupa e libera lugar: %s" % [hire_ok, recruiter_ok])
+	print("  recrutamento pago: %s (recusa com a lista cheia: %s) · recrutadora ocupa e libera lugar: %s" % [hire_ok, full_ok, recruiter_ok])
 	Game.state.reputation = 90.0
 	Game.office.move_to(2)
 	main.show_world_map()
