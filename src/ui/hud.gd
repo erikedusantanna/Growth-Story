@@ -5,6 +5,9 @@ extends PanelContainer
 var money_label: Label
 var rep_label: Label
 var date_label: Label
+var clock_label: Label
+var alert_button: Button
+var _bell_t := 0.0
 var phase_label: Label
 var speed_buttons: Array = []
 var pause_button: Button
@@ -28,11 +31,14 @@ func _ready() -> void:
 	rep_label = UIKit.number("0", 20)
 	rep_box.add_child(rep_label)
 	top.add_child(rep_box)
-	var date_box := UIKit.hbox(6)
+	# data e relógio em rótulos separados: o relógio vem menor e o topo fica mais estreito
+	var date_box := UIKit.hbox(4)
 	date_box.size_flags_horizontal = 0
 	date_box.add_child(UIKit.icon("calendar"))
-	date_label = UIKit.number("01 Jan 2010 08:00", 17, UIKit.COLOR_TEXT)
+	date_label = UIKit.number("01 Jan 2010", 17, UIKit.COLOR_TEXT)
 	date_box.add_child(date_label)
+	clock_label = UIKit.number("08:00", 14, UIKit.COLOR_MUTED)
+	date_box.add_child(clock_label)
 	top.add_child(date_box)
 
 	var bottom := UIKit.hbox(4)
@@ -43,10 +49,10 @@ func _ready() -> void:
 	phase_label.clip_text = true
 	phase_label.custom_minimum_size.x = 0
 	bottom.add_child(phase_label)
-	var agenda_button := _icon_button("agenda", func(): get_tree().call_group("main", "show_calendar"), 40)
-	agenda_button.tooltip_text = "Calendário: o que vem pela frente, missões e foco do mês"
-	agenda_button.set_meta("tutorial", "calendar")
-	bottom.add_child(agenda_button)
+	# central de notificações: o que está pedindo atenção agora, com atalho para a aba certa
+	alert_button = _icon_button("bell", func(): get_tree().call_group("main", "show_notifications"), 44)
+	alert_button.tooltip_text = "Notificações: o que precisa de você agora"
+	bottom.add_child(alert_button)
 	var map_button := _icon_button("map", func(): get_tree().call_group("main", "show_world_map"), 40)
 	map_button.tooltip_text = "Mapa: regiões, mudança de sede e concorrentes"
 	map_button.set_meta("tutorial", "map")
@@ -93,22 +99,27 @@ static func clock_text() -> String:
 	return "%02d:%02d" % [h, m]
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if not Game.has_game():
 		return
-	var text := "%s %s" % [Game.state.date_text(), clock_text()]
+	_refresh_bell(delta)
+	var text: String = Game.state.date_text()
 	if text != date_label.text:
 		date_label.text = text
+	var clock: String = clock_text()
+	if clock != clock_label.text:
+		clock_label.text = clock
 
 
 func refresh() -> void:
 	if not Game.has_game():
 		return
 	var st: GameState = Game.state
-	money_label.text = UIKit.money(st.money)
+	money_label.text = UIKit.money_short(st.money)   # abreviado: o topo não pode crescer com o caixa
 	money_label.add_theme_color_override("font_color", UIKit.COLOR_NUMBER if st.money >= 0.0 else UIKit.COLOR_RED)
 	rep_label.text = "%d" % int(roundf(st.reputation))
-	date_label.text = "%s %s" % [st.date_text(), clock_text()]
+	date_label.text = st.date_text()
+	clock_label.text = clock_text()
 	phase_label.text = "%s · %s" % [st.agency_name, Game.reputation.phase_name()]
 	pause_button.icon = UIKit.icon_texture("play" if st.paused else "pause")
 	music_button.icon = UIKit.icon_texture("sound_on" if Audio.music_enabled else "sound_off")
@@ -121,3 +132,22 @@ func refresh() -> void:
 			b.add_theme_stylebox_override("normal", b.get_theme_stylebox("pressed"))
 		else:
 			b.remove_theme_stylebox_override("normal")
+
+
+## O sino mostra quantos avisos existem e pulsa quando algum é urgente.
+func _refresh_bell(delta: float) -> void:
+	if alert_button == null:
+		return
+	var urgent: int = Game.notifications.urgent_count()
+	var total: int = Game.notifications.count()
+	var label := "" if total <= 0 else "%d" % total
+	if alert_button.text != label:
+		alert_button.text = label
+		alert_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER if total <= 0 else HORIZONTAL_ALIGNMENT_LEFT
+		alert_button.custom_minimum_size.x = 44.0 if total <= 0 else 62.0
+	if urgent > 0:
+		_bell_t += delta
+		var k := 0.5 + 0.5 * sin(_bell_t * 5.0)
+		alert_button.modulate = Color(1.0, 1.0 - 0.3 * k, 1.0 - 0.5 * k)
+	elif alert_button.modulate != Color.WHITE:
+		alert_button.modulate = Color.WHITE

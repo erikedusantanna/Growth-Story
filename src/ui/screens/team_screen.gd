@@ -14,9 +14,86 @@ func build() -> void:
 	content.add_child(UIKit.spacer(4))
 	content.add_child(header("📋 Candidatos", "%d disponíveis" % st.candidates.size()))
 	if st.candidates.is_empty():
-		content.add_child(UIKit.muted("Nenhum candidato no momento. Novos currículos chegam todo mês."))
+		content.add_child(UIKit.muted("Nenhum candidato no momento. Currículos chegam todo mês — ou você vai atrás deles aqui embaixo."))
 	for c in st.candidates:
 		content.add_child(_candidate_card(c))
+	content.add_child(UIKit.spacer(4))
+	content.add_child(_recruiter_card())
+	content.add_child(_recruitment_card())
+
+
+## Recrutadora interna: ocupa um lugar no escritório e mantém o funil cheio todo mês.
+func _recruiter_card() -> PanelContainer:
+	var r: Dictionary = Game.recruitment.recruiter_data()
+	var card := UIKit.card()
+	var v := UIKit.card_content(card)
+	var top := UIKit.hbox()
+	var title := UIKit.label("%s %s" % [String(r.get("icon", "🧑‍💼")), String(r.get("name", "Recrutadora"))], 18, UIKit.COLOR_ACCENT)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(title)
+	if Game.recruitment.has_recruiter():
+		top.add_child(UIKit.label("na equipe", 13, UIKit.COLOR_GREEN))
+	v.add_child(top)
+	v.add_child(UIKit.label(String(r.get("desc", "")), 13, UIKit.COLOR_MUTED, true))
+	if Game.recruitment.has_recruiter():
+		v.add_child(UIKit.label("+%d candidato(s) por mês · %s/mês · ocupa 1 lugar" % [
+			Game.recruitment.monthly_bonus(), UIKit.money(Game.recruitment.salary())], 14, UIKit.COLOR_GREEN))
+		var fire := UIKit.button("Dispensar a recrutadora", func():
+			popups().show_choice("Dispensar a recrutadora",
+				"O lugar dela no escritório fica livre e o salário sai da folha. Os candidatos voltam ao ritmo normal.",
+				["Dispensar", "Deixar como está"], func(i):
+					if i == 0:
+						Game.recruitment.fire_recruiter()), false, 40)
+		v.add_child(fire)
+	else:
+		var check: Dictionary = Game.recruitment.can_hire_recruiter()
+		v.add_child(UIKit.label("%s de contratação · %s/mês · ocupa 1 lugar" % [
+			UIKit.money(Game.recruitment.hire_cost()), UIKit.money(float(r.get("salary", 0)))], 14, UIKit.COLOR_TEXT))
+		var b := UIKit.button("🧑‍💼 Contratar recrutadora", func():
+			var res: Dictionary = Game.recruitment.hire_recruiter()
+			if not res.ok:
+				popups().show_info("Recrutadora", res.reason), true, 44)
+		b.disabled = not check.ok
+		v.add_child(b)
+		if not check.ok:
+			v.add_child(UIKit.muted(check.reason, 12))
+	return card
+
+
+## Buscas pagas avulsas, no mesmo espírito da mídia paga da aba Clientes.
+func _recruitment_card() -> PanelContainer:
+	var card := UIKit.card()
+	var v := UIKit.card_content(card)
+	var top := UIKit.hbox()
+	var title := UIKit.label("🔎 Buscar candidatos", 18, UIKit.COLOR_ACCENT)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(title)
+	var pending: int = Game.recruitment.pending()
+	if pending > 0:
+		var soonest := 999
+		for h in Game.state.hunts:
+			soonest = mini(soonest, int(h.get("arrive_day", 0)) - Game.state.day)
+		top.add_child(UIKit.label("%d currículo(s) a caminho · %d dia(s)" % [pending, maxi(soonest, 0)], 13, UIKit.COLOR_GREEN))
+	v.add_child(top)
+	v.add_child(UIKit.muted("Currículos comprados chegam em poucos dias, além dos que aparecem sozinhos. O custo sobe com a região da sede.", 13))
+	for s in Game.recruitment.searches():
+		var row := UIKit.hbox(8)
+		var info := UIKit.vbox(0)
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info.add_child(UIKit.label("%s %s" % [String(s.get("icon", "🔎")), String(s.get("name", ""))], 15, UIKit.COLOR_TEXT))
+		info.add_child(UIKit.muted(String(s.get("desc", "")), 12))
+		row.add_child(info)
+		var check: Dictionary = Game.recruitment.can_start(s)
+		var b := UIKit.button(UIKit.money(Game.recruitment.cost(s)), func():
+			var res: Dictionary = Game.recruitment.start(String(s.get("id", "")))
+			if not res.ok:
+				popups().show_info("Recrutamento", res.reason), true, 40)
+		b.size_flags_horizontal = 0
+		b.custom_minimum_size.x = 118
+		b.disabled = not check.ok
+		row.add_child(b)
+		v.add_child(row)
+	return card
 
 
 ## Faixa do escritório: mostra lotação e o caminho para ampliar sem precisar achar a aba Empresa.

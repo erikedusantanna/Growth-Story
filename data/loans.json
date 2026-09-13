@@ -1,0 +1,53 @@
+{
+  "comment": "Empréstimos do banco (BankSystem). Aparece no World Map a partir da região 2. 'amount' é o que cai na conta na hora; 'monthly_rate' são os juros ao mês sobre o saldo devedor, usados na fórmula de parcela fixa (Price); 'months' é o prazo. A parcela sai junto com o fechamento do mês. Atrasar custa reputação e multa.",
+  "min_region": 2,
+  "max_active": 2,
+  "late_fee_rate": 0.08,
+  "late_reputation": 2,
+  "offers": [
+    {
+      "id": "giro_curto",
+      "icon": "💵",
+      "name": "Capital de giro curto",
+      "desc": "Dinheiro rápido para fechar o mês. Prazo curto, parcela alta.",
+      "amount": 20000,
+      "months": 6,
+      "monthly_rate": 0.035,
+      "min_region": 2,
+      "requires_rep": 0
+    },
+    {
+      "id": "giro_medio",
+      "icon": "🏦",
+      "name": "Capital de giro",
+      "desc": "O empréstimo comum: um ano para pagar, juros equilibrados.",
+      "amount": 60000,
+      "months": 12,
+      "monthly_rate": 0.028,
+      "min_region": 2,
+      "requires_rep": 20
+    },
+    {
+      "id": "expansao",
+      "icon": "📈",
+      "name": "Crédito de expansão",
+      "desc": "Para mudar de sede ou montar uma equipe nova. Prazo longo, juros menores.",
+      "amount": 180000,
+      "months": 24,
+      "monthly_rate": 0.022,
+      "min_region": 3,
+      "requires_rep": 40
+    },
+    {
+      "id": "investidor",
+      "icon": "💼",
+      "name": "Linha de investimento",
+      "desc": "O gerente te chama de 'parceiro'. Muito dinheiro, muito compromisso.",
+      "amount": 500000,
+      "months": 36,
+      "monthly_rate": 0.019,
+      "min_region": 4,
+      "requires_rep": 60
+    }
+  ]
+}

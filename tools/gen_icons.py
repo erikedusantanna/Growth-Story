@@ -183,14 +183,41 @@ ICONS = {
         "..3.......", "..33......", "..333.....", "..3333....", "..33333...",
         "..33333...", "..3333....", "..333.....", "..33......", "..3.......",
     ],
-    "agenda": [  # calendário com marcações (botão do HUD)
-        ".1......1.", "1111111111", "1WWWWWWWW1", "1111111111", "1W1WW1WW11",
-        "1WWWWWWWW1", "1W11WW1WW1", "1WWWWWWWW1", "1W1WW11WW1", "1111111111",
+    # --- navegação de baixo: uma aba por ícone, sem texto (a barra fica mais dinâmica) ---
+    "nav_team": [  # duas pessoas: cabeça e ombros
+        "..444.333.", "..444.333.", "..444.333.", "..........", ".44444333.",
+        "4444443333", "4444443333", "4444443333", "4444443333", ".444443333",
+    ],
+    "nav_clients": [  # balão de conversa (é onde se fala com o cliente)
+        ".22222222.", "2222222222", "2222222222", "22.9.9.922", "2222222222",
+        "2222222222", ".22222222.", "..222.....", ".22.......", "..........",
+    ],
+    "nav_projects": [  # prancheta com a lista do que está em andamento
+        "...1111...", ".11111111.", ".11111111.", ".19991111.", ".11111111.",
+        ".19999111.", ".11111111.", ".19991111.", ".11111111.", ".11111111.",
+    ],
+    "nav_company": [  # prédio com janelas
+        "..222222..", ".22222222.", ".29229229.", ".22222222.", ".29229229.",
+        ".22222222.", ".29229229.", ".22222222.", ".22.99.22.", "2222992222",
+    ],
+    "nav_hr": [  # coração
+        ".66..66...", "6666666...", "6666666666", "6666666666", "6666666666",
+        ".66666666.", "..666666..", "...6666...", "....66....", "..........",
+    ],
+    "nav_agency": [  # troféu
+        ".5555555..", "55555555..", "5.555555.5", "5.555555.5", "5.555555.5",
+        "..55555.5.", "...555....", "...555....", "..55555...", ".5555555..",
+    ],
+    "bell": [  # sino da central de notificações (botão do HUD)
+        "....11....", "...1WW1...", "..1WWWW1..", "..1WWWW1..", ".1WWWWWW1.",
+        ".1WWWWWW1.", "1WWWWWWWW1", "1111111111", "....11....", "...1111...",
     ],
 }
 
 
-HUD_BUTTON_ICONS = ("map", "sound_on", "sound_off", "pause", "play", "agenda")
+HUD_BUTTON_ICONS = ("map", "sound_on", "sound_off", "pause", "play", "bell")
+# a navegação de baixo também usa ícones grandes, no lugar do texto de antes
+NAV_ICONS = ("nav_team", "nav_clients", "nav_projects", "nav_company", "nav_hr", "nav_agency")
 
 
 def scale2(c):
@@ -200,7 +227,7 @@ def scale2(c):
 def main():
     for name, rows in ICONS.items():
         c = icon(rows)
-        if name in HUD_BUTTON_ICONS:
+        if name in HUD_BUTTON_ICONS or name in NAV_ICONS:
             c = scale2(c)
         write_png(os.path.join(OUT, "icons", f"{name}.png"), c)
 

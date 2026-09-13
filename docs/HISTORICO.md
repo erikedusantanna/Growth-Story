@@ -541,6 +541,127 @@ o fundo é um degradê vertical amostrado do céu da própria arte. Conferido na
 As fontes em `assets/brand/` entraram no `exclude_filter` dos dois presets de exportação — são
 arquivos grandes e não têm uso em tempo de execução, não precisam ir no APK.
 
+## 8k. Rolagem no celular, recrutamento e banco (13/09)
+
+Lote vindo de quem estava jogando no celular. Quatro correções e duas mecânicas novas.
+
+### As correções
+
+1. **Carros parados na tela inicial.** Não era animação quebrada: os carros estavam *pintados
+   dentro* de `title_background()`, então nunca se moveram — só os pedestres, que são sprites. Os
+   carros saíram da imagem e viraram `assets/art/title/car_*.png`, animados pela tela inicial em
+   duas faixas de mão contrária (com a versão espelhada, para o farol ficar do lado certo).
+
+2. **Rolar a tela era quase impossível.** Dois problemas somados, os dois confirmados por
+   medição antes de mexer em qualquer coisa:
+   - `UIKit.card()` é um `PanelContainer`, e no Godot 4 ele nasce `MOUSE_FILTER_STOP`. O cartão
+     engolia o toque e o `ScrollContainer` nunca via o arraste — daí a queixa de "só rola nos
+     cantinhos que sobram de background". `UIKit.allow_scroll_drag()` passa tudo que não é botão,
+     campo ou slider para `MOUSE_FILTER_PASS`, chamado em `BaseScreen.refresh()`, em
+     `Popups._open()` (adiado, porque alguns painéis montam o conteúdo no próprio `_ready`) e no
+     calendário. `UIKit.spacer()` também virou `IGNORE` — era um `Control` vazio bloqueando.
+   - A barra de rolagem padrão do Godot tem **8 px**. Ganhou tema próprio com 16 px.
+
+3. **"Zoom" na aba Clientes.** Não consegui reproduzir o corte aqui, mas a medição achou a
+   fragilidade: o limite real não é 540 px e sim **524** (a raiz tem 8 px de margem de cada lado),
+   e o HUD chegava a **516** num jogo longo — 8 px de folga. O que cresce é o rótulo do caixa
+   ("R$ 99.998.499" ocupa 174 px contra 90 do início). Com uma fonte só um pouco mais larga, como
+   a do Android, isso estoura. Duas mudanças cortaram o topo para 470: `UIKit.money_short()` no
+   HUD (R$ 2,4 mi) e data e relógio em rótulos separados, o relógio menor. O `ui_smoke_test` agora
+   também mede o HUD com caixa de 8 dígitos.
+
+4. **Candidatos raros travando o avanço.** Era real: o lote saía uma vez por mês, com 1–2 pessoas.
+
+### Recrutamento (`recruitment_system.gd`, `data/recruitment.json`)
+
+Mesma lógica que resolveu a falta de clientes — uma saída paga para quem não quer esperar:
+
+- Lote mensal espontâneo subiu para 2–3, +1 com reputação 25 e +1 com 55; `MAX_CANDIDATES` de 5
+  para 7.
+- **Buscas pagas** na aba Equipe, no molde da mídia paga: anúncio em plataforma, recrutadora
+  freelancer e headhunter, com custo que sobe com a região e entrega em poucos dias.
+- **Recrutadora interna**, que foi o pedido explícito do jogador: custo único + salário mensal,
+  **ocupa um lugar no escritório** e soma candidatos ao lote todo mês. Para ela ocupar a vaga sem
+  espalhar condições pelo código, `OfficeSystem.capacity()` passou a devolver
+  `base_capacity() - staff_slots()` — assim toda checagem existente de "cabe mais alguém?" já
+  desconta. Dispensar libera a vaga e corta o salário.
+
+A régua do `sim_test` para o ano 1 subiu de 5 para 7 pessoas por causa disso: a agência cresce mais
+rápido agora, e o resto das faixas (receita, caixa, moral, reputação) continua dentro do previsto.
+
+### Banco (`bank_system.gd`, `data/loans.json`)
+
+Botão 🏦 no World Map a partir da Região 2, com quatro linhas liberadas por região e reputação. O
+dinheiro cai na hora; a parcela é fixa pela tabela Price e sai no fechamento do mês, junto com os
+custos. Sem caixa no dia do débito, a parcela não sai: o saldo ganha 8% de multa e a reputação cai
+— encarece a dívida sem quebrar a agência de imediato. Dá para quitar o saldo cheio a qualquer
+momento, e no máximo dois empréstimos ficam abertos ao mesmo tempo.
+
+### Calendário cortado
+
+O jogador disse que ficou confuso e pouco útil, pedi uma decisão e ele respondeu "cortar
+calendário". A tela saiu inteira (`src/ui/calendar_screen.gd` deletado, botão 📅 fora do HUD), mas
+o `CalendarSystem` ficou: o problema era a tela, não a mecânica.
+
+Onde cada parte foi parar:
+
+| Parte | Destino |
+|---|---|
+| Foco do mês | topo da aba **Empresa** (é o que se usa de verdade) |
+| Agenda | aba **Empresa**, curta: `upcoming(45)` com 5 itens, em vez de 18 |
+| Presente de aniversário | junto da agenda, que era a única ação que a tela tinha |
+| Banca de notícias | aba **Agência**, ao lado das tendências que as manchetes mexem |
+| Grade de 12 meses | **removida** — foi o que motivou a queixa; `month_markers()` segue no sistema, sem uso |
+
+Lição que vale registrar: a grade era bonita e não fazia nada. Uma tela inteira para informação que
+se consulta de relance vira peso, não recurso.
+
+## 8l. Clareza: alertas, assistente, ícones e mapa mais rico (13/09)
+
+Lote pedido depois de uma partida perdida de surpresa. O fio condutor é o mesmo em todos os itens:
+**o jogo sabia coisas que não contava ao jogador**.
+
+1. **Aba Equipe piscando com currículo novo.** A aba Clientes já piscava com prospect esperando; a
+   Equipe não. O contador é `GameState.new_candidates`, zerado ao abrir a aba. Para ele nunca ficar
+   defasado, todo currículo passou a entrar por um caminho só — `EmployeeSystem.register_candidate()`
+   — usado pelo lote mensal, pelas buscas pagas, pela recrutadora e pelo talento raro, que antes
+   emitiam o sinal cada um do seu jeito (a recrutadora emitia duas vezes).
+
+2. **Critério de derrota evidente.** A queixa foi literal: *"já fiquei com algumas quantias
+   negativas e não tive problema, de repente perdi o jogo"*. O limite (−R$ 30.000) existia desde
+   sempre e nunca aparecia. Agora `FinanceSystem.status()` devolve nível, limite, folga e quantos
+   meses o caixa aguenta no ritmo atual, desenhado no topo da aba **Empresa**; e `check_alerts()`,
+   chamado no fim de todo `add_money()`, dispara dois avisos antes da derrota (−6.000 e −18.000),
+   uma vez por queda, rearmados quando o caixa volta ao positivo. No segundo aviso o popup oferece
+   **capital de giro no banco** — a mecânica do lote anterior virou a saída deste.
+
+3. **RH mais cedo.** `hire.requires_office` foi de **7 → 4**: o RH abre na *Sala no centro*, o
+   primeiro escritório da Região 2, em vez de esperar a capital. Quando abria no 7, o time já
+   estava grande e estressado havia meses.
+
+4. **Central de notificações (o assistente).** `NotificationSystem` **não guarda estado**: lê os
+   outros sistemas e monta na hora a lista do que pede atenção, ordenada por urgência, cada item
+   com um botão que leva à aba certa. O sino no HUD mostra a contagem e pulsa quando há algo
+   urgente. Não guardar estado foi decisão de projeto: sem sincronizar, sem migrar save, e resolver
+   a causa apaga o item sozinho.
+
+5. **Navegação por ícones.** A barra de baixo virou seis ícones pixel art com o nome no tooltip.
+   Os três primeiros desenhos (equipe, clientes, projetos) eram ilegíveis em 10×10 e foram
+   redesenhados — duas pessoas, balão de conversa, prancheta — e conferidos em 4× antes de entrar.
+
+6. **World Map mais rico.** Mar com profundidade por BFS a partir da costa, faixa de areia e espuma
+   quebrando, sombra no chão sob cada prédio, telhados com caixa d'água / casa de máquinas / antena
+   com luz, praças com chafariz, lago, campinho de futebol, igrejinha, prédio do banco, faixa
+   central e faixas de pedestre na avenida, postes de luz e dois tipos de árvore.
+
+   Três coisas custaram uma rodada de correção cada, e vale registrar: (a) os detalhes de telhado
+   saíram do losango porque foram posicionados em linhas onde o telhado é estreito — a largura
+   disponível é `(4 − |dy|)·2` de cada lado do centro; (b) as antenas de 12 px viraram agulhas
+   visíveis em todo o mapa, e só ficaram boas com 7 px e limitadas aos prédios de 34 px ou mais;
+   (c) um píer de madeira foi escrito, renderizado, olhado e **removido** — a busca por praia achou
+   uma enseada no meio da cidade e ele saiu atravessando arranha-céus. Olhar a imagem antes de
+   commitar é o que separou as três.
+
 ## 9. Checklist para retomar o projeto
 
 1. Ler este documento, depois `README.md` (tabela "O que já existe") e `docs/ARQUITETURA.md`;

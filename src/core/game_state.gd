@@ -43,6 +43,11 @@ var awards: Array = []                  # [{year, category, status, title, detai
 var rivals: Dictionary = {}             # id -> {strength, aggressive_until, clients, staff, wins, losses}
 var last_raid_day: int = -999           # última investida contra uma rival (cooldown de 90 dias)
 var campaigns: Array = []               # mídia paga: [{id, arrive_day, prospects, tier_bonus}] leads a caminho
+var hunts: Array = []                   # recrutamento pago: [{id, arrive_day, candidates, quality, high_chance}]
+var recruiter_hired := false            # recrutadora interna (ocupa um lugar no escritório)
+var new_candidates := 0                 # currículos que chegaram e o jogador ainda não abriu (aviso na aba Equipe)
+var bankrupt_warnings := 0              # quantos avisos de falência já foram dados nesta queda
+var loans: Array = []                   # empréstimos do banco: [{id, amount, remaining, installment, months_left, rate, taken_day}]
 var quests: Array = []                  # missões ativas: [{id, start_day, deadline_day, start_stat, progress}]
 var quests_done: Dictionary = {}        # id -> último dia em que terminou (cumprida ou perdida)
 var last_quest_day: int = -999
@@ -60,7 +65,7 @@ var cases: int = 0
 var speed: int = 1
 var paused: bool = false
 var game_over: bool = false
-var stats: Dictionary = {"projects_done": 0, "five_stars": 0, "hires": 0, "total_revenue": 0.0, "clients_signed": 0, "trainings": 0, "retainers": 0, "diagnoses": 0, "hr_actions": 0, "furniture": 0, "agency_events": 0, "awards": 0, "campaigns": 0, "quests_done": 0, "quests_failed": 0, "news": 0, "specializations": 0, "decisions": 0, "legends": 0, "crises": 0}
+var stats: Dictionary = {"projects_done": 0, "five_stars": 0, "hires": 0, "total_revenue": 0.0, "clients_signed": 0, "trainings": 0, "retainers": 0, "diagnoses": 0, "hr_actions": 0, "furniture": 0, "agency_events": 0, "awards": 0, "campaigns": 0, "quests_done": 0, "quests_failed": 0, "news": 0, "specializations": 0, "decisions": 0, "legends": 0, "crises": 0, "searches": 0, "loans": 0}
 
 
 func new_id() -> int:
@@ -179,6 +184,8 @@ func to_dict() -> Dictionary:
 		"events_last_day": events_last_day.duplicate(), "objective_index": objective_index, "tutorial_done": tutorial_done,
 		"furniture": furniture.duplicate(), "buffs": buffs.duplicate(true), "hr_last_used": hr_last_used.duplicate(),
 		"hr_hired": hr_hired, "pets": pets.duplicate(),
+		"hunts": hunts.duplicate(true), "recruiter_hired": recruiter_hired, "loans": loans.duplicate(true),
+		"new_candidates": new_candidates, "bankrupt_warnings": bankrupt_warnings,
 		"agency_events": agency_events.duplicate(true), "agency_events_last": agency_events_last.duplicate(),
 		"awards": awards.duplicate(true), "rivals": rivals.duplicate(true), "last_raid_day": last_raid_day,
 		"campaigns": campaigns.duplicate(true), "quests": quests.duplicate(true), "quests_done": quests_done.duplicate(), "last_quest_day": last_quest_day,
@@ -232,6 +239,11 @@ static func from_dict(d: Dictionary) -> GameState:
 	s.buffs = Array(d.get("buffs", []))
 	s.hr_last_used = d.get("hr_last_used", {})
 	s.hr_hired = bool(d.get("hr_hired", false))
+	s.hunts = Array(d.get("hunts", []))
+	s.recruiter_hired = bool(d.get("recruiter_hired", false))
+	s.new_candidates = int(d.get("new_candidates", 0))
+	s.bankrupt_warnings = int(d.get("bankrupt_warnings", 0))
+	s.loans = Array(d.get("loans", []))
 	s.pets = Array(d.get("pets", []))
 	s.agency_events = Array(d.get("agency_events", []))
 	s.agency_events_last = d.get("agency_events_last", {})

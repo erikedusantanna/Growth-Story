@@ -292,15 +292,18 @@ func _ready() -> void:
 	await _shot("15_noticia")
 	main.popups.close()
 	await _frames(2)
-	# calendário: foco do mês, grade de 12 meses, agenda e banca
-	main.show_calendar()
+	# foco do mês e agenda, agora no topo da aba Empresa (a tela de calendário foi cortada).
+	# a rolagem fica guardada entre visitas, então volta para o topo antes de capturar
+	main.show_screen("company")
 	await _frames(3)
-	await _shot("15b_calendario")
-	main.calendar_screen.scroll.scroll_vertical = 560
+	main.screens["company"].scroll_vertical = 0
 	await _frames(3)
-	await _shot("15c_calendario_agenda")
-	main.calendar_screen.close()
-	await _frames(2)
+	await _shot("15b_foco_e_agenda")
+	Game.calendar.set_focus("entrega")
+	await _frames(3)
+	main.screens["company"].scroll_vertical = 0
+	await _frames(3)
+	await _shot("15c_foco_escolhido")
 	# missão nova
 	Game.quests.start("entrega_4")
 	await _frames(3)
@@ -375,6 +378,59 @@ func _ready() -> void:
 	await _shot("15m_missao_arco")
 	main.popups.close()
 	await _frames(2)
+	# recrutamento: buscas pagas e a recrutadora interna
+	st.money = 900000.0
+	main.show_screen("team")
+	await _frames(3)
+	main.screens["team"].scroll_vertical = 99999
+	await _frames(3)
+	await _shot("15o_recrutamento")
+	Game.recruitment.hire_recruiter()
+	await _frames(3)
+	main.screens["team"].scroll_vertical = 99999
+	await _frames(3)
+	await _shot("15p_recrutadora_contratada")
+	# banco no mapa (região 3 já alcançada antes)
+	main.show_world_map()
+	await get_tree().create_timer(0.7).timeout
+	await _shot("15q_mapa_com_banco")
+	main.popups.show_bank()
+	await _frames(3)
+	await _shot("15r_banco")
+	Game.bank.take("giro_medio")
+	await _settle()
+	main.popups.show_bank()
+	await _frames(3)
+	await _shot("15s_banco_com_divida")
+	await _settle()
+	main.world_map.close()
+	await _frames(2)
+	# central de notificações: o assistente que junta tudo o que está pedindo atenção
+	Game.clients.spawn_prospect()
+	Game.employees.add_candidate("high")
+	await _frames(3)
+	await _settle()
+	main.show_notifications()
+	await _frames(3)
+	await _shot("15t_notificacoes")
+	await _settle()
+	# aviso de falência antes da derrota, com a saída do banco
+	var money_before: float = st.money
+	st.money = float(FinanceSystem.WARN_AT[1]) - 500.0
+	st.bankrupt_warnings = 1
+	Game.finance.check_alerts()
+	await _frames(3)
+	await _shot("15u_alerta_falencia")
+	await _settle()
+	# e o mesmo status em tempo real no topo da aba Empresa
+	main.show_screen("company")
+	await _frames(3)
+	main.screens["company"].scroll_vertical = 0
+	await _frames(3)
+	await _shot("15v_status_do_caixa")
+	st.money = money_before
+	Game.finance.check_alerts()
+	await _settle()
 	# espaços de save na tela inicial
 	Game.save.delete_save()
 	Game.save.save(st, 1)

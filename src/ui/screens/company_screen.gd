@@ -1,11 +1,17 @@
 class_name CompanyScreen
 extends BaseScreen
-## Empresa: finanças, escritório, estatísticas, save e menu.
+## Empresa: foco do mês, agenda, finanças, escritório, estatísticas, save e menu.
+##
+## O foco e a agenda vieram da tela de calendário, que foi cortada: era uma tela inteira para duas
+## coisas que se usam de relance, e a grade de 12 meses ninguém abria duas vezes.
 
 
 func build() -> void:
 	var st: GameState = Game.state
 	content.add_child(header("🏢 %s" % st.agency_name, Game.reputation.phase_name()))
+	content.add_child(_status_card())
+	content.add_child(_focus_card())
+	content.add_child(_agenda_card())
 
 	var fin := UIKit.card()
 	var fv := UIKit.card_content(fin)
@@ -153,3 +159,107 @@ func _row(left: String, right: String, color: Color = UIKit.COLOR_TEXT) -> HBoxC
 	r.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	h.add_child(r)
 	return h
+
+
+## Foco do mês: uma prioridade por mês, escolhida uma única vez. Era o que a tela de calendário
+## tinha de mais útil, então veio para cá, no topo da aba.
+func _focus_card() -> PanelContainer:
+	var card := UIKit.card()
+	var v := UIKit.card_content(card)
+	var current: Dictionary = Game.calendar.focus()
+	if current.is_empty():
+		v.add_child(UIKit.label("🎯 Foco do mês", 19, UIKit.COLOR_ACCENT))
+		v.add_child(UIKit.muted("Escolha uma prioridade para este mês. Vale até a virada do mês e só dá para escolher uma vez.", 13))
+		for f in CalendarSystem.FOCUS:
+			var row := UIKit.hbox(8)
+			var info := UIKit.vbox(0)
+			info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			info.add_child(UIKit.label("%s %s" % [String(f["icon"]), String(f["name"])], 15, UIKit.COLOR_TEXT))
+			info.add_child(UIKit.muted(String(f["desc"]), 12))
+			row.add_child(info)
+			var b := UIKit.button("Escolher", func():
+				var r: Dictionary = Game.calendar.set_focus(String(f["id"]))
+				if not r.ok:
+					popups().show_info("Foco do mês", r.reason), true, 38)
+			b.size_flags_horizontal = 0
+			b.custom_minimum_size.x = 106
+			row.add_child(b)
+			v.add_child(row)
+	else:
+		v.add_child(UIKit.label("%s %s" % [String(current.get("icon", "🎯")), String(current.get("name", ""))], 19, UIKit.COLOR_ACCENT))
+		v.add_child(UIKit.label(String(current.get("desc", "")), 14, UIKit.COLOR_TEXT, true))
+		var left: int = GameState.DAYS_PER_MONTH - Game.state.day_of_month()
+		v.add_child(UIKit.muted("Vale por mais %d dia(s), até a virada do mês." % maxi(left, 0), 13))
+	return card
+
+
+## Agenda curta: só o que está próximo. A lista longa da tela de calendário virava ruído.
+func _agenda_card() -> PanelContainer:
+	var st: GameState = Game.state
+	var card := UIKit.card()
+	var v := UIKit.card_content(card)
+	v.add_child(UIKit.label("⏳ O que vem pela frente", 19, UIKit.COLOR_ACCENT))
+	var items: Array = Game.calendar.upcoming(45)
+	if items.is_empty():
+		v.add_child(UIKit.muted("Nada marcado para os próximos dias."))
+		return card
+	for item in items.slice(0, 5):
+		var day: int = int(item["day"])
+		var days_left: int = day - st.day
+		var row := UIKit.hbox(8)
+		var title := UIKit.label("%s %s" % [String(item.get("icon", "•")), String(item.get("title", ""))], 14, UIKit.COLOR_TEXT)
+		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		title.clip_text = true
+		row.add_child(title)
+		var when := UIKit.label("hoje" if days_left <= 0 else "em %d d" % days_left, 13,
+			UIKit.COLOR_RED if days_left <= 3 else UIKit.COLOR_MUTED)
+		when.size_flags_horizontal = 0
+		row.add_child(when)
+		v.add_child(row)
+	# o presente de aniversário de contrato era a única ação da agenda; continua aqui
+	for c in st.active_clients():
+		var check: Dictionary = Game.calendar.can_send_gift(c)
+		if not check.ok:
+			continue
+		var client: Client = c
+		var gift := UIKit.button("🎁 Presente de aniversário: %s (%s)" % [c.name, UIKit.money(Game.calendar.gift_cost(c))], func():
+			var r: Dictionary = Game.calendar.send_gift(client)
+			if not r.ok:
+				popups().show_info("Presente", r.reason), true, 40)
+		v.add_child(gift)
+	return card
+
+
+## Situação do caixa em tempo real. O jogador perdeu de surpresa por não saber onde ficava a linha
+## da falência, então ela aparece aqui sempre: o limite exato, quanto falta e quanto o caixa dura.
+func _status_card() -> PanelContainer:
+	var st: GameState = Game.state
+	var status: Dictionary = Game.finance.status()
+	var colors := {"green": UIKit.COLOR_GREEN, "text": UIKit.COLOR_TEXT, "accent": UIKit.COLOR_ACCENT, "red": UIKit.COLOR_RED}
+	var color: Color = colors.get(String(status.get("color_kind", "text")), UIKit.COLOR_TEXT)
+	var icons := ["💚", "🟡", "⚠️", "🚨"]
+	var level: int = int(status.get("level", 0))
+	var card := UIKit.card()
+	var v := UIKit.card_content(card)
+	var top := UIKit.hbox()
+	var title := UIKit.label("%s Situação: %s" % [icons[level], String(status.get("name", ""))], 19, color)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(title)
+	top.add_child(UIKit.label(UIKit.money(st.money), 17, UIKit.COLOR_GREEN if st.money >= 0.0 else UIKit.COLOR_RED))
+	v.add_child(top)
+	v.add_child(UIKit.label("O jogo acaba se o caixa passar de %s." % UIKit.money(FinanceSystem.BANKRUPT_AT), 14, UIKit.COLOR_MUTED, true))
+	# barra da folga até o limite: cheia quando o caixa está positivo, vazia na falência
+	var room: float = float(status.get("room", 0))
+	var span: float = -FinanceSystem.BANKRUPT_AT
+	v.add_child(UIKit.bar(clampf(room, 0.0, span), span, color, 12))
+	v.add_child(UIKit.muted("Folga até o limite: %s" % UIKit.money(maxf(room, 0.0)), 13))
+	var months: float = float(status.get("months_left", -1.0))
+	if float(status.get("burn", 0.0)) <= 0.0:
+		v.add_child(UIKit.label("A receita recorrente cobre o custo fixo: o caixa tende a subir.", 14, UIKit.COLOR_GREEN, true))
+	elif months >= 0.0:
+		v.add_child(UIKit.label("No ritmo atual (queima de %s/mês), o caixa aguenta cerca de %d mês(es)." % [
+			UIKit.money(float(status.get("burn", 0))), int(months)], 14, color, true))
+	if level >= 2 and Game.bank.is_available():
+		v.add_child(UIKit.button("🏦 Pegar capital de giro no banco", func(): popups().show_bank(), true, 40))
+	return card

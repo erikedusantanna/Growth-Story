@@ -11,6 +11,15 @@ const WORLD_SCALE := 2.0
 const LOGO_TOP := 24.0               # o logo ocupa a faixa de cima, acima dos botões
 const LOGO_HEIGHT := 430.0
 const LOGO_MARGIN := 14.0
+# a avenida do cenário: os carros são sprites animados por cima do fundo (antes estavam
+# pintados dentro da imagem e por isso ficavam parados enquanto os pedestres andavam)
+const CAR_SCALE := 2.0
+const CAR_LANES := [
+	{"y": 864.0, "dir": 1, "speed": 46.0},
+	{"y": 904.0, "dir": -1, "speed": 62.0},
+]
+const CAR_COLORS := ["y", "b", "r", "w"]
+const CAR_WIDTH := 44.0              # 22 px de arte em escala 2
 const SIDEWALK_Y := 828.0            # pés dos pedestres, em px de tela (as pessoas ficam em 1x, menores que o cenário)
 const WALK_SPEED := 32.0
 const FRAME_TIME := 0.2
@@ -31,6 +40,7 @@ var _delete_pending := 0                 # segundo toque na lixeira confirma apa
 var world: Node2D
 var people: Node2D                   # pessoas em escala 1, para ficarem pequenas diante dos prédios
 var walkers: Array = []              # {node, dir}
+var cars: Array = []                 # {node, dir, speed}
 var _frame_timer := 0.0
 var _walk_frame := 0
 
@@ -61,6 +71,7 @@ func _ready() -> void:
 	logo.offset_bottom = LOGO_TOP + LOGO_HEIGHT
 	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(logo)
+	_add_cars()
 	people = Node2D.new()
 	add_child(people)
 	_add_walkers()
@@ -150,6 +161,25 @@ func _ready() -> void:
 	add_child(version)
 
 
+## Carros na avenida, em duas faixas de mão contrária. Saem por um lado e voltam pelo outro.
+func _add_cars() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	for lane_index in CAR_LANES.size():
+		var lane: Dictionary = CAR_LANES[lane_index]
+		var dir: int = int(lane["dir"])
+		for i in 3:
+			var color: String = CAR_COLORS[(lane_index * 2 + i) % CAR_COLORS.size()]
+			var car := Sprite2D.new()
+			# o sprite espelhado tem o farol do outro lado, por isso são dois arquivos
+			car.texture = load("res://assets/art/title/car_%s%s.png" % [color, "" if dir > 0 else "_flip"])
+			car.centered = false
+			car.scale = Vector2(CAR_SCALE, CAR_SCALE)
+			car.position = Vector2(rng.randf_range(-CAR_WIDTH, 540.0), float(lane["y"]))
+			add_child(car)
+			cars.append({"node": car, "dir": dir, "speed": float(lane["speed"]) * rng.randf_range(0.85, 1.15)})
+
+
 ## Pedestres na calçada: aparências variadas, andando de um lado para o outro.
 func _add_walkers() -> void:
 	var rng := RandomNumberGenerator.new()
@@ -179,6 +209,13 @@ func _process(delta: float) -> void:
 	if _frame_timer >= FRAME_TIME:
 		_frame_timer = 0.0
 		_walk_frame = 1 - _walk_frame
+	for ca in cars:
+		var car: Sprite2D = ca.node
+		car.position.x += ca.dir * ca.speed * delta
+		if car.position.x > 540.0:
+			car.position.x = -CAR_WIDTH
+		elif car.position.x < -CAR_WIDTH:
+			car.position.x = 540.0
 	for wk in walkers:
 		var w: Worker = wk.node
 		w.position.x += wk.dir * wk.speed * delta

@@ -145,19 +145,35 @@ da equipe). `check()` roda a cada mudança de estado e `on_day()` cuida de prazo
 formam um arco de três etapas: `_eligible()` recusa quem tem `step > 1`, então só a etapa 1 entra no
 sorteio, e `_complete()` chama `start(next)` na hora, encadeando a etapa seguinte com prêmio maior.
 
-`CalendarSystem` não guarda agenda própria: `upcoming()` monta a lista lendo os outros sistemas
+`CalendarSystem` sobreviveu à remoção da tela de calendário — o sistema era útil, a tela é que não
+era. Ele não guarda agenda própria: `upcoming(days)` monta a lista lendo os outros sistemas
 (fechamento do mês, temas sazonais, premiação, prazos de projeto e missão, leads de mídia paga,
 aniversários, semana de mudança, cooldown de investida). O que é dele: o **foco do mês**
 (`state.focus`, consultado por `has_focus()` em clientes, projetos, pessoas e finanças) e o
 **aniversário de contrato** com presente (`state.gifts_sent`).
 
+**Onde isso aparece hoje:** o foco e uma agenda curta (`upcoming(45)`, cinco itens) ficam no topo da
+aba **Empresa**; a banca de manchetes foi para a aba **Agência**, ao lado das tendências de mercado
+que as notícias mexem. `month_markers()` continua no sistema, sem uso na interface — era a grade de
+12 meses, que foi o que motivou o corte.
+
 `NewsSystem` sorteia manchetes de `data/news.json`, guarda as últimas em `state.news_feed` para a banca
-do calendário e aplica os efeitos declarados — um em `effect` ou vários em `effects`: `money_pct`,
+da aba Agência e aplica os efeitos declarados — um em `effect` ou vários em `effects`: `money_pct`,
 `money`, `reputation`, `morale`, `trend`/`cold` (tendência temporária de mercado), `client_budget`
 (verba dos clientes ativos) e `prospects`. As ilustrações ficam em `assets/art/news/` e são geradas
 por `tools/gen_art.py` (`NEWS_ART`).
 
-**Regra de layout:** nada na interface pode pedir mais largura que o viewport (540 px). O HUD e as
+**Regra de layout:** nada na interface pode pedir mais largura que o viewport. O limite real é
+**524 px**: a raiz (`main.gd`) tem 8 px de margem de cada lado. O `ui_smoke_test` confere cada tela,
+o HUD e o HUD com caixa de 8 dígitos — foi o caixa que quase estourou o topo (516 de 524), o que
+levou o HUD a usar `UIKit.money_short()` (R$ 2,4 mi) e a separar data e relógio em dois rótulos.
+
+**Rolagem no celular:** painéis e imagens nascem com `MOUSE_FILTER_STOP` e engolem o toque, então
+arrastar o dedo sobre um cartão não rolava a tela — só funcionava nos cantos vazios do fundo.
+`UIKit.allow_scroll_drag(node)` percorre o que foi montado e passa tudo que não é botão, campo ou
+slider para `MOUSE_FILTER_PASS`; é chamado no `BaseScreen.refresh()`, no `Popups._open()` (adiado,
+porque alguns painéis montam o conteúdo no próprio `_ready`) e no calendário. A barra de rolagem
+também ganhou tema próprio: `UIKit.SCROLLBAR_WIDTH` (16 px) no lugar dos 8 px padrão do Godot. O HUD e as
 telas são verificados pelo `ui_smoke_test`; passar disso empurra o layout inteiro e corta a tela.
 
 ## World Map e regiões (`data/regions.json`, `data/offices.json`, `OfficeSystem`)
@@ -174,6 +190,32 @@ telas são verificados pelo `ui_smoke_test`; passar disso empurra o layout intei
   marcos posicionados por `map_pos` de cada região; região atual mostra ampliação, a seguinte a mudança de sede,
   as demais o cadeado. Concorrentes das regiões alcançadas aparecem como prédio com bandeira (painel no bloco C).
 - `OfficeView`: parede com `WALL_TINTS[região]` e vista da janela por região (morros, prédios, torres, mar).
+
+### Desenho da cidade (`tools/gen_art.py → world_map()`)
+
+O mapa é um losango isométrico de 16×8 px por tile (`iso_pt`, `iso_tile`, `iso_box`, `iso_tree`)
+num canvas de 270×640 em 1x. O terreno sai por faixa de altura (`_band_of`, 1 embaixo … 5 em cima),
+depois vêm, nesta ordem: praia (toda terra encostada no mar vira areia), profundidade do mar por
+BFS a partir da costa (`_sea_depth`: raso → `sea_hi` → `sea` → `sea_deep`), a avenida de progresso
+(tiles a menos de 9 px da polilinha entre os marcos das regiões), a grade de ruas secundárias, e as
+áreas de lazer — quatro **praças** com chafariz, um **lago** no bairro e um **campinho de futebol**
+com listras de corte e marcação. `free_spot(bands, dmin, dmax, keep_out, gap, size)` escolhe cada
+área num quarteirão inteiro livre de rua, longe da avenida e das outras.
+
+Duas regras de camada importam:
+
+- **Sombra no chão**: cada prédio escurece os tiles a leste dele, com o comprimento crescendo com a
+  altura. As cores `_sh` são geradas a partir de `MAP_GROUND` (a mesma cor 20% mais escura), e
+  `outline_region()` trata `_sh` como chão — então a sombra não ganha contorno.
+- **`world_cover.png`**: o canvas é copiado (`terrain`) **antes** dos prédios; a cobertura é a
+  diferença entre o desenho final e essa cópia. Tudo o que precisa ficar **atrás** dos carros
+  (sombra, faixa central, faixas de pedestre) tem de ser desenhado antes da cópia; tudo o que fica
+  **na frente** (prédios, árvores, chafarizes, postes, farol) depois.
+
+Os telhados ganham parapeito e um detalhe sorteado (`_roof_detail`): caixa d'água, casa de máquinas
+ou antena com luz de sinalização vermelha — esta só nos prédios de 34 px ou mais. As janelas novas
+entram sozinhas em `windows`/`dark_windows` do `map_life.json`, porque `_map_meta()` lê o canvas
+pronto; ou seja, prédio novo já acende à noite sem mexer em mais nada.
 
 ### Camada viva do mapa (`src/ui/world_map_life.gd`, `data/map_life.json`)
 
@@ -218,7 +260,7 @@ source)` grava em `state.market` (`{service, kind, until_day, source}`) e `on_da
 venceu, logando a volta ao normal. `is_trending()` soma a era e as tendências quentes; `is_cold()`
 vale só para as frias que a era não contradiz. Serviço frio leva `ProjectSystem.PENALTY_COLD` (−4) no
 `_score()`, com linha própria no detalhamento. A aba Agência mostra um cartão com as tendências
-temporárias e prefixa 🔥/🧊 nos serviços; o calendário agenda o fim de cada uma.
+temporárias e prefixa 🔥/🧊 nos serviços; a agenda da aba Empresa marca o fim de cada uma.
 
 ## Especialização, decisões, talento raro e crises
 
@@ -274,6 +316,69 @@ temporárias e prefixa 🔥/🧊 nos serviços; o calendário agenda o fim de ca
   de ser fechado por uma agência rival (nome sorteado de `agencies`), via
   `ClientSystem.lose_client()` — reaproveita o mesmo caminho de perda de cliente (log, som de
   crise). Complementa os eventos que já existiam (`proposta_concorrente`, `concorrente_cresce`).
+
+## Recrutamento e banco (`recruitment_system.gd`, `bank_system.gd`)
+
+- **Recrutamento** (`data/recruitment.json`): o lote mensal de `EmployeeSystem.refresh_candidates()`
+  subiu para 2–3 (+1 com reputação 25, +1 com 55) e `MAX_CANDIDATES` foi de 5 para 7. As **buscas
+  pagas** funcionam como a mídia paga: `start(id)` cobra o custo (que sobe com a região, igual às
+  campanhas) e empilha entradas em `state.hunts` com `arrive_day`; `on_day()` entrega os currículos
+  como candidatos, sorteando `high_chance` para um deles. A **recrutadora interna**
+  (`state.recruiter_hired`) é um vínculo fixo no mesmo molde do RH: custo único, salário mensal
+  somado em `monthly_costs().hr`, e ocupa um lugar — `OfficeSystem.capacity()` passou a devolver
+  `base_capacity() - staff_slots()`, então toda checagem de "cabe mais alguém?" já conta com ela
+  sem precisar mudar cada chamada. Enquanto está na equipe, soma `monthly_candidates` ao lote e tem
+  `weekly_chance` de trazer alguém fora dele.
+- **Banco** (`data/loans.json`): `is_available()` exige região ≥ `min_region` (2). A parcela é fixa,
+  pela tabela Price — `installment_for(amount, months, rate) = P·i / (1 − (1+i)^−n)` — e o saldo
+  devedor (`remaining`) começa em `parcela × meses`, então `total_cost()` mostra ao jogador quanto
+  ele devolve antes de assinar. `take(id)` credita o valor na hora; `on_month()`, chamado pelo
+  `GameManager` logo depois de `finance.on_month()`, debita cada parcela. Sem caixa, a parcela não
+  sai: o saldo cresce `late_fee_rate` (8%) e a reputação cai `late_reputation` — encarece, mas não
+  quebra a agência sozinho. `settle(id)` quita o saldo cheio, sem desconto.
+
+## Central de notificações (`notification_system.gd`)
+
+O jogo acumula coisas pedindo atenção ao mesmo tempo e dava para passar por tudo sem ver. O
+assistente resolve isso **sem guardar estado**: `items()` lê os outros sistemas na hora e monta a
+lista do que precisa do jogador agora, cada item no formato
+`{id, icon, title, detail, urgency, screen}` — `urgency` 2 age agora, 1 atenção, 0 informativo; e
+`screen` é a aba para onde o botão "Ir para…" leva. As fontes são caixa (`finance.status()`),
+parcela e capacidade do banco, prospects e diagnósticos, currículos novos, talento raro com prazo,
+estresse acima de 85 e gente parada há 10 dias, projeto sem equipe e prazo apertado, missões com 7
+dias ou menos, crise ativa, escritório lotado e RH liberado. Como nada é persistido, não há
+sincronizar nem migrar save: apagar a causa apaga o item.
+
+O sino fica no HUD (`hud.gd`, `_refresh_bell`): mostra `urgent_count()` e pulsa quando há algo
+urgente; `main.show_notifications()` abre a lista em `popups.gd`.
+
+## Aviso de falência (`finance_system.gd`)
+
+A derrota sempre existiu (`BANKRUPT_AT = −30.000`), mas era invisível até acontecer. Agora há dois
+pontos de apoio:
+
+- `status()` devolve `{level, name, color_kind, money, limit, room, months_left, burn}` — `level` 0
+  saudável, 1 no vermelho, 2 alerta, 3 risco de falência — e é o que a aba **Empresa** desenha no
+  topo, em tempo real, com a barra de folga até o limite e quantos meses o caixa aguenta no ritmo
+  atual (`burn = custo fixo com parcelas − MRR`).
+- `check_alerts()`, chamado no fim de todo `add_money()`, dispara
+  `EventBus.bankruptcy_warning(level, status)` ao cruzar cada linha de `WARN_AT`
+  (−6.000 e −18.000), uma vez por queda. `state.bankrupt_warnings` guarda qual já saiu e zera
+  quando o caixa volta ao positivo, então o mesmo aviso pode voltar numa crise nova. No segundo
+  aviso o popup oferece o banco, quando `BankSystem.is_available()`.
+
+## Navegação por ícones e abas piscando (`main.gd`, `employee_system.gd`)
+
+A barra de baixo usa `NAV_ICONS` (`assets/art/icons/nav_*.png`, desenhados em 10×10 e ampliados 2×
+por `tools/gen_icons.py`) e o rótulo antigo virou `tooltip_text`. `_alert_nav(key, count)` escreve o
+número no próprio botão e troca `icon_alignment` de centro para esquerda, para o ícone e o número
+caberem sem mudar a largura da barra.
+
+A aba **Equipe** pisca com `state.new_candidates`, zerado em `show_screen("team")`. Para o contador
+nunca ficar defasado, todo currículo entra por um caminho só —
+`EmployeeSystem.register_candidate(e)`, que anexa à lista, incrementa o contador e emite
+`EventBus.candidates_arrived` — usado pelo lote mensal, pelas buscas pagas, pela recrutadora e pelo
+talento raro.
 
 ## Marca: logo e ícone do app (`assets/brand/`, `tools/gen_brand.py`)
 

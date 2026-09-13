@@ -70,7 +70,7 @@ func spawn() -> Employee:
 	e.salary *= SALARY_MULT
 	e.legendary = true
 	e.candidate_expires = st.day + WINDOW_DAYS
-	st.candidates.append(e)
+	game.employees.register_candidate(e)
 	st.last_talent_day = st.day
 	game.add_log("⭐ Talento raro no mercado: %s (%s). Só por %d dias, e a concorrência está de olho." % [
 		e.name, game.employees.title(e), WINDOW_DAYS], "unlock")

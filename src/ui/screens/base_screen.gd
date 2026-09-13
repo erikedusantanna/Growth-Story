@@ -29,6 +29,7 @@ func refresh() -> void:
 	var scroll := scroll_vertical
 	UIKit.clear(content)
 	build()
+	UIKit.allow_scroll_drag(content)   # o dedo rola a tela mesmo começando em cima de um cartão
 	set_deferred("scroll_vertical", scroll)
 
 

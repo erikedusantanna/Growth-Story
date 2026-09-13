@@ -7,6 +7,7 @@ const TIER_NAMES := {"inicio": "Início", "intermediario": "Intermediário", "av
 
 func build() -> void:
 	_build_competitors()
+	_build_news()
 	_build_agency_events()
 	var era: Dictionary = Game.era.current()
 	content.add_child(header("🧩 Serviços", "%d/%d" % [Game.state.unlocked_services.size(), Game.content.service_order.size()]))
@@ -161,3 +162,32 @@ func _service_card(svc: Dictionary) -> PanelContainer:
 		if not check.ok:
 			v.add_child(UIKit.label(check.reason, 13, UIKit.COLOR_RED))
 	return card
+
+
+## Banca de notícias: veio da tela de calendário, que foi cortada. Fica aqui, junto das
+## tendências de mercado, que é o que as manchetes mexem.
+func _build_news() -> void:
+	var feed: Array = Game.state.news_feed
+	if feed.is_empty():
+		return
+	content.add_child(header("📰 Banca", "%d manchete(s)" % feed.size()))
+	for entry in feed.slice(0, 6):
+		var n: Dictionary = Game.news.by_id(String(entry.get("id", "")))
+		if n.is_empty():
+			continue
+		var card := UIKit.card()
+		var v := UIKit.card_content(card)
+		var top := UIKit.hbox(8)
+		var outlet := UIKit.label("%s %s" % ["📰" if String(n.get("media", "jornal")) == "jornal" else "📱", Game.news.outlet(n)], 12, UIKit.COLOR_MUTED)
+		outlet.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		top.add_child(outlet)
+		top.add_child(UIKit.label(GameState.date_text_for(int(entry.get("day", 0))), 12, UIKit.COLOR_MUTED))
+		v.add_child(top)
+		var news := n
+		var b := UIKit.button(String(n.get("title", "")), func(): popups().show_news(news), false, 44)
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.add_theme_font_size_override("font_size", 14)
+		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		b.clip_text = false
+		v.add_child(b)
+		content.add_child(card)

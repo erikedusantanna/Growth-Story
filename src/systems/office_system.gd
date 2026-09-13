@@ -98,8 +98,20 @@ func moving_multiplier() -> float:
 	return float(game.content.regions.get("moving_productivity", 0.85)) if is_moving() else 1.0
 
 
+## Lugares livres para a equipe. A recrutadora interna ocupa uma mesa como qualquer pessoa,
+## então ela sai daqui — assim toda checagem de "cabe mais alguém?" já conta com ela.
 func capacity() -> int:
+	return maxi(base_capacity() - staff_slots(), 1)
+
+
+## Lugares do andar, sem descontar nada.
+func base_capacity() -> int:
 	return int(current().get("capacity", 2))
+
+
+## Lugares ocupados por gente que não entra na lista de funcionários.
+func staff_slots() -> int:
+	return 1 if game.state.recruiter_hired else 0
 
 
 func rent() -> float:
