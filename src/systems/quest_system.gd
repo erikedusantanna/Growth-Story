@@ -1,7 +1,8 @@
 class_name QuestSystem
 extends RefCounted
 ## Missões: pedidos que surgem na rotina com prazo. Cumprir dá dinheiro e/ou reputação; deixar
-## o prazo passar custa reputação (data/quests.json). Progresso por contadores de stats (delta
+## o prazo passar custa reputação (data/quests.json). Algumas formam arcos de três etapas: só a
+## primeira entra no sorteio e cada etapa cumprida começa a seguinte, com prêmio maior no fim. Progresso por contadores de stats (delta
 ## desde o início da missão), por entregas com N estrelas, por dias seguidos de moral alta, por
 ## caixa no fim do prazo ou por tamanho da equipe. A UI mostra em Calendário e no feed.
 
@@ -100,6 +101,9 @@ func _eligible(t: Dictionary) -> bool:
 	var id := String(t.get("id", ""))
 	if id in active_ids():
 		return false
+	# etapas 2 e 3 de um arco só entram quando a etapa anterior é cumprida
+	if int(t.get("step", 1)) > 1:
+		return false
 	if st.day < int(t.get("min_day", 0)) or st.reputation < float(t.get("min_rep", 0)):
 		return false
 	var last_done: int = int(st.quests_done.get(id, -9999))
@@ -131,6 +135,13 @@ func _pick() -> Dictionary:
 	return pool[st.rng.randi_range(0, pool.size() - 1)]
 
 
+## Rótulo do arco, quando a missão faz parte de um ("" se for avulsa).
+func arc_label(t: Dictionary) -> String:
+	if String(t.get("arc", "")) == "":
+		return ""
+	return "%s · etapa %d de %d" % [String(t.get("arc_name", "")), int(t.get("step", 1)), int(t.get("steps", 3))]
+
+
 ## Começa uma missão (usado pelo sorteio diário e pelos testes).
 func start(id: String) -> Dictionary:
 	var st: GameState = game.state
@@ -141,7 +152,7 @@ func start(id: String) -> Dictionary:
 		"start_stat": int(st.stats.get(String(t.get("type", "")), 0)), "progress": 0}
 	st.quests.append(q)
 	st.last_quest_day = st.day
-	game.add_log("📜 Missão nova: %s (%d dias, vale %s)." % [String(t.get("title", "")), int(t.get("days", 30)), reward_text(t)], "unlock")
+	game.add_log("📜 %s: %s (%d dias, vale %s)." % ["Missão nova" if String(t.get("arc", "")) == "" else "Arco %s, etapa %d/%d" % [String(t.get("arc_name", "")), int(t.get("step", 1)), int(t.get("steps", 3))], String(t.get("title", "")), int(t.get("days", 30)), reward_text(t)], "unlock")
 	EventBus.quest_started.emit(q)
 	EventBus.state_changed.emit()
 	return q
@@ -163,6 +174,10 @@ func _complete(q: Dictionary) -> void:
 		game.reputation.add(rep)
 	game.add_log("✅ Missão cumprida: %s. Recompensa: %s." % [String(t.get("title", "")), reward_text(t)], "unlock")
 	EventBus.quest_finished.emit(q, true)
+	# arco: a etapa seguinte começa na hora
+	var next_id := String(t.get("next", ""))
+	if next_id != "":
+		start(next_id)
 
 
 func _fail(q: Dictionary) -> void:

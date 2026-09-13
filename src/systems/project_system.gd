@@ -349,6 +349,7 @@ func on_day() -> void:
 		game.chemistry.apply_daily(team_members(p))
 		if p.complex and not p.checkpoint_done and p.progress() >= 0.5:
 			_checkpoint(p)
+		_maybe_decision(p)
 		for key in Project.INDICATORS:
 			var goal: float = clampf(p.targets[key] + p.boosts[key], 0.0, 100.0)
 			p.indicators[key] = lerpf(p.indicators[key], goal, 0.12) + st.rng.randf_range(-1.5, 1.5)
@@ -360,6 +361,119 @@ func on_day() -> void:
 				_finish_cycle(p)
 		elif p.effort_done >= p.effort_total or p.team.is_empty() and p.days_elapsed > p.deadline_days + 15:
 			complete(p)
+
+
+# --- Decisões no meio do projeto ------------------------------------------------------
+
+## Nem todo projeto tem uma: a chance é diária, dentro da janela de progresso, e cada projeto
+## recebe no máximo uma (data/decisions.json). A escolha mexe em indicadores, prazo, esforço,
+## dinheiro, moral ou relação com o cliente.
+
+func decisions_data() -> Dictionary:
+	return game.content.decisions
+
+
+func decision_by_id(id: String) -> Dictionary:
+	for d in decisions_data().get("decisions", []):
+		if String(d.get("id", "")) == id:
+			return d
+	return {}
+
+
+func _decision_eligible(d: Dictionary, p: Project) -> bool:
+	var services: Array = d.get("requires_service", [])
+	if not services.is_empty() and not p.services.any(func(sid): return sid in services):
+		return false
+	return true
+
+
+## Sorteia e dispara a decisão de um projeto. Retorna a decisão escolhida (vazia se não houver).
+func trigger_decision(p: Project, forced_id: String = "") -> Dictionary:
+	var st: GameState = game.state
+	var d := decision_by_id(forced_id) if forced_id != "" else {}
+	if d.is_empty():
+		var pool: Array = decisions_data().get("decisions", []).filter(func(item): return _decision_eligible(item, p))
+		if pool.is_empty():
+			return {}
+		var total := 0.0
+		for item in pool:
+			total += float(item.get("weight", 1))
+		var roll := st.rng.randf() * total
+		for item in pool:
+			roll -= float(item.get("weight", 1))
+			if roll <= 0.0:
+				d = item
+				break
+		if d.is_empty():
+			d = pool.back()
+	p.decision_done = true
+	var c: Client = st.client_by_id(p.client_id)
+	var members := team_members(p)
+	var who: String = members[st.rng.randi_range(0, members.size() - 1)].name if not members.is_empty() else "alguém do time"
+	var text := String(d.get("text", ""))
+	text = text.replace("{client}", c.name if c != null else "O cliente").replace("{project}", p.title).replace("{employee}", who)
+	var shown := d.duplicate(true)
+	shown["text"] = text
+	shown["project_id"] = p.id
+	EventBus.project_decision.emit(p, shown)
+	return shown
+
+
+## Aplica a escolha do jogador. `index` é a opção escolhida.
+func apply_decision(p: Project, d: Dictionary, index: int) -> void:
+	var st: GameState = game.state
+	var choices: Array = d.get("choices", [])
+	if choices.is_empty():
+		return
+	var choice: Dictionary = choices[clampi(index, 0, choices.size() - 1)]
+	var c: Client = st.client_by_id(p.client_id)
+	game.add_log("%s %s: %s" % [String(d.get("icon", "🔀")), String(d.get("title", "Decisão")), String(choice.get("label", ""))], "project")
+	for effect in choice.get("effects", []):
+		var value := float(effect.get("value", 0))
+		match String(effect.get("type", "")):
+			"indicator":
+				var key := String(effect.get("key", ""))
+				if p.boosts.has(key):
+					p.boosts[key] += value
+			"effort":
+				p.effort_total = maxf(p.effort_total * (1.0 + value), p.effort_done + 1.0)
+			"deadline":
+				p.deadline_days = maxi(p.deadline_days + int(value), 1)
+			"budget":
+				p.budget = maxf(p.budget * (1.0 + value), 0.0)
+			"money":
+				game.finance.add_money(value, String(d.get("title", "Decisão")), "expense" if value < 0.0 else "revenue")
+			"morale":
+				for e in team_members(p):
+					game.employees.change_morale(e, value)
+			"stress":
+				for e in team_members(p):
+					e.stress = clampf(e.stress + value, 0.0, 100.0)
+			"relationship":
+				if c != null:
+					c.relationship = clampf(c.relationship + value, 0.0, 100.0)
+			"reputation":
+				if value < 0.0:
+					game.reputation.penalize(-value, "decisão de projeto")
+				else:
+					game.reputation.add(value)
+			"log":
+				game.add_log(String(effect.get("text", "")), "project")
+	st.stats["decisions"] = int(st.stats.get("decisions", 0)) + 1
+	EventBus.state_changed.emit()
+
+
+func _maybe_decision(p: Project) -> void:
+	var st: GameState = game.state
+	var data := decisions_data()
+	if p.decision_done or p.team.is_empty() or not st.pending_event.is_empty():
+		return
+	var progress := p.progress()
+	if progress < float(data.get("min_progress", 0.2)) or progress > float(data.get("max_progress", 0.75)):
+		return
+	if st.rng.randf() > float(data.get("chance_per_day", 0.07)):
+		return
+	trigger_decision(p)
 
 
 ## Checkpoint do projeto complexo: o cliente avalia na metade; nota abaixo de 50 vira refação.
@@ -441,6 +555,7 @@ const BONUS_DIAGNOSIS_LUCKY := 3.0
 const BONUS_SPECIALIST := 4.0
 const BONUS_SPECIALIST_MAX := 8.0
 const BONUS_TRENDING := 3.0
+const PENALTY_COLD := 4.0            # serviço que uma notícia esfriou rende menos por alguns dias
 const BONUS_KEY_SERVICE := 4.0
 const BONUS_KEY_SERVICE_MAX := 8.0
 
@@ -529,6 +644,13 @@ func _score(p: Project, c: Client, with_noise: bool, predicted_days: int = -1) -
 		var trending_names: Array = trending.map(func(sid): return game.content.service_name(sid))
 		breakdown.append({"label": "Em alta em %s: %s" % [String(game.era.current().get("id", "")), ", ".join(trending_names)],
 			"text": "+%d" % int(BONUS_TRENDING), "good": true})
+
+	var cold: Array = p.services.filter(func(sid): return game.era.is_cold(sid))
+	if not cold.is_empty():
+		score -= PENALTY_COLD
+		var cold_names: Array = cold.map(func(sid): return game.content.service_name(sid))
+		breakdown.append({"label": "Em baixa no mercado: %s" % ", ".join(cold_names),
+			"text": "-%d" % int(PENALTY_COLD), "good": false})
 
 	var difficulty := c.difficulty if c != null else 1
 	if difficulty > 1:

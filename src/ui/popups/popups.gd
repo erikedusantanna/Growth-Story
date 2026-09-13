@@ -28,6 +28,9 @@ func _ready() -> void:
 	EventBus.game_over.connect(show_game_over)
 	EventBus.quest_started.connect(show_quest)
 	EventBus.news_published.connect(show_news)
+	EventBus.project_decision.connect(show_decision)
+	EventBus.talent_appeared.connect(show_talent)
+	EventBus.crisis_started.connect(show_crisis)
 
 
 func is_open() -> bool:
@@ -131,6 +134,60 @@ func show_event(ev: Dictionary) -> void:
 		return parts.panel)
 
 
+## Talento raro no mercado: janela curta e disputa com as rivais.
+func show_talent(e: Employee) -> void:
+	_open(func():
+		var parts := _panel("⭐ Talento raro no mercado")
+		parts.body.add_child(UIKit.label("%s · %s" % [e.name, Game.employees.title(e)], 18, UIKit.COLOR_ACCENT, true))
+		parts.body.add_child(UIKit.attr_grid(e))
+		parts.body.add_child(UIKit.label("Salário %s/mês + bônus de contratação %s" % [UIKit.money(e.salary), UIKit.money(Game.talent.signing_bonus(e))], 15, UIKit.COLOR_GREEN, true))
+		parts.body.add_child(UIKit.label("Fica no mercado por %d dias. Se você não fechar, uma agência rival fecha." % TalentSystem.WINDOW_DAYS, 14, UIKit.COLOR_RED, true))
+		parts.body.add_child(UIKit.muted("A proposta fica na aba Equipe, em Candidatos.", 13))
+		parts.buttons.add_child(UIKit.button("👥 Ver na aba Equipe", func():
+			close()
+			var m = _main()
+			if m != null:
+				m.show_screen("team"), true))
+		parts.buttons.add_child(UIKit.button("Depois eu vejo", close))
+		return parts.panel)
+
+
+## Crise na região: avisa o que muda e por quantos dias.
+func show_crisis(state_crisis: Dictionary) -> void:
+	_open(func():
+		var c: Dictionary = Game.crisis.current()
+		var parts := _panel("%s %s" % [String(c.get("icon", "⚠️")), String(c.get("name", "Crise"))])
+		parts.body.add_child(UIKit.label(String(c.get("text", "")), 17, UIKit.COLOR_TEXT, true))
+		var lines: Array = []
+		if float(c.get("productivity", 1.0)) < 1.0:
+			lines.append("Produtividade em %d%% enquanto durar." % int(float(c.get("productivity", 1.0)) * 100.0))
+		if float(c.get("prospects", 1.0)) < 1.0:
+			lines.append("Quase não chega prospect novo.")
+		if float(c.get("morale", 0)) < 0.0:
+			lines.append("A equipe já sentiu: %d de moral." % int(c.get("morale", 0)))
+		if float(c.get("money", 0)) < 0.0:
+			lines.append("Custo imediato de %s." % UIKit.money(-float(c.get("money", 0))))
+		lines.append("Dura %d dias e pega as rivais da região também." % int(c.get("days", 5)))
+		parts.body.add_child(UIKit.label("• " + "\n• ".join(lines), 15, UIKit.COLOR_RED, true))
+		parts.buttons.add_child(UIKit.button("Vamos aguentar", close, true))
+		return parts.panel)
+
+
+## Decisão no meio do projeto: escolha rápida que muda o rumo da entrega.
+func show_decision(p, d: Dictionary) -> void:
+	_open(func():
+		var parts := _panel("%s %s" % [String(d.get("icon", "🔀")), String(d.get("title", "Decisão"))])
+		parts.body.add_child(UIKit.label(String(d.get("text", "")), 17, UIKit.COLOR_TEXT, true))
+		parts.body.add_child(UIKit.muted("Projeto: %s · %d%% concluído" % [p.title, int(p.progress() * 100)], 13))
+		var choices: Array = d.get("choices", [])
+		for i in choices.size():
+			var idx := i
+			parts.buttons.add_child(UIKit.button(String(choices[i].get("label", "OK")), func():
+				close()
+				Game.projects.apply_decision(p, d, idx), i == 0))
+		return parts.panel)
+
+
 ## Notícia do mercado: página de jornal ou post de rede social, com ilustração.
 ## Só entretenimento — as marcas e pessoas são fictícias.
 func show_news(n: Dictionary) -> void:
@@ -174,9 +231,9 @@ func show_news(n: Dictionary) -> void:
 		art.custom_minimum_size = Vector2(0, 132)
 		fv.add_child(art)
 		fv.add_child(UIKit.label(String(n.get("text", "")), 15, Color("#3a3630"), true))
-		var effect: Dictionary = n.get("effect", {})
-		if not effect.is_empty():
-			fv.add_child(UIKit.label(String(effect.get("text", "")), 14, Color("#8c3b2e"), true))
+		var effect_text := String(n.get("effect_text", String((n.get("effect", {}) as Dictionary).get("text", ""))))
+		if effect_text != "":
+			fv.add_child(UIKit.label(effect_text, 14, Color("#8c3b2e"), true))
 		parts.body.add_child(frame)
 		parts.body.add_child(UIKit.muted("Ficção: empresas e pessoas citadas não existem.", 11))
 		parts.buttons.add_child(UIKit.button("📰 Fechar o jornal" if paper else "📱 Continuar rolando", close, true))
@@ -187,7 +244,10 @@ func show_news(n: Dictionary) -> void:
 func show_quest(q: Dictionary) -> void:
 	_open(func():
 		var t: Dictionary = Game.quests.template(String(q.get("id", "")))
-		var parts := _panel("📜 Missão nova")
+		var arc := Game.quests.arc_label(t)
+		var parts := _panel("📜 Missão nova" if arc == "" else "🧭 Arco em andamento")
+		if arc != "":
+			parts.body.add_child(UIKit.label(arc, 14, UIKit.COLOR_PURPLE))
 		parts.body.add_child(UIKit.label("%s %s" % [String(t.get("icon", "📜")), String(t.get("title", ""))], 18, UIKit.COLOR_ACCENT, true))
 		parts.body.add_child(UIKit.label(String(t.get("desc", "")), 16, UIKit.COLOR_TEXT, true))
 		parts.body.add_child(UIKit.label("⏳ Prazo: %d dias (até %s)" % [int(t.get("days", 30)), GameState.date_text_for(int(q.get("deadline_day", 0)))], 15, UIKit.COLOR_BLUE))
@@ -403,6 +463,40 @@ func show_training(e: Employee) -> void:
 					show_info("Treinamento", r.reason))
 			b.disabled = not check.ok
 			v.add_child(b)
+			parts.body.add_child(card)
+		parts.buttons.add_child(UIKit.button("✖️ Fechar", close))
+		return parts.panel)
+
+
+## Trilha de especialização: transforma alguém em especialista de um serviço.
+func show_specialize(e: Employee) -> void:
+	_open(func():
+		var parts := _panel("🎯 Especializar %s" % e.name.split(" ")[0])
+		parts.body.add_child(UIKit.muted("Especialista rende bônus no projeto do serviço dele e ganha pontos nos atributos que esse serviço pede. O cargo muda de vez. Aptidão mínima: %d." % int(EmployeeSystem.SPEC_MIN_SKILL)))
+		parts.body.add_child(UIKit.label("Agora: %s" % Game.employees.title(e), 15, UIKit.COLOR_ACCENT))
+		for sid in Game.employees.spec_options(e):
+			var card := UIKit.card()
+			var v := UIKit.card_content(card)
+			var skill: float = Game.employees.spec_skill(e, sid)
+			var top := UIKit.hbox()
+			var name := UIKit.label(Game.content.service_name(sid), 17)
+			name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			top.add_child(name)
+			top.add_child(UIKit.label("aptidão %d" % int(roundf(skill)), 14, UIKit.COLOR_GREEN if skill >= EmployeeSystem.SPEC_MIN_SKILL else UIKit.COLOR_RED))
+			v.add_child(top)
+			var attrs: Array = Game.projects.key_attrs([sid], 2).map(func(a): return Employee.ATTR_NAMES.get(a, a))
+			v.add_child(UIKit.muted("%s · %d dias · reforça %s" % [UIKit.money(Game.employees.spec_cost(sid)), Game.employees.spec_days(sid), ", ".join(attrs)], 13))
+			var check: Dictionary = Game.employees.can_specialize(e, sid)
+			var b := UIKit.button("🎯 Começar a trilha", func():
+				var r: Dictionary = Game.employees.specialize(e, sid)
+				close()
+				if not r.ok:
+					show_info("Especialização", r.reason))
+			b.disabled = not check.ok
+			b.tooltip_text = check.reason
+			v.add_child(b)
+			if not check.ok:
+				v.add_child(UIKit.label(check.reason, 12, UIKit.COLOR_RED, true))
 			parts.body.add_child(card)
 		parts.buttons.add_child(UIKit.button("✖️ Fechar", close))
 		return parts.panel)

@@ -33,8 +33,55 @@ func at_year(year: int) -> Dictionary:
 	return eras.back() if not eras.is_empty() else {}
 
 
+## Serviços em alta agora: os da era mais os que uma notícia esquentou por alguns dias.
 func is_trending(service_id: String) -> bool:
-	return service_id in current().get("trends", [])
+	return service_id in current().get("trends", []) or _has_market(service_id, "hot")
+
+
+## Serviço que uma notícia esfriou: rende menos na nota enquanto durar.
+func is_cold(service_id: String) -> bool:
+	return _has_market(service_id, "cold") and not (service_id in current().get("trends", []))
+
+
+func _has_market(service_id: String, kind: String) -> bool:
+	for m in game.state.market:
+		if String(m.get("service", "")) == service_id and String(m.get("kind", "")) == kind:
+			return true
+	return false
+
+
+## Cria (ou renova) uma tendência temporária. kind: "hot" ou "cold".
+func add_market_trend(service_id: String, kind: String, days: int, source: String = "") -> void:
+	var st: GameState = game.state
+	for m in st.market:
+		if String(m.get("service", "")) == service_id and String(m.get("kind", "")) == kind:
+			m["until_day"] = maxi(int(m.get("until_day", 0)), st.day + days)
+			return
+	st.market.append({"service": service_id, "kind": kind, "until_day": st.day + days, "source": source})
+
+
+## Tendências temporárias ativas, com dias restantes.
+func market_trends() -> Array:
+	var st: GameState = game.state
+	return st.market.map(func(m): return {
+		"service": String(m.get("service", "")),
+		"name": game.content.service_name(String(m.get("service", ""))),
+		"kind": String(m.get("kind", "hot")),
+		"days_left": int(m.get("until_day", 0)) - st.day,
+		"until_day": int(m.get("until_day", 0)),
+		"source": String(m.get("source", "")),
+	})
+
+
+func on_day() -> void:
+	var st: GameState = game.state
+	var gone: Array = st.market.filter(func(m): return int(m.get("until_day", 0)) <= st.day)
+	for m in gone:
+		var name: String = game.content.service_name(String(m.get("service", "")))
+		game.add_log("O mercado voltou ao normal em %s." % name, "info")
+	if not gone.is_empty():
+		st.market = st.market.filter(func(m): return int(m.get("until_day", 0)) > st.day)
+		EventBus.state_changed.emit()
 
 
 func trending_services() -> Array:

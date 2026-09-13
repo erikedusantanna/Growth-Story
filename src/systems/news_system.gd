@@ -69,9 +69,20 @@ func publish(id: String = "") -> Dictionary:
 
 
 func _apply_effect(n: Dictionary) -> void:
-	var effect: Dictionary = n.get("effect", {})
-	if effect.is_empty():
-		return
+	for effect in _effects(n):
+		_apply_one(n, effect)
+
+
+## A notícia pode ter um efeito (`effect`) ou vários (`effects`).
+func _effects(n: Dictionary) -> Array:
+	var list: Array = (n.get("effects", []) as Array).duplicate()
+	var single: Dictionary = n.get("effect", {})
+	if not single.is_empty():
+		list.append(single)
+	return list
+
+
+func _apply_one(n: Dictionary, effect: Dictionary) -> void:
 	var value := float(effect.get("value", 0))
 	match String(effect.get("type", "")):
 		"money_pct":
@@ -86,6 +97,16 @@ func _apply_effect(n: Dictionary) -> void:
 		"morale":
 			for e in game.state.employees:
 				game.employees.change_morale(e, value)
+		"trend":
+			game.era.add_market_trend(String(effect.get("service", "")), "hot", int(effect.get("days", 30)), String(n.get("title", "")))
+		"cold":
+			game.era.add_market_trend(String(effect.get("service", "")), "cold", int(effect.get("days", 30)), String(n.get("title", "")))
+		"client_budget":
+			for c in game.state.active_clients():
+				c.budget = maxf(c.budget * (1.0 + value), 500.0)
+		"prospects":
+			for i in int(value):
+				game.clients.spawn_prospect()
 
 
 func on_day() -> void:

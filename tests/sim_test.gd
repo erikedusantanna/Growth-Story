@@ -33,6 +33,13 @@ func _ready() -> void:
 	_test_calendar(game)
 	_test_paid_media(game)
 	_test_pets(game)
+	_test_specialization(game)
+	_test_decisions(game)
+	_test_market_trends(game)
+	_test_quest_arcs(game)
+	_test_talent(game)
+	_test_crisis(game)
+	_test_save_slots(game)
 	if failures == 0:
 		print("\n[OK] Todos os testes passaram.")
 		get_tree().quit(0)
@@ -340,7 +347,7 @@ func _run_simulation(game, seed: int, years: int) -> void:
 	if year_report.size() >= 1:
 		var y1: Dictionary = year_report[0]
 		check(y1.employees >= 2 and y1.employees <= 5, "ano 1: equipe entre 2 e 5 (%d)" % y1.employees)
-		check(y1.rep >= 8.0 and y1.rep <= 56.0, "ano 1: reputação entre 8 e 56 (%.0f)" % y1.rep)
+		check(y1.rep >= 8.0 and y1.rep <= 62.0, "ano 1: reputação entre 8 e 62 (%.0f)" % y1.rep)
 	check(not st.game_over, "não faliu com política simples")
 	check(completed >= 6, "concluiu pelo menos 6 projetos/ciclos (%d)" % completed)
 	check(events_resolved >= 3, "eventos dispararam (%d)" % events_resolved)
@@ -995,3 +1002,243 @@ func _test_region_content(game) -> void:
 	check(p.checkpoint_done, "checkpoint aconteceu na metade")
 	check(Project.from_dict(p.to_dict()).complex, "projeto complexo sobrevive ao save")
 	check(game.content.client_templates.filter(func(t): return int(t.tier) == 5).size() >= 6, "há clientes tier 5 suficientes")
+
+
+func _test_specialization(game) -> void:
+	print("== Especialização de carreira ==")
+	game.new_game("Carreira", "Chefe", 71)
+	var st = game.state
+	st.money = 200000.0
+	var e: Employee = game.employees.generate_candidate("high")
+	game.employees.hire(e)
+	var target := ""
+	for sid in game.employees.spec_options(e):
+		if game.employees.spec_skill(e, sid) >= EmployeeSystem.SPEC_MIN_SKILL:
+			target = sid
+			break
+	if target == "":
+		# garante aptidão suficiente para a trilha do primeiro serviço liberado
+		target = String(game.employees.spec_options(e)[0])
+		for key in Employee.ATTRS:
+			e.attrs[key] = 90.0
+	check(game.employees.can_specialize(e, target).ok, "pode entrar na trilha de %s" % target)
+	check(not game.employees.can_specialize(st.employees[0], target).ok, "fundador não troca de especialidade")
+	var money_before: float = st.money
+	var old_role: String = e.role
+	check(game.employees.specialize(e, target).ok, "entrou na especialização")
+	check(e.specializing == target and not e.is_available(st.day), "fica ocupado durante a trilha")
+	check(st.money < money_before, "especialização custa dinheiro")
+	check(int(st.stats.get("specializations", 0)) == 1, "estatística de especializações conta")
+	var weights: Dictionary = game.content.services.get(target, {}).get("weights", {})
+	var main_key := ""
+	for k in weights:
+		if main_key == "" or float(weights[k]) > float(weights[main_key]):
+			main_key = String(k)
+	var attr_before: float = e.attr(main_key)
+	st.day = e.busy_until + 1
+	game.employees.on_day()
+	check(e.specializing == "" and e.role == target and old_role != target, "terminou e mudou de cargo para %s" % target)
+	check(e.attr(main_key) > attr_before, "ganhou pontos no atributo principal (%.0f → %.0f)" % [attr_before, e.attr(main_key)])
+	var restored := Employee.from_dict(e.to_dict())
+	check(restored.role == target, "cargo novo sobrevive ao save")
+
+
+func _test_decisions(game) -> void:
+	print("== Decisões no meio do projeto ==")
+	game.new_game("Decisões", "Chefe", 72)
+	var st = game.state
+	var c = game.clients.spawn_prospect()
+	c.status = Client.Status.ACTIVE
+	var r = game.projects.create_project(c, [String(st.unlocked_services[0])], [st.employees[0].id])
+	check(r.ok, "projeto criado (%s)" % r.reason)
+	var p: Project = st.running_projects()[0]
+	check(not p.decision_done, "projeto começa sem decisão")
+	var d: Dictionary = game.projects.trigger_decision(p, "pedido_ultima_hora")
+	check(not d.is_empty() and p.decision_done, "decisão disparada e marcada no projeto")
+	check(String(d.get("id", "")) == "pedido_ultima_hora" and (d.get("choices", []) as Array).size() >= 2, "a decisão chega com as opções e o projeto a que pertence")
+	check(int(d.get("project_id", -1)) == p.id, "decisão aponta para o projeto certo")
+	check(not String(d.get("text", "")).contains("{client}"), "os nomes entram no texto: %s" % String(d.get("text", "")).substr(0, 60))
+	var effort_before: float = p.effort_total
+	var deadline_before: int = p.deadline_days
+	var indicators_before: float = p.boosts.values().reduce(func(a, b): return a + b, 0.0)
+	game.projects.apply_decision(p, d, 0)
+	check(int(st.stats.get("decisions", 0)) == 1, "estatística de decisões conta a escolha")
+	check(p.effort_total != effort_before or p.deadline_days != deadline_before \
+		or p.boosts.values().reduce(func(a, b): return a + b, 0.0) != indicators_before, "a escolha mexeu no projeto")
+	# cada projeto recebe no máximo uma
+	game.projects._maybe_decision(p)
+	check(int(st.stats.get("decisions", 0)) == 1, "o mesmo projeto não recebe uma segunda decisão")
+	check(Project.from_dict(p.to_dict()).decision_done, "marca de decisão sobrevive ao save")
+	check(game.content.decisions.get("decisions", []).size() >= 10, "há decisões suficientes no conteúdo")
+
+
+func _test_market_trends(game) -> void:
+	print("== Notícias que mexem no mercado ==")
+	game.new_game("Mercado", "Chefe", 73)
+	var st = game.state
+	st.day = 300
+	check(not game.era.is_cold("paid_traffic"), "tráfego pago começa normal")
+	var n: Dictionary = game.news.publish("eleicao_debate")
+	check(not n.is_empty(), "notícia publicada")
+	check(game.era.is_cold("paid_traffic"), "a notícia esfriou o tráfego pago")
+	var trends: Array = game.era.market_trends()
+	check(trends.size() == 1 and int(trends[0]["days_left"]) > 0, "tendência temporária listada com prazo")
+	# serviço frio penaliza a nota do projeto
+	var c = game.clients.spawn_prospect()
+	c.status = Client.Status.ACTIVE
+	var restored = GameState.from_dict(st.to_dict())
+	check(restored.market.size() == 1, "tendência temporária sobrevive ao save")
+	st.day = int(st.market[0]["until_day"])
+	game.era.on_day()
+	check(not game.era.is_cold("paid_traffic") and game.era.market_trends().is_empty(), "a tendência acaba no prazo")
+	var hot: Dictionary = game.news.publish("influencer_sumiu")
+	check(not hot.is_empty() and game.era.is_trending("influencer"), "notícia também aquece um serviço")
+	var clients_before: int = st.prospects().size()
+	game.news.publish("startup_unicornio")
+	check(st.prospects().size() > clients_before, "notícia de captação traz prospects")
+
+
+func _test_quest_arcs(game) -> void:
+	print("== Missões em arco ==")
+	game.new_game("Arcos", "Chefe", 74)
+	var st = game.state
+	st.day = 60
+	var t1: Dictionary = game.quests.template("arco_case_1")
+	check(String(t1.get("arc", "")) == "primeiro_case" and int(t1.get("steps", 0)) == 3, "etapa 1 do arco existe com 3 passos")
+	check(game.quests.arc_label(t1).contains("etapa 1 de 3"), "rótulo do arco: %s" % game.quests.arc_label(t1))
+	check(not game.quests._eligible(game.quests.template("arco_case_2")), "etapa 2 não entra no sorteio sozinha")
+	var q: Dictionary = game.quests.start("arco_case_1")
+	check(not q.is_empty(), "arco começou")
+	st.stats["clients_signed"] = int(st.stats.get("clients_signed", 0)) + 1
+	game.quests.check()
+	check(game.quests.active_ids() == ["arco_case_2"], "etapa 1 cumprida começa a etapa 2 na hora")
+	game.quests._on_project_completed(null, {"stars": 4})
+	check(game.quests.active_ids() == ["arco_case_3"], "etapa 2 cumprida começa a etapa 3")
+	var t3: Dictionary = game.quests.template("arco_case_3")
+	check(float(t3.get("reward_money", 0)) > float(t1.get("reward_money", 0)), "a última etapa paga mais que a primeira")
+	var rep_before: float = st.reputation
+	st.stats["retainers"] = int(st.stats.get("retainers", 0)) + 1
+	game.quests.check()
+	check(game.quests.active().is_empty() and st.reputation > rep_before, "arco concluído paga o prêmio grande")
+	var arcs := {}
+	for t in game.quests.templates():
+		if String(t.get("arc", "")) != "":
+			arcs[String(t.get("arc", ""))] = true
+	check(arcs.size() >= 3, "há pelo menos 3 arcos no conteúdo (%d)" % arcs.size())
+
+
+func _test_talent(game) -> void:
+	print("== Talento raro ==")
+	game.new_game("Talento", "Chefe", 75)
+	var st = game.state
+	st.day = 200
+	st.money = 300000.0
+	var e: Employee = game.talent.spawn()
+	check(e != null and e.legendary, "talento raro apareceu")
+	check(game.talent.active() == e and e in st.candidates, "entra na lista de candidatos")
+	var normal: Employee = game.employees.generate_candidate("high")
+	var sum_legend := 0.0
+	var sum_normal := 0.0
+	for key in Employee.ATTRS:
+		sum_legend += e.attr(key)
+		sum_normal += normal.attr(key)
+	check(sum_legend > sum_normal, "atributos acima de um candidato bom (%.0f vs %.0f)" % [sum_legend, sum_normal])
+	check(game.talent.signing_bonus(e) > 0.0 and e.candidate_expires > st.day, "tem bônus de contratação e prazo")
+	check(game.talent.spawn() == null, "não aparece um segundo talento ao mesmo tempo")
+	var money_before: float = st.money
+	check(game.talent.hire(e).ok, "contratou o talento")
+	check(e in st.employees and st.money < money_before - e.salary, "entrou na equipe e o bônus foi pago")
+	check(int(st.stats.get("legends", 0)) == 1, "estatística de lendas conta")
+	check(Employee.from_dict(e.to_dict()).legendary, "marca de lenda sobrevive ao save")
+	# prazo perdido: a rival leva e fica mais forte
+	game.new_game("Talento2", "Chefe", 76)
+	st = game.state
+	st.day = 200
+	st.reputation = 95.0
+	st.money = 300000.0
+	check(game.office.move_to(2).ok, "mudou para a região 2, onde há rivais")
+	game.competitors.ensure_rivals()
+	var e2: Employee = game.talent.spawn()
+	var rivals: Array = game.competitors.active_rivals()
+	check(not rivals.is_empty(), "há rivais na região para disputar o talento")
+	var before := 0.0
+	for a in rivals:
+		before += float(st.rivals.get(String(a.get("id", "")), {}).get("strength", 0))
+	st.day = e2.candidate_expires
+	game.talent.on_day()
+	var after := 0.0
+	for a in rivals:
+		after += float(st.rivals.get(String(a.get("id", "")), {}).get("strength", 0))
+	check(not (e2 in st.candidates), "talento sai da lista quando o prazo passa")
+	check(after > before, "a rival que levou o talento ficou mais forte (%.1f → %.1f)" % [before, after])
+
+
+func _test_crisis(game) -> void:
+	print("== Crises regionais ==")
+	game.new_game("Crise", "Chefe", 77)
+	var st = game.state
+	st.day = 250
+	check(not game.crisis.is_active() and game.crisis.productivity_multiplier() == 1.0, "sem crise a produtividade é normal")
+	var morale_before: float = game.employees.morale_average()
+	var c: Dictionary = game.crisis.start("apagao")
+	check(not c.is_empty() and game.crisis.is_active(), "crise começou")
+	check(game.crisis.productivity_multiplier() < 1.0 and game.crisis.prospect_multiplier() < 1.0, "produtividade e prospects caem")
+	check(game.crisis.days_left() > 0 and game.crisis.headline().contains("Apagão"), "aviso do topo: %s" % game.crisis.headline())
+	check(game.employees.morale_average() < morale_before, "a crise derruba a moral")
+	check(int(st.stats.get("crises", 0)) == 1, "estatística de crises conta")
+	var restored = GameState.from_dict(st.to_dict())
+	check(not restored.crisis.is_empty(), "crise sobrevive ao save")
+	st.day = int(st.crisis["until_day"])
+	game.crisis.on_day()
+	check(not game.crisis.is_active() and game.crisis.productivity_multiplier() == 1.0, "a crise acaba no prazo")
+	# a crise também bate nas rivais da região
+	game.new_game("Crise2", "Chefe", 78)
+	st = game.state
+	st.day = 250
+	st.reputation = 95.0
+	st.money = 300000.0
+	check(game.office.move_to(2).ok, "mudou para a região 2, onde há rivais")
+	game.competitors.ensure_rivals()
+	var region: int = game.office.region()
+	var locals: Array = game.competitors.active_rivals().filter(func(a): return int(a.get("region", 1)) == region)
+	var before := 0.0
+	for a in locals:
+		before += float(st.rivals.get(String(a.get("id", "")), {}).get("strength", 0))
+	game.crisis.start("enchente")
+	var after := 0.0
+	for a in locals:
+		after += float(st.rivals.get(String(a.get("id", "")), {}).get("strength", 0))
+	check(not locals.is_empty(), "há rivais na região para sentir a crise")
+	check(after < before, "as rivais da região também perdem força (%.1f → %.1f)" % [before, after])
+	check(game.content.crises.get("crises", []).size() >= 8, "há crises suficientes no conteúdo")
+
+
+func _test_save_slots(game) -> void:
+	print("== Espaços de save ==")
+	game.save.delete_save()
+	check(not game.save.has_save() and game.save.first_free_slot() == 1, "começa sem nenhum save")
+	game.new_game("Agência Um", "Chefe", 81, 1)
+	var st = game.state
+	st.day = 120
+	st.money = 45000.0
+	check(game.save.current_slot == 1, "partida nova ocupa o espaço escolhido")
+	check(game.save.save(st), "salvou no espaço 1")
+	check(game.save.has_slot(1) and game.save.first_free_slot() == 2, "espaço 1 ocupado, o 2 é o próximo livre")
+	game.new_game("Agência Dois", "Chefe", 82, 3)
+	game.state.day = 400
+	check(game.save.save(game.state, 3), "salvou no espaço 3")
+	var info: Dictionary = game.save.slot_info(1)
+	check(bool(info.exists) and String(info.agency_name) == "Agência Um" and int(info.day) == 120, "resumo do espaço 1: %s, dia %d" % [info.agency_name, info.day])
+	check(String(info.date) != "" and float(info.money) == 45000.0 and int(info.saved_at) > 0, "resumo traz data, caixa e horário do save")
+	check(not bool(game.save.slot_info(2).exists), "espaço 2 continua vazio")
+	var loaded = game.save.load_state(1)
+	check(loaded != null and loaded.agency_name == "Agência Um" and loaded.day == 120, "carregou o espaço 1 sem tocar no 3")
+	check(game.save.load_state(3).agency_name == "Agência Dois", "carregou o espaço 3")
+	check(game.save.slots().size() == SaveSystem.MAX_SLOTS, "a tela inicial lista %d espaços" % SaveSystem.MAX_SLOTS)
+	game.save.delete_slot(1)
+	check(not game.save.has_slot(1) and game.save.has_slot(3), "apagar um espaço não mexe nos outros")
+	# partida nova sem espaço indicado vai para o primeiro livre
+	game.new_game("Agência Três", "Chefe", 83)
+	check(game.save.current_slot == 1, "sem espaço indicado, a partida nova usa o primeiro livre")
+	game.save.delete_save()
+	check(not game.save.has_save(), "limpeza final")

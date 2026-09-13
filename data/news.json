@@ -1,38 +1,360 @@
 {
-  "comment": "Notícias cômicas do mercado (NewsSystem). Puro entretenimento: empresas e pessoas são fictícias, com nomes que lembram marcas reais sem serem elas. media: jornal (Jornal do Mercado) ou rede (post na Bluesocial). art: ilustração em assets/art/news/<art>.png. effect (opcional) é pequeno e declarado no texto.",
-  "gap_days": 9,
-  "daily_chance": 0.2,
-  "cooldown_days": 200,
-  "papers": ["Jornal do Mercado", "Gazeta do Anúncio", "Diário da Conversão"],
-  "networks": ["Bluesocial", "Fotograma", "Linkedout"],
-  "news": [
-    {"id": "b4_pivot", "media": "jornal", "art": "office", "title": "B4 Company anuncia pivô para \"consultoria de energia de marca\"", "text": "A B4 Company comunicou ao mercado que deixa de vender tráfego e passa a vender \"energia de marca\", medida em unidades que a própria agência criou. O CEO garantiu que o indicador é auditado por ele mesmo. Ações da empresa não existem, mas caíram assim mesmo.", "tag": "mercado"},
-    {"id": "agencia_beta_premio", "media": "jornal", "art": "trophy", "title": "Agência Beta vence prêmio que ela mesma organizou", "text": "Pelo sétimo ano seguido, a Agência Beta levou o Troféu Excelência Beta, entregue no Beta Awards, realizado na sede da Beta. A comissão julgadora, formada por três sócios da Beta, classificou o resultado como \"surpreendente\".", "tag": "mercado"},
-    {"id": "fabio_augusto_curso", "media": "rede", "art": "guru", "title": "Fabio Augusto lança curso de R$ 12 mil sobre como economizar", "text": "\"O segredo da riqueza é cortar o cafezinho\", escreveu Fabio Augusto no post, feito de um iate. O curso tem 4 módulos, 3 deles sobre o próprio Fabio Augusto. Comentários desativados.", "tag": "guru"},
-    {"id": "tiago_bigo_planilha", "media": "rede", "art": "chart", "title": "Tiago Bigo diz que resolveu a economia com uma planilha", "text": "Em um vídeo de 48 minutos, Tiago Bigo apresentou a planilha que, segundo ele, \"zera a inflação em duas abas\". Economistas pediram para ver a célula B7. Ele respondeu que está no curso.", "tag": "guru"},
-    {"id": "eleicao_imposto", "media": "jornal", "art": "politics", "title": "Partido propõe imposto sobre carrossel de Instagram", "text": "Em ano eleitoral, o Partido da Reforma Justa apresentou projeto que taxa publicações em carrossel acima de cinco slides. A justificativa é que \"ninguém chega no slide seis mesmo\". A oposição propôs taxar o slide um.", "tag": "politica", "effect": {"type": "money_pct", "value": -0.01, "text": "A contabilidade adiantou uma reserva: −1% do caixa."}},
-    {"id": "eleicao_debate", "media": "jornal", "art": "politics", "title": "Candidato promete \"CPM zero para todos\"", "text": "Durante o debate, o candidato garantiu que, eleito, o custo por mil impressões cairá a zero. Questionado sobre como, respondeu que \"a plataforma vai entender\". As plataformas não responderam.", "tag": "politica"},
-    {"id": "algoritmo_muda", "media": "jornal", "art": "phone", "title": "Rede social muda algoritmo e agora prioriza quem não posta", "text": "A Bluesocial anunciou que o novo algoritmo dará alcance a perfis inativos, \"para valorizar o silêncio\". Agências correram para publicar nada. O engajamento do nada bateu recorde.", "tag": "plataforma", "effect": {"type": "reputation", "value": -1, "text": "Ninguém entendeu o novo alcance: −1 de reputação no mercado."}},
-    {"id": "plataforma_cai", "media": "rede", "art": "phone", "title": "Fotograma fica fora do ar por 40 minutos e o país descobre a janela", "text": "A queda da rede levou milhares de pessoas a olharem pela janela pela primeira vez no ano. Relatos indicam a existência de vizinhos, céu e um cachorro. O serviço voltou e todos esqueceram.", "tag": "plataforma"},
-    {"id": "influencer_sumiu", "media": "rede", "art": "guru", "title": "Influenciador some por 3 dias e volta dizendo que era estratégia", "text": "Após sumir da internet, o criador Lucca Prime publicou: \"Era um teste de escassez\". Seu perfil perdeu 8 mil seguidores e ganhou uma palestra sobre escassez.", "tag": "guru"},
-    {"id": "ia_criativa", "media": "jornal", "art": "robot", "title": "Agência demite time criativo e contrata uma IA que só faz mais do mesmo", "text": "A Vórtice Comunicação substituiu quatro redatores por um robô que gera a frase \"transformando ideias em resultados\" em 32 fontes diferentes. O cliente aprovou na primeira. A segunda também.", "tag": "tecnologia"},
-    {"id": "ia_reuniao", "media": "rede", "art": "robot", "title": "IA entra em reunião no lugar do diretor e ninguém percebe", "text": "Durante 50 minutos, o avatar repetiu \"faz sentido\" e \"vamos alinhar offline\". A ata foi aprovada por unanimidade. O diretor estava na praia, o que também faz sentido.", "tag": "tecnologia"},
-    {"id": "black_friday_antecipada", "media": "jornal", "art": "shop", "title": "Varejo antecipa Black Friday para março e chama de \"Black Friday de Verão\"", "text": "A rede Magazine Lupe lançou promoções de novembro em pleno março, com descontos de \"até 70%\" — sendo o até a parte mais importante da frase. O consumidor médio já não sabe em que mês vive.", "tag": "mercado"},
-    {"id": "cliente_logo_maior", "media": "rede", "art": "office", "title": "Cliente pede logo maior; universo se expande para acomodar", "text": "Astrônomos registraram uma expansão anômala do cosmos logo após um cliente da região pedir \"só um pouquinho maior\" pela quarta vez. O arquivo final tem 14 gigabytes e uma logo.", "tag": "clientes"},
-    {"id": "briefing_telepatico", "media": "rede", "art": "office", "title": "Cliente envia briefing por telepatia e cobra alteração", "text": "\"Achei que estava claro\", disse o gerente de marketing, que não enviou nenhuma mensagem. A agência entregou três versões, todas erradas, e uma quarta que ele aprovou sem abrir.", "tag": "clientes"},
-    {"id": "metaverso_volta", "media": "jornal", "art": "robot", "title": "Empresa investe no metaverso pela terceira vez e chama de \"a definitiva\"", "text": "A Nébula Tech comprou um terreno virtual ao lado de outro terreno virtual vazio. A visitação no primeiro mês foi de dois avatares, sendo um deles o estagiário.", "tag": "tecnologia"},
-    {"id": "cafe_da_agencia", "media": "rede", "art": "office", "title": "Pesquisa aponta que 94% das ideias nascem na fila do café", "text": "O estudo, feito por uma agência que fica ao lado de uma cafeteria, recomenda mais cafeteiras por metro quadrado. O outro 6% nasce no banho e não pode ser comprovado.", "tag": "mercado", "effect": {"type": "morale", "value": 2, "text": "A equipe leu a notícia e tomou mais café: +2 de moral."}},
-    {"id": "dolar_criativo", "media": "jornal", "art": "chart", "title": "Dólar sobe e agências passam a cobrar em \"reais criativos\"", "text": "A nova moeda, lastreada em portfólio, já é aceita por três fornecedores e nenhum banco. O câmbio do dia é de 1 real criativo para \"a gente se acerta depois\".", "tag": "economia"},
-    {"id": "juros_briefing", "media": "jornal", "art": "chart", "title": "Banco Central mantém juros e o mercado publica 400 carrosséis explicando", "text": "Nenhum dos carrosséis explicou. Um deles tinha o gráfico invertido e viralizou. O autor foi convidado para um painel.", "tag": "economia"},
-    {"id": "greve_entregadores", "media": "jornal", "art": "politics", "title": "Categoria entra em greve e campanhas de delivery ficam sem entrega", "text": "Marcas de comida seguraram anúncios por dois dias. Uma delas esqueceu de pausar e prometeu 15 minutos para uma cidade parada. O perfil segue pedindo desculpas.", "tag": "politica"},
-    {"id": "startup_unicornio", "media": "jornal", "art": "shop", "title": "Startup vira unicórnio vendendo assinatura de gelo mineral", "text": "A Frost&Co captou R$ 300 milhões para entregar cubos de gelo \"de origem controlada\". O modelo de negócio derrete em 40 minutos, o que a empresa chama de churn natural.", "tag": "mercado"},
-    {"id": "podcast_novo", "media": "rede", "art": "mic", "title": "Nasce mais um podcast de marketing; total no país chega a todos", "text": "Com o lançamento do \"Sem Filtro de Conversão\", o país atinge a marca de um podcast por habitante. O episódio de estreia tem 3h40 e é sobre ter disciplina para ser breve.", "tag": "mercado"},
-    {"id": "guru_processado", "media": "rede", "art": "guru", "title": "Guru promete 10 mil por dia e explica que era por ano", "text": "Depois da repercussão, Fabio Augusto esclareceu que o valor é anual, bruto e hipotético. O curso continua no ar, agora com o título \"10 mil por período\".", "tag": "guru"},
-    {"id": "agencia_beta_fusao", "media": "jornal", "art": "office", "title": "Agência Beta compra a Beta Digital e cria a Beta Beta", "text": "As duas empresas, que eram a mesma desde 2014, formalizaram a fusão em evento com fogos. O novo nome já está em disputa com a Beta Beta Media, também deles.", "tag": "mercado"},
-    {"id": "b4_estagiario", "media": "rede", "art": "office", "title": "Estagiário da B4 Company posta rascunho no perfil oficial e engaja mais que a campanha", "text": "O texto \"não sei o que escrever aqui socorro\" alcançou 2 milhões de pessoas. A B4 disse que fazia parte de uma estratégia de humanização planejada há meses.", "tag": "mercado", "effect": {"type": "reputation", "value": 1, "text": "Seu time comentou na hora certa: +1 de reputação."}},
-    {"id": "feira_cancelada", "media": "jornal", "art": "trophy", "title": "Feira do setor é cancelada por excesso de painéis sobre cancelamento", "text": "A organização informou que a programação tinha 31 painéis, sendo 29 sobre \"a era do cancelamento\". O evento foi cancelado, o que virou o tema do 32º painel.", "tag": "mercado"},
-    {"id": "pesquisa_horario", "media": "jornal", "art": "phone", "title": "Estudo revela melhor horário para postar: aquele em que você não pode postar", "text": "A pesquisa cruzou 4 bilhões de publicações e concluiu que o pico de alcance ocorre às 3h47 de terça. Agências pediram para o algoritmo ser mais razoável.", "tag": "plataforma"},
-    {"id": "marca_pede_viral", "media": "rede", "art": "office", "title": "Marca pede \"algo viral, mas sério, e barato, e para ontem\"", "text": "O briefing de uma linha gerou 47 e-mails. A campanha final foi um post com a logo maior, aprovado às 23h50 de sexta.", "tag": "clientes"},
-    {"id": "capivara_prefeitura", "media": "jornal", "art": "office", "title": "Capivara invade prefeitura e vira garota-propaganda da cidade", "text": "O animal entrou pela porta principal, sentou na recepção e ficou. A campanha \"Fica, Capi\" teve 12 milhões de visualizações e custo de produção igual a zero.", "tag": "mercado"}
-  ]
+ "comment": "Notícias cômicas do mercado (NewsSystem). Puro entretenimento: empresas e pessoas são fictícias, com nomes que lembram marcas reais sem serem elas. media: jornal (Jornal do Mercado) ou rede (post na Bluesocial). art: ilustração em assets/art/news/<art>.png. effect (opcional) é pequeno e declarado no texto.",
+ "gap_days": 9,
+ "daily_chance": 0.2,
+ "cooldown_days": 200,
+ "papers": [
+  "Jornal do Mercado",
+  "Gazeta do Anúncio",
+  "Diário da Conversão"
+ ],
+ "networks": [
+  "Bluesocial",
+  "Fotograma",
+  "Linkedout"
+ ],
+ "news": [
+  {
+   "id": "b4_pivot",
+   "media": "jornal",
+   "art": "office",
+   "title": "B4 Company anuncia pivô para \"consultoria de energia de marca\"",
+   "text": "A B4 Company comunicou ao mercado que deixa de vender tráfego e passa a vender \"energia de marca\", medida em unidades que a própria agência criou. O CEO garantiu que o indicador é auditado por ele mesmo. Ações da empresa não existem, mas caíram assim mesmo.",
+   "tag": "mercado"
+  },
+  {
+   "id": "agencia_beta_premio",
+   "media": "jornal",
+   "art": "trophy",
+   "title": "Agência Beta vence prêmio que ela mesma organizou",
+   "text": "Pelo sétimo ano seguido, a Agência Beta levou o Troféu Excelência Beta, entregue no Beta Awards, realizado na sede da Beta. A comissão julgadora, formada por três sócios da Beta, classificou o resultado como \"surpreendente\".",
+   "tag": "mercado"
+  },
+  {
+   "id": "fabio_augusto_curso",
+   "media": "rede",
+   "art": "guru",
+   "title": "Fabio Augusto lança curso de R$ 12 mil sobre como economizar",
+   "text": "\"O segredo da riqueza é cortar o cafezinho\", escreveu Fabio Augusto no post, feito de um iate. O curso tem 4 módulos, 3 deles sobre o próprio Fabio Augusto. Comentários desativados.",
+   "tag": "guru"
+  },
+  {
+   "id": "tiago_bigo_planilha",
+   "media": "rede",
+   "art": "chart",
+   "title": "Tiago Bigo diz que resolveu a economia com uma planilha",
+   "text": "Em um vídeo de 48 minutos, Tiago Bigo apresentou a planilha que, segundo ele, \"zera a inflação em duas abas\". Economistas pediram para ver a célula B7. Ele respondeu que está no curso.",
+   "tag": "guru"
+  },
+  {
+   "id": "eleicao_imposto",
+   "media": "jornal",
+   "art": "politics",
+   "title": "Partido propõe imposto sobre carrossel de Instagram",
+   "text": "Em ano eleitoral, o Partido da Reforma Justa apresentou projeto que taxa publicações em carrossel acima de cinco slides. A justificativa é que \"ninguém chega no slide seis mesmo\". A oposição propôs taxar o slide um.",
+   "tag": "politica",
+   "effect": {
+    "type": "money_pct",
+    "value": -0.01,
+    "text": "A contabilidade adiantou uma reserva: −1% do caixa."
+   }
+  },
+  {
+   "id": "eleicao_debate",
+   "media": "jornal",
+   "art": "politics",
+   "title": "Candidato promete \"CPM zero para todos\"",
+   "text": "Durante o debate, o candidato garantiu que, eleito, o custo por mil impressões cairá a zero. Questionado sobre como, respondeu que \"a plataforma vai entender\". As plataformas não responderam.",
+   "tag": "politica",
+   "effects": [
+    {
+     "type": "cold",
+     "service": "paid_traffic",
+     "days": 30
+    }
+   ],
+   "effect_text": "Leilão de mídia ficou caro na temporada eleitoral: tráfego pago rende menos por um tempo."
+  },
+  {
+   "id": "algoritmo_muda",
+   "media": "jornal",
+   "art": "phone",
+   "title": "Rede social muda algoritmo e agora prioriza quem não posta",
+   "text": "A Bluesocial anunciou que o novo algoritmo dará alcance a perfis inativos, \"para valorizar o silêncio\". Agências correram para publicar nada. O engajamento do nada bateu recorde.",
+   "tag": "plataforma",
+   "effects": [
+    {
+     "type": "cold",
+     "service": "social_media",
+     "days": 40
+    },
+    {
+     "type": "reputation",
+     "value": -1
+    }
+   ],
+   "effect_text": "Ninguém entendeu o alcance novo: social media rende menos por um tempo e você perde 1 de reputação."
+  },
+  {
+   "id": "plataforma_cai",
+   "media": "rede",
+   "art": "phone",
+   "title": "Fotograma fica fora do ar por 40 minutos e o país descobre a janela",
+   "text": "A queda da rede levou milhares de pessoas a olharem pela janela pela primeira vez no ano. Relatos indicam a existência de vizinhos, céu e um cachorro. O serviço voltou e todos esqueceram.",
+   "tag": "plataforma"
+  },
+  {
+   "id": "influencer_sumiu",
+   "media": "rede",
+   "art": "guru",
+   "title": "Influenciador some por 3 dias e volta dizendo que era estratégia",
+   "text": "Após sumir da internet, o criador Lucca Prime publicou: \"Era um teste de escassez\". Seu perfil perdeu 8 mil seguidores e ganhou uma palestra sobre escassez.",
+   "tag": "guru",
+   "effects": [
+    {
+     "type": "trend",
+     "service": "influencer",
+     "days": 35
+    }
+   ],
+   "effect_text": "O caso repercutiu e o mercado voltou a olhar para criadores: influencer rende mais."
+  },
+  {
+   "id": "ia_criativa",
+   "media": "jornal",
+   "art": "robot",
+   "title": "Agência demite time criativo e contrata uma IA que só faz mais do mesmo",
+   "text": "A Vórtice Comunicação substituiu quatro redatores por um robô que gera a frase \"transformando ideias em resultados\" em 32 fontes diferentes. O cliente aprovou na primeira. A segunda também.",
+   "tag": "tecnologia",
+   "effects": [
+    {
+     "type": "trend",
+     "service": "ia",
+     "days": 60
+    },
+    {
+     "type": "cold",
+     "service": "copywriting",
+     "days": 40
+    }
+   ],
+   "effect_text": "O mercado correu para IA: projetos de IA rendem mais e copy esfria por uns dias."
+  },
+  {
+   "id": "ia_reuniao",
+   "media": "rede",
+   "art": "robot",
+   "title": "IA entra em reunião no lugar do diretor e ninguém percebe",
+   "text": "Durante 50 minutos, o avatar repetiu \"faz sentido\" e \"vamos alinhar offline\". A ata foi aprovada por unanimidade. O diretor estava na praia, o que também faz sentido.",
+   "tag": "tecnologia",
+   "effects": [
+    {
+     "type": "trend",
+     "service": "martech",
+     "days": 40
+    }
+   ],
+   "effect_text": "Automação virou pauta em todo comitê: martech rende mais por um tempo."
+  },
+  {
+   "id": "black_friday_antecipada",
+   "media": "jornal",
+   "art": "shop",
+   "title": "Varejo antecipa Black Friday para março e chama de \"Black Friday de Verão\"",
+   "text": "A rede Magazine Lupe lançou promoções de novembro em pleno março, com descontos de \"até 70%\" — sendo o até a parte mais importante da frase. O consumidor médio já não sabe em que mês vive.",
+   "tag": "mercado",
+   "effects": [
+    {
+     "type": "trend",
+     "service": "paid_traffic",
+     "days": 45
+    }
+   ],
+   "effect_text": "Todo mundo quer mídia: tráfego pago rende mais por algumas semanas."
+  },
+  {
+   "id": "cliente_logo_maior",
+   "media": "rede",
+   "art": "office",
+   "title": "Cliente pede logo maior; universo se expande para acomodar",
+   "text": "Astrônomos registraram uma expansão anômala do cosmos logo após um cliente da região pedir \"só um pouquinho maior\" pela quarta vez. O arquivo final tem 14 gigabytes e uma logo.",
+   "tag": "clientes"
+  },
+  {
+   "id": "briefing_telepatico",
+   "media": "rede",
+   "art": "office",
+   "title": "Cliente envia briefing por telepatia e cobra alteração",
+   "text": "\"Achei que estava claro\", disse o gerente de marketing, que não enviou nenhuma mensagem. A agência entregou três versões, todas erradas, e uma quarta que ele aprovou sem abrir.",
+   "tag": "clientes"
+  },
+  {
+   "id": "metaverso_volta",
+   "media": "jornal",
+   "art": "robot",
+   "title": "Empresa investe no metaverso pela terceira vez e chama de \"a definitiva\"",
+   "text": "A Nébula Tech comprou um terreno virtual ao lado de outro terreno virtual vazio. A visitação no primeiro mês foi de dois avatares, sendo um deles o estagiário.",
+   "tag": "tecnologia",
+   "effects": [
+    {
+     "type": "cold",
+     "service": "branding",
+     "days": 45
+    }
+   ],
+   "effect_text": "Verba de marca migrou para o hype: branding rende menos por um tempo."
+  },
+  {
+   "id": "cafe_da_agencia",
+   "media": "rede",
+   "art": "office",
+   "title": "Pesquisa aponta que 94% das ideias nascem na fila do café",
+   "text": "O estudo, feito por uma agência que fica ao lado de uma cafeteria, recomenda mais cafeteiras por metro quadrado. O outro 6% nasce no banho e não pode ser comprovado.",
+   "tag": "mercado",
+   "effect": {
+    "type": "morale",
+    "value": 2,
+    "text": "A equipe leu a notícia e tomou mais café: +2 de moral."
+   }
+  },
+  {
+   "id": "dolar_criativo",
+   "media": "jornal",
+   "art": "chart",
+   "title": "Dólar sobe e agências passam a cobrar em \"reais criativos\"",
+   "text": "A nova moeda, lastreada em portfólio, já é aceita por três fornecedores e nenhum banco. O câmbio do dia é de 1 real criativo para \"a gente se acerta depois\".",
+   "tag": "economia",
+   "effects": [
+    {
+     "type": "client_budget",
+     "value": -0.04
+    }
+   ],
+   "effect_text": "Câmbio apertou os clientes: os orçamentos caíram 4%."
+  },
+  {
+   "id": "juros_briefing",
+   "media": "jornal",
+   "art": "chart",
+   "title": "Banco Central mantém juros e o mercado publica 400 carrosséis explicando",
+   "text": "Nenhum dos carrosséis explicou. Um deles tinha o gráfico invertido e viralizou. O autor foi convidado para um painel.",
+   "tag": "economia",
+   "effects": [
+    {
+     "type": "trend",
+     "service": "cro",
+     "days": 40
+    }
+   ],
+   "effect_text": "Com juros altos todo mundo quer converter melhor: CRO rende mais por um tempo."
+  },
+  {
+   "id": "greve_entregadores",
+   "media": "jornal",
+   "art": "politics",
+   "title": "Categoria entra em greve e campanhas de delivery ficam sem entrega",
+   "text": "Marcas de comida seguraram anúncios por dois dias. Uma delas esqueceu de pausar e prometeu 15 minutos para uma cidade parada. O perfil segue pedindo desculpas.",
+   "tag": "politica"
+  },
+  {
+   "id": "startup_unicornio",
+   "media": "jornal",
+   "art": "shop",
+   "title": "Startup vira unicórnio vendendo assinatura de gelo mineral",
+   "text": "A Frost&Co captou R$ 300 milhões para entregar cubos de gelo \"de origem controlada\". O modelo de negócio derrete em 40 minutos, o que a empresa chama de churn natural.",
+   "tag": "mercado",
+   "effects": [
+    {
+     "type": "prospects",
+     "value": 1
+    }
+   ],
+   "effect_text": "A rodada movimentou o mercado: um prospect novo apareceu."
+  },
+  {
+   "id": "podcast_novo",
+   "media": "rede",
+   "art": "mic",
+   "title": "Nasce mais um podcast de marketing; total no país chega a todos",
+   "text": "Com o lançamento do \"Sem Filtro de Conversão\", o país atinge a marca de um podcast por habitante. O episódio de estreia tem 3h40 e é sobre ter disciplina para ser breve.",
+   "tag": "mercado",
+   "effects": [
+    {
+     "type": "trend",
+     "service": "content",
+     "days": 45
+    }
+   ],
+   "effect_text": "Conteúdo virou obsessão do mercado: projetos de conteúdo rendem mais."
+  },
+  {
+   "id": "guru_processado",
+   "media": "rede",
+   "art": "guru",
+   "title": "Guru promete 10 mil por dia e explica que era por ano",
+   "text": "Depois da repercussão, Fabio Augusto esclareceu que o valor é anual, bruto e hipotético. O curso continua no ar, agora com o título \"10 mil por período\".",
+   "tag": "guru"
+  },
+  {
+   "id": "agencia_beta_fusao",
+   "media": "jornal",
+   "art": "office",
+   "title": "Agência Beta compra a Beta Digital e cria a Beta Beta",
+   "text": "As duas empresas, que eram a mesma desde 2014, formalizaram a fusão em evento com fogos. O novo nome já está em disputa com a Beta Beta Media, também deles.",
+   "tag": "mercado"
+  },
+  {
+   "id": "b4_estagiario",
+   "media": "rede",
+   "art": "office",
+   "title": "Estagiário da B4 Company posta rascunho no perfil oficial e engaja mais que a campanha",
+   "text": "O texto \"não sei o que escrever aqui socorro\" alcançou 2 milhões de pessoas. A B4 disse que fazia parte de uma estratégia de humanização planejada há meses.",
+   "tag": "mercado",
+   "effect": {
+    "type": "reputation",
+    "value": 1,
+    "text": "Seu time comentou na hora certa: +1 de reputação."
+   }
+  },
+  {
+   "id": "feira_cancelada",
+   "media": "jornal",
+   "art": "trophy",
+   "title": "Feira do setor é cancelada por excesso de painéis sobre cancelamento",
+   "text": "A organização informou que a programação tinha 31 painéis, sendo 29 sobre \"a era do cancelamento\". O evento foi cancelado, o que virou o tema do 32º painel.",
+   "tag": "mercado"
+  },
+  {
+   "id": "pesquisa_horario",
+   "media": "jornal",
+   "art": "phone",
+   "title": "Estudo revela melhor horário para postar: aquele em que você não pode postar",
+   "text": "A pesquisa cruzou 4 bilhões de publicações e concluiu que o pico de alcance ocorre às 3h47 de terça. Agências pediram para o algoritmo ser mais razoável.",
+   "tag": "plataforma",
+   "effects": [
+    {
+     "type": "trend",
+     "service": "social_media",
+     "days": 30
+    }
+   ],
+   "effect_text": "Todo cliente quer revisar o calendário de posts: social media rende mais por um tempo."
+  },
+  {
+   "id": "marca_pede_viral",
+   "media": "rede",
+   "art": "office",
+   "title": "Marca pede \"algo viral, mas sério, e barato, e para ontem\"",
+   "text": "O briefing de uma linha gerou 47 e-mails. A campanha final foi um post com a logo maior, aprovado às 23h50 de sexta.",
+   "tag": "clientes"
+  },
+  {
+   "id": "capivara_prefeitura",
+   "media": "jornal",
+   "art": "office",
+   "title": "Capivara invade prefeitura e vira garota-propaganda da cidade",
+   "text": "O animal entrou pela porta principal, sentou na recepção e ficou. A campanha \"Fica, Capi\" teve 12 milhões de visualizações e custo de produção igual a zero.",
+   "tag": "mercado"
+  }
+ ]
 }

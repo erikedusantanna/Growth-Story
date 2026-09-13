@@ -27,4 +27,7 @@ signal office_feedback(employee_id: int, text: String, kind: String)  # balão/n
 signal quest_started(quest: Dictionary)       # missão nova apareceu
 signal quest_finished(quest: Dictionary, success: bool)
 signal news_published(news: Dictionary)      # notícia cômica (jornal/rede social)
+signal project_decision(project, decision: Dictionary)   # escolha no meio do projeto
+signal talent_appeared(employee)             # talento raro no mercado, por poucos dias
+signal crisis_started(crisis: Dictionary)    # crise atingiu a região
 signal game_started()

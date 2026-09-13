@@ -34,6 +34,8 @@ var hired_on: int = -1                 # dia da contratação (-1 = candidato)
 var candidate_expires: int = 0         # dia em que o candidato some da lista
 var project_id: int = -1               # projeto atual (-1 = livre)
 var training_id: String = ""
+var legendary: bool = false            # talento raro (aparece por poucos dias, disputado com as rivais)
+var specializing: String = ""          # serviço em que está virando especialista (trilha de carreira)
 var busy_until: int = -1               # dia até o qual está ocupado (treino/burnout)
 var busy_reason: String = ""
 var months_since_raise: int = 0
@@ -94,7 +96,7 @@ func to_dict() -> Dictionary:
 		"experience": experience, "potential": potential, "salary": salary, "career_level": career_level,
 		"age": age, "color": color, "skin": skin, "hair_style": hair_style, "hair_color": hair_color, "glasses": glasses,
 		"hired_on": hired_on, "candidate_expires": candidate_expires,
-		"project_id": project_id, "training_id": training_id, "busy_until": busy_until,
+		"project_id": project_id, "training_id": training_id, "specializing": specializing, "legendary": legendary, "busy_until": busy_until,
 		"busy_reason": busy_reason, "months_since_raise": months_since_raise,
 		"journey": journey.duplicate(true), "department": department,
 		"idle_days": idle_days, "last_good_news_day": last_good_news_day, "last_offer_day": last_offer_day,
@@ -128,6 +130,8 @@ static func from_dict(d: Dictionary) -> Employee:
 	e.candidate_expires = int(d.get("candidate_expires", 0))
 	e.project_id = int(d.get("project_id", -1))
 	e.training_id = d.get("training_id", "")
+	e.specializing = String(d.get("specializing", ""))
+	e.legendary = bool(d.get("legendary", false))
 	e.busy_until = int(d.get("busy_until", -1))
 	e.busy_reason = d.get("busy_reason", "")
 	e.months_since_raise = int(d.get("months_since_raise", 0))

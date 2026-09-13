@@ -34,6 +34,8 @@ var briefings: Array = []            # temas de projeto (data/briefings.json)
 var chemistry: Array = []            # pares de personalidade (data/chemistry.json)
 var quests: Dictionary = {}          # missões (data/quests.json)
 var news: Dictionary = {}            # notícias cômicas (data/news.json)
+var decisions: Dictionary = {}       # decisões no meio do projeto (data/decisions.json)
+var crises: Dictionary = {}          # crises da região (data/crises.json)
 
 
 func load_all() -> void:
@@ -77,6 +79,8 @@ func load_all() -> void:
 	competitors = _load_json("res://data/competitors.json")
 	quests = _load_json("res://data/quests.json")
 	news = _load_json("res://data/news.json")
+	decisions = _load_json("res://data/decisions.json")
+	crises = _load_json("res://data/crises.json")
 
 
 func _load_json(path: String) -> Dictionary:

@@ -49,6 +49,10 @@ var last_quest_day: int = -999
 var news_seen: Dictionary = {}          # id da notícia -> último dia em que saiu
 var news_feed: Array = []               # [{id, day}] últimas notícias, para a banca do calendário
 var last_news_day: int = -999
+var crisis: Dictionary = {}             # crise da região em andamento: {id, region, until_day, start_day}
+var last_crisis_day: int = -999
+var last_talent_day: int = -999         # última vez que um talento raro apareceu
+var market: Array = []                  # tendências temporárias: [{service, kind: hot/cold, until_day, source}]
 var focus: Dictionary = {}              # foco do mês: {id, month_index}
 var gifts_sent: Dictionary = {}         # id do cliente -> dia do último presente de aniversário
 var pending_event: Dictionary = {}
@@ -56,7 +60,7 @@ var cases: int = 0
 var speed: int = 1
 var paused: bool = false
 var game_over: bool = false
-var stats: Dictionary = {"projects_done": 0, "five_stars": 0, "hires": 0, "total_revenue": 0.0, "clients_signed": 0, "trainings": 0, "retainers": 0, "diagnoses": 0, "hr_actions": 0, "furniture": 0, "agency_events": 0, "awards": 0, "campaigns": 0, "quests_done": 0, "quests_failed": 0, "news": 0}
+var stats: Dictionary = {"projects_done": 0, "five_stars": 0, "hires": 0, "total_revenue": 0.0, "clients_signed": 0, "trainings": 0, "retainers": 0, "diagnoses": 0, "hr_actions": 0, "furniture": 0, "agency_events": 0, "awards": 0, "campaigns": 0, "quests_done": 0, "quests_failed": 0, "news": 0, "specializations": 0, "decisions": 0, "legends": 0, "crises": 0}
 
 
 func new_id() -> int:
@@ -179,6 +183,8 @@ func to_dict() -> Dictionary:
 		"awards": awards.duplicate(true), "rivals": rivals.duplicate(true), "last_raid_day": last_raid_day,
 		"campaigns": campaigns.duplicate(true), "quests": quests.duplicate(true), "quests_done": quests_done.duplicate(), "last_quest_day": last_quest_day,
 		"news_seen": news_seen.duplicate(), "news_feed": news_feed.duplicate(true), "last_news_day": last_news_day,
+		"market": market.duplicate(true), "crisis": crisis.duplicate(), "last_crisis_day": last_crisis_day,
+		"last_talent_day": last_talent_day,
 		"focus": focus.duplicate(), "gifts_sent": gifts_sent.duplicate(),
 		"pending_event": pending_event.duplicate(true), "cases": cases,
 		"speed": speed, "game_over": game_over, "stats": stats.duplicate(),
@@ -239,6 +245,10 @@ static func from_dict(d: Dictionary) -> GameState:
 	s.news_seen = d.get("news_seen", {})
 	s.news_feed = Array(d.get("news_feed", []))
 	s.last_news_day = int(d.get("last_news_day", -999))
+	s.market = Array(d.get("market", []))
+	s.crisis = d.get("crisis", {})
+	s.last_crisis_day = int(d.get("last_crisis_day", -999))
+	s.last_talent_day = int(d.get("last_talent_day", -999))
 	s.focus = d.get("focus", {})
 	s.gifts_sent = d.get("gifts_sent", {})
 	s.pending_event = d.get("pending_event", {})

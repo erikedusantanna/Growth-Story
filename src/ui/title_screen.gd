@@ -18,6 +18,12 @@ var message: Label
 var music_button: Button
 var menu: VBoxContainer
 var form: PanelContainer
+var slots_panel: PanelContainer          # lista dos espaços de save
+var slots_box: VBoxContainer
+var slots_title: Label
+var slots_mode := "load"                 # "load" (continuar) ou "new" (escolher onde criar)
+var _confirm_overwrite_pending := false  # segunda toque confirma substituir uma partida
+var _delete_pending := 0                 # segundo toque na lixeira confirma apagar
 var world: Node2D
 var people: Node2D                   # pessoas em escala 1, para ficarem pequenas diante dos prédios
 var walkers: Array = []              # {node, dir}
@@ -89,6 +95,24 @@ func _ready() -> void:
 	message = UIKit.muted("")
 	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	fv.add_child(message)
+
+	# lista dos espaços de save (Continuar, ou escolher onde criar a partida nova)
+	slots_panel = PanelContainer.new()
+	slots_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	slots_panel.anchor_left = 0.5
+	slots_panel.anchor_right = 0.5
+	slots_panel.offset_left = -230
+	slots_panel.offset_right = 230
+	slots_panel.offset_top = 400
+	slots_panel.visible = false
+	add_child(slots_panel)
+	var sv := UIKit.vbox(6)
+	slots_panel.add_child(sv)
+	slots_title = UIKit.label("Escolha a partida", 18, UIKit.COLOR_ACCENT)
+	sv.add_child(slots_title)
+	slots_box = UIKit.vbox(6)
+	sv.add_child(slots_box)
+	sv.add_child(UIKit.button("↩️ Voltar", _show_menu, false, 44))
 
 	# som e versão
 	music_button = UIKit.button("", _toggle_music, false, 40)
@@ -180,12 +204,84 @@ func open() -> void:
 func _show_menu() -> void:
 	menu.visible = true
 	form.visible = false
+	slots_panel.visible = false
 
 
 func _show_form() -> void:
 	menu.visible = false
 	form.visible = true
+	slots_panel.visible = false
 	agency_input.grab_focus()
+
+
+## Lista os espaços de save. mode "load" continua uma partida; "new" escolhe onde criar.
+func _show_slots(mode: String) -> void:
+	slots_mode = mode
+	menu.visible = false
+	form.visible = false
+	slots_panel.visible = true
+	slots_title.text = "▶️ Continuar de onde parou" if mode == "load" else "🚀 Escolha um espaço para a partida nova"
+	UIKit.clear(slots_box)
+	for info in Game.save.slots():
+		slots_box.add_child(_slot_row(info))
+
+
+func _slot_row(info: Dictionary) -> HBoxContainer:
+	var row := UIKit.hbox(6)
+	var slot := int(info["slot"])
+	var used: bool = bool(info["exists"])
+	var label := ""
+	if used:
+		label = "%d · %s\n%s · %s · %d pessoa(s)%s" % [slot, String(info["agency_name"]), String(info["date"]),
+			FinanceSystem.format_money(float(info["money"])), int(info["employees"]),
+			" · encerrada" if bool(info["game_over"]) else ""]
+	else:
+		label = "%d · espaço livre" % slot
+	var pick := UIKit.button(label, func(): _pick_slot(slot, used), used if slots_mode == "load" else true, 56)
+	pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pick.add_theme_font_size_override("font_size", 13)
+	pick.clip_text = true
+	pick.disabled = slots_mode == "load" and not used
+	row.add_child(pick)
+	if used:
+		var del := UIKit.button("🗑️", func(): _confirm_delete(slot), false, 56)
+		del.size_flags_horizontal = 0
+		del.custom_minimum_size.x = 56
+		del.tooltip_text = "Apagar esta partida"
+		row.add_child(del)
+	return row
+
+
+func _pick_slot(slot: int, used: bool) -> void:
+	if slots_mode == "load":
+		if Game.load_game(slot):
+			visible = false
+			start_requested.emit()
+		else:
+			message.text = "Não foi possível carregar esta partida."
+			_show_menu()
+		return
+	# partida nova: espaço ocupado pede confirmação antes de sobrescrever
+	if used and not _confirm_overwrite_pending:
+		_confirm_overwrite_pending = true
+		slots_title.text = "Esta partida será apagada. Toque de novo no espaço %d para confirmar." % slot
+		return
+	_confirm_overwrite_pending = false
+	_start_new_game(slot)
+
+
+func _confirm_delete(slot: int) -> void:
+	if _delete_pending == slot:
+		Game.save.delete_slot(slot)
+		_delete_pending = 0
+		continue_button.visible = Game.save.has_save()
+		if not Game.save.has_save() and slots_mode == "load":
+			_show_menu()
+		else:
+			_show_slots(slots_mode)
+		return
+	_delete_pending = slot
+	slots_title.text = "Toque na lixeira de novo para apagar a partida %d." % slot
 
 
 func _toggle_music() -> void:
@@ -198,15 +294,23 @@ func _refresh_music_button() -> void:
 
 
 func _on_continue() -> void:
-	if Game.load_game():
-		visible = false
-		start_requested.emit()
-	else:
-		message.text = "Não foi possível carregar o save."
+	if not Game.save.has_save():
+		message.text = "Nenhuma partida salva ainda."
+		return
+	_show_slots("load")
 
 
 func _on_new_game() -> void:
-	Game.new_game(agency_input.text, founder_input.text)
-	Game.save_game()  # "Continuar" passa a apontar para a nova partida
+	# com espaço livre a partida nova entra direto; sem espaço, o jogador escolhe qual substituir
+	var free: int = Game.save.first_free_slot()
+	if free >= 1:
+		_start_new_game(free)
+	else:
+		_show_slots("new")
+
+
+func _start_new_game(slot: int) -> void:
+	Game.new_game(agency_input.text, founder_input.text, -1, slot)
+	Game.save_game()  # "Continuar" passa a apontar para a partida nova
 	visible = false
 	start_requested.emit()

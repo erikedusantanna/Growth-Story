@@ -470,6 +470,48 @@ couber por 6 meses, escolhe o foco do mês, compra mídia paga quando falta pros
    falso para sempre (os botões 1x/2x/3x não resolviam). Agora `load_game()` reemite o evento (ou
    limpa se estiver sem opções) e explica um save que terminou em falência. Coberto por teste.
 
+## 8i. Lote de carreira, decisões, mercado, arcos, talento/crises e espaços de save (12/09)
+
+Pedido do usuário em seis itens, todos entregues neste lote:
+
+1. **Especialização de carreira** (`EmployeeSystem`, botão 🎯 Especializar na aba Equipe): trilha de
+   10–21 dias por serviço liberado (custo por tier), exige aptidão 50+, o fundador fica de fora. No
+   fim troca o cargo, soma +7 no atributo principal do serviço e +4 no segundo, e o bônus de
+   especialista passa a valer nos projetos daquele serviço.
+2. **Decisões durante o projeto** (`data/decisions.json`, 12 dilemas): deliberadamente **não** acontece
+   em todo projeto — chance diária de 7% entre 20% e 75% de progresso, no máximo uma por projeto. As
+   escolhas mexem em indicadores, prazo, esforço, orçamento, caixa, moral, estresse, relação e
+   reputação; o texto usa os nomes reais do cliente, do projeto e de quem está no time.
+3. **Notícias que mexem o mercado**: 12 das 28 manchetes ganharam `effects`. Além de dinheiro,
+   reputação e moral, elas agora aquecem 🔥 ou esfriam 🧊 um serviço por algumas semanas
+   (`EraSystem.add_market_trend` → `state.market`), mexem na verba dos clientes ou trazem prospects.
+   Serviço frio custa −4 na nota (`PENALTY_COLD`), com linha no detalhamento; a aba Agência e o
+   calendário mostram a tendência e quando ela acaba.
+4. **Missões em arco**: três arcos de três etapas (O primeiro case, Time de verdade, O mercado
+   olhando). Só a etapa 1 entra no sorteio; cada etapa cumprida começa a seguinte na hora e a última
+   paga bem mais (até R$ 20 mil e +8 de reputação). Para abrir espaço, 16 missões avulsas tiveram a
+   recompensa de reputação reduzida em 1 — sem isso a régua do primeiro ano estourava.
+5. **Talento raro e crises** (`TalentSystem`, `CrisisSystem`, `data/crises.json`): a lenda aparece a
+   partir do dia 180 com 12 dias de prazo e bônus de contratação de 2 salários; se o prazo passar,
+   uma rival leva e fica mais forte. As 10 crises pegam a região inteira por alguns dias — e também
+   tiram força das rivais que estão lá, o que abre uma janela para avançar sobre elas.
+6. **Espaços de save** (`SaveSystem`): 5 espaços em `user://saves/slot_N.json`, com `saved_at` e
+   `slot` no arquivo. "Continuar" lista os espaços com agência, data, caixa e tamanho da equipe;
+   "Nova partida" só pergunta quando não há espaço livre. Apagar e sobrescrever pedem confirmação em
+   dois toques. O `user://savegame.json` antigo é migrado para o espaço 1.
+
+**Armadilhas encontradas nesta sessão** (para não repetir):
+
+- O `ui_smoke_test` passou a travar depois de algumas execuções: os 5 espaços de save enchiam, e aí
+  "Nova partida" abria a lista em vez de começar o jogo, deixando `Game.state` nulo. O teste agora
+  chama `Game.save.delete_save()` antes de instanciar a UI.
+- `DirAccess.remove_absolute(ProjectSettings.globalize_path(path))` não apagava os arquivos em
+  `user://`; passar o caminho `user://` direto funciona.
+- `_finish_specialization` (como `_finish_training`) só roda quando `busy_until < day`: no teste é
+  preciso avançar para `busy_until + 1`, não para `busy_until`.
+- As agências rivais só existem nas regiões 2–4. Testes que medem força de rival precisam mover a
+  sede para a região 2 e chamar `ensure_rivals()` antes.
+
 ## 9. Checklist para retomar o projeto
 
 1. Ler este documento, depois `README.md` (tabela "O que já existe") e `docs/ARQUITETURA.md`;

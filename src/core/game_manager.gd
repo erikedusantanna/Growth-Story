@@ -23,6 +23,8 @@ var awards := AwardSystem.new()
 var quests := QuestSystem.new()
 var news := NewsSystem.new()
 var calendar := CalendarSystem.new()
+var talent := TalentSystem.new()
+var crisis := CrisisSystem.new()
 var save := SaveSystem.new()
 var time := TimeSystem.new()
 
@@ -35,7 +37,7 @@ var ui_blocking := false
 func _ready() -> void:
 	content = ContentDB.new()
 	content.load_all()
-	for system in [services, employees, clients, projects, finance, reputation, events, office, objectives, hr, agency_events, era, departments, competitors, seasons, chemistry, awards, quests, news, calendar, time]:
+	for system in [services, employees, clients, projects, finance, reputation, events, office, objectives, hr, agency_events, era, departments, competitors, seasons, chemistry, awards, quests, news, calendar, talent, crisis, save, time]:
 		system.setup(self)
 	EventBus.state_changed.connect(func():
 		if state != null:
@@ -59,9 +61,11 @@ func has_game() -> bool:
 
 # --- Ciclo de vida -----------------------------------------------------------------
 
-func new_game(agency_name: String = "Minha Agência", founder_name: String = "Você", seed: int = -1) -> void:
+func new_game(agency_name: String = "Minha Agência", founder_name: String = "Você", seed: int = -1, slot: int = -1) -> void:
 	state = GameState.new()
 	ui_blocking = false
+	# a partida nova ocupa o espaço pedido, ou o primeiro livre (se não houver, o espaço 1)
+	save.current_slot = slot if slot >= 1 else maxi(save.first_free_slot(), 1)
 	state.seed = seed if seed >= 0 else randi()
 	state.rng.seed = state.seed
 	state.agency_name = agency_name.strip_edges() if agency_name.strip_edges() != "" else "Minha Agência"
@@ -75,8 +79,8 @@ func new_game(agency_name: String = "Minha Agência", founder_name: String = "Vo
 	EventBus.state_changed.emit()
 
 
-func load_game() -> bool:
-	var loaded := save.load_state()
+func load_game(slot: int = -1) -> bool:
+	var loaded := save.load_state(slot)
 	if loaded == null:
 		return false
 	state = loaded
@@ -125,6 +129,9 @@ func on_day() -> void:
 	events.on_day()
 	hr.on_day()
 	agency_events.on_day()
+	era.on_day()
+	talent.on_day()
+	crisis.on_day()
 	quests.on_day()
 	calendar.on_day()
 	news.on_day()
