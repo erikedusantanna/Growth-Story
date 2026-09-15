@@ -13,6 +13,12 @@ const WALL_ROWS := 2
 const MAX_ZOOM := 2.0
 const DEFAULT_ZOOM_MIN := 1.0
 const DEFAULT_ZOOM_MAX := 1.5
+## No PC o painel do escritório é muito maior, então o enquadramento pode aproximar mais. O zoom
+## é arredondado em passos de 0,25: como o tile tem 32 px, cada passo continua dando um número
+## inteiro de pixels por tile (40, 48, 56, 64…) e a pixel art não cintila.
+const WIDE_PANEL_W := 700.0
+const WIDE_ZOOM_MAX := 3.0
+const ZOOM_STEP := 0.25
 const TAP_SLOP := 8.0
 const FURNITURE := {
 	"desk": "res://assets/art/furniture/desk.png",
@@ -118,6 +124,7 @@ signal worker_tapped(employee_id: int)
 
 func _ready() -> void:
 	clip_contents = true
+	mouse_default_cursor_shape = Control.CURSOR_DRAG   # no PC deixa claro que o escritório arrasta
 	world = Node2D.new()
 	add_child(world)
 	sky_layer = Node2D.new()
@@ -156,11 +163,18 @@ func _ready() -> void:
 	EventBus.employee_left.connect(_on_employee_left)
 
 
+## O cartão da sala de treinamento fica no canto direito. Num painel de PC o escritório é
+## desenhado centralizado, então grudar o cartão na borda do PAINEL o deixaria boiando a centenas
+## de pixels do escritório: ele se ancora na borda direita do MUNDO desenhado.
 func _place_training_room() -> void:
 	if training_room == null:
 		return
 	training_room.reset_size()
-	training_room.position = Vector2(size.x - training_room.size.x - 10, 10)
+	var x: float = size.x - training_room.size.x - 10.0
+	if is_wide_panel() and world != null and not layout.is_empty():
+		var right: float = world.position.x + float(_total_width()) * TILE * world.scale.x
+		x = clampf(right - training_room.size.x, 10.0, x)
+	training_room.position = Vector2(x, 10)
 
 
 func refresh() -> void:
@@ -595,7 +609,9 @@ func _layout_world(reset: bool = false) -> void:
 		pending_reset = false
 	fit_zoom = minf(size.x / w, size.y / h)
 	if reset:
-		zoom = clampf(fit_zoom, DEFAULT_ZOOM_MIN, DEFAULT_ZOOM_MAX)
+		zoom = clampf(fit_zoom, DEFAULT_ZOOM_MIN, fit_cap())
+		if is_wide_panel():
+			zoom = maxf(DEFAULT_ZOOM_MIN, floorf(zoom / ZOOM_STEP) * ZOOM_STEP)
 		world.scale = Vector2(zoom, zoom)
 		# começa mostrando o canto esquerdo (mesas) centralizado na vertical
 		world.position = Vector2(maxf((size.x - w * zoom) * 0.5, 0.0), (size.y - h * zoom) * 0.5)
@@ -606,8 +622,17 @@ func min_zoom() -> float:
 	return minf(fit_zoom, DEFAULT_ZOOM_MIN)
 
 
+## Painel largo = layout de PC: o escritório ganha um painel bem maior que os 524x336 do celular.
+func is_wide_panel() -> bool:
+	return size.x >= WIDE_PANEL_W
+
+
+func fit_cap() -> float:
+	return WIDE_ZOOM_MAX if is_wide_panel() else DEFAULT_ZOOM_MAX
+
+
 func set_zoom(new_zoom: float, pivot: Vector2) -> void:
-	new_zoom = clampf(new_zoom, min_zoom(), MAX_ZOOM)
+	new_zoom = clampf(new_zoom, min_zoom(), maxf(MAX_ZOOM, fit_cap()))
 	var old := world.scale.x
 	if is_equal_approx(old, new_zoom):
 		return
@@ -633,6 +658,7 @@ func _clamp_world() -> void:
 	else:
 		pos.y = clampf(pos.y, size.y - h, 0.0)
 	world.position = pos.round()
+	_place_training_room()   # o cartão acompanha a borda do escritório, não a do painel
 
 
 func _draw_world() -> void:

@@ -12,19 +12,26 @@ var phase_label: Label
 var speed_buttons: Array = []
 var pause_button: Button
 var music_button: Button
+var map_button: Button
+var top: HBoxContainer
+var bottom: HBoxContainer
+var money_box: HBoxContainer
+var rep_box: HBoxContainer
+var date_box: HBoxContainer
+var controls: Array = []      # sino, mapa, pausa, 1x/2x/3x e som, na ordem em que aparecem
 
 
 func _ready() -> void:
 	var v := UIKit.vbox(4)
 	add_child(v)
-	var top := UIKit.hbox(10)
+	top = UIKit.hbox(10)
 	v.add_child(top)
-	var money_box := UIKit.hbox(6)
+	money_box = UIKit.hbox(6)
 	money_box.add_child(UIKit.icon("coin"))
 	money_label = UIKit.number("R$ 0", 20)
 	money_box.add_child(money_label)
 	top.add_child(money_box)
-	var rep_box := UIKit.hbox(6)
+	rep_box = UIKit.hbox(6)
 	rep_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rep_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	rep_box.add_child(UIKit.icon("rep"))
@@ -32,7 +39,7 @@ func _ready() -> void:
 	rep_box.add_child(rep_label)
 	top.add_child(rep_box)
 	# data e relógio em rótulos separados: o relógio vem menor e o topo fica mais estreito
-	var date_box := UIKit.hbox(4)
+	date_box = UIKit.hbox(4)
 	date_box.size_flags_horizontal = 0
 	date_box.add_child(UIKit.icon("calendar"))
 	date_label = UIKit.number("01 Jan 2010", 17, UIKit.COLOR_TEXT)
@@ -41,7 +48,7 @@ func _ready() -> void:
 	date_box.add_child(clock_label)
 	top.add_child(date_box)
 
-	var bottom := UIKit.hbox(4)
+	bottom = UIKit.hbox(4)
 	v.add_child(bottom)
 	phase_label = UIKit.label("Freelancer", 15, UIKit.COLOR_MUTED)
 	phase_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -53,7 +60,7 @@ func _ready() -> void:
 	alert_button = _icon_button("bell", func(): get_tree().call_group("main", "show_notifications"), 44)
 	alert_button.tooltip_text = "Notificações: o que precisa de você agora"
 	bottom.add_child(alert_button)
-	var map_button := _icon_button("map", func(): get_tree().call_group("main", "show_world_map"), 40)
+	map_button = _icon_button("map", func(): get_tree().call_group("main", "show_world_map"), 40)
 	map_button.tooltip_text = "Mapa: regiões, mudança de sede e concorrentes"
 	map_button.set_meta("tutorial", "map")
 	bottom.add_child(map_button)
@@ -74,9 +81,11 @@ func _ready() -> void:
 		refresh(), 40)
 	music_button.tooltip_text = "Música ligada/desligada"
 	bottom.add_child(music_button)
+	controls = [alert_button, map_button, pause_button] + speed_buttons + [music_button]
 
 	EventBus.state_changed.connect(refresh)
 	EventBus.day_passed.connect(func(_d): refresh())
+	# (o layout de PC junta as duas linhas numa só — ver set_wide, chamado pelo main)
 	EventBus.money_changed.connect(func(_v, _d): refresh())
 	EventBus.reputation_changed.connect(func(_v, _d): refresh())
 
@@ -89,6 +98,25 @@ static func _icon_button(icon_name: String, callback: Callable, width: int) -> B
 	b.icon = UIKit.icon_texture(icon_name)
 	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	return b
+
+
+## No PC o topo cabe numa linha só: caixa e reputação param de flutuar no meio de 700 px de vazio
+## e os controles de ritmo ficam ao lado do nome da agência, não a um monitor de distância.
+## Idempotente: o main chama isso sempre que a janela cruza o limiar de largura.
+func set_wide(w: bool) -> void:
+	if top == null:
+		return
+	money_box.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN if w else Control.SIZE_EXPAND_FILL
+	rep_box.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN if w else Control.SIZE_EXPAND_FILL
+	rep_box.alignment = BoxContainer.ALIGNMENT_BEGIN if w else BoxContainer.ALIGNMENT_CENTER
+	var host: HBoxContainer = top if w else bottom
+	for c in ([phase_label] + controls):
+		var node: Control = c
+		if node.get_parent() != null:
+			node.get_parent().remove_child(node)
+		host.add_child(node)
+	top.move_child(date_box, top.get_child_count() - 1)   # a data fecha a linha, sempre
+	bottom.visible = not w
 
 
 ## Hora do dia de trabalho (08:00–20:00), em passos de 10 minutos, a partir da fração do dia.

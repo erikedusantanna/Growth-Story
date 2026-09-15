@@ -21,6 +21,7 @@ func _ready() -> void:
 	holder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(holder)
+	get_viewport().size_changed.connect(_recenter)
 	EventBus.event_triggered.connect(show_event)
 	EventBus.agency_event_finished.connect(show_agency_result)
 	EventBus.awards_ceremony.connect(show_awards)
@@ -34,8 +35,17 @@ func _ready() -> void:
 	EventBus.bankruptcy_warning.connect(show_bankruptcy_warning)
 
 
+const MIN_PANEL_H := 320.0   # altura mínima útil de um modal, mesmo em janela baixa
+
+
 func is_open() -> bool:
 	return current != null
+
+
+## A janela do PC pode ser redimensionada com um modal aberto; ele volta para o meio.
+func _recenter() -> void:
+	if current is Control and current.anchor_left == 0.5:
+		UIKit.center_panel(current, UIKit.POPUP_MAX_WIDTH, UIKit.viewport_size(self).x)
 
 
 func _open(builder: Callable) -> void:
@@ -66,14 +76,29 @@ func close() -> void:
 
 
 ## Painel padrão: título, corpo rolável e barra de botões.
-func _panel(title: String, top: float = 90.0) -> Dictionary:
+## Em tela larga o modal não vira uma faixa de ponta a ponta: fica centrado com largura máxima.
+func _panel(title: String, top: float = 90.0, box: Rect2 = Rect2()) -> Dictionary:
 	var panel := PanelContainer.new()
 	panel.theme = UIKit.theme()
 	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	panel.offset_left = 20
-	panel.offset_right = -20
-	panel.offset_top = top
-	panel.offset_bottom = -90
+	if box.size.x > 0.0:
+		# caixa pedida pela cena principal (no PC, a coluna da aba, ao lado do escritório)
+		panel.anchor_right = 0.0
+		panel.anchor_bottom = 0.0
+		panel.offset_left = box.position.x
+		panel.offset_right = box.position.x + box.size.x
+		panel.offset_top = box.position.y
+		panel.offset_bottom = box.position.y + box.size.y
+	else:
+		panel.offset_left = 20
+		panel.offset_right = -20
+		var vh: float = UIKit.viewport_size(self).y
+		# janela baixa: as margens encolhem para o modal nunca ficar sem altura útil
+		var vm: float = minf(90.0, vh * 0.25)
+		panel.offset_top = clampf(top, vm, maxf(vm, vh - vm - MIN_PANEL_H))
+		panel.offset_bottom = -vm
+		# o painel ainda não está na árvore: a largura vem daqui, que já está
+		UIKit.center_panel(panel, UIKit.POPUP_MAX_WIDTH, UIKit.viewport_size(self).x)
 	var v := UIKit.vbox(10)
 	panel.add_child(v)
 	v.add_child(UIKit.title(title))
@@ -111,18 +136,21 @@ func _main():
 
 
 ## Abre a cena do evento (se houver) e devolve a altura em que o popup deve começar.
-func _scene_top(ev: Dictionary, employees: Array) -> float:
+## Abre a cena do evento (se houver) e devolve onde o modal deve ficar para não tapá-la:
+## {top} no celular (abaixo do escritório) e {box} no PC (a coluna da aba, ao lado da cena).
+func _scene_spot(ev: Dictionary, employees: Array) -> Dictionary:
 	var kind := String(ev.get("scene", ""))
 	var m = _main()
 	if kind == "" or m == null or employees.is_empty():
-		return 90.0
+		return {"top": 90.0, "box": Rect2()}
 	m.show_event_scene(kind, employees)
-	return m.below_office_y()
+	return {"top": m.below_office_y(), "box": m.event_popup_rect()}
 
 
 func show_event(ev: Dictionary) -> void:
 	_open(func():
-		var parts := _panel(ev.get("title", "Evento"), _scene_top(ev, Game.state.employees))
+		var spot := _scene_spot(ev, Game.state.employees)
+		var parts := _panel(ev.get("title", "Evento"), spot.top, spot.box)
 		parts.body.add_child(UIKit.label(ev.get("text", ""), 17, UIKit.COLOR_TEXT, true))
 		var choices: Array = ev.get("choices", [])
 		for i in choices.size():
@@ -271,7 +299,8 @@ func show_agency_result(ev: Dictionary, people: Array, summary: String) -> void:
 				team.append(e)
 		if team.is_empty():
 			team = Game.state.employees.duplicate()
-		var parts := _panel("🎪 %s" % String(ev.get("name", "Evento")), _scene_top(ev, team))
+		var spot := _scene_spot(ev, team)
+		var parts := _panel("🎪 %s" % String(ev.get("name", "Evento")), spot.top, spot.box)
 		parts.body.add_child(UIKit.label(String(ev.get("desc", "")), 16, UIKit.COLOR_TEXT, true))
 		if summary != "":
 			parts.body.add_child(UIKit.label("Rendeu: %s." % summary, 16, UIKit.COLOR_GREEN, true))
@@ -369,7 +398,8 @@ func show_awards(ceremony: Dictionary) -> void:
 				team.append(e)
 				seen[e.id] = true
 		var won_any: bool = ceremony.get("results", []).any(func(r): return String(r.get("status", "")) == "won")
-		var parts := _panel("🏆 Prêmios do Marketing %d" % int(ceremony.get("year", 0)), _scene_top({"scene": "stage" if won_any else "auditorium"}, team))
+		var spot := _scene_spot({"scene": "stage" if won_any else "auditorium"}, team)
+		var parts := _panel("🏆 Prêmios do Marketing %d" % int(ceremony.get("year", 0)), spot.top, spot.box)
 		var b: VBoxContainer = parts.body
 		b.add_child(UIKit.label("A cerimônia do ano reúne as agências do mercado. Veja como a %s se saiu:" % st.agency_name, 15, UIKit.COLOR_TEXT, true))
 		for r in ceremony.get("results", []):

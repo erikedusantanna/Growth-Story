@@ -191,6 +191,17 @@ telas são verificados pelo `ui_smoke_test`; passar disso empurra o layout intei
   as demais o cadeado. Concorrentes das regiões alcançadas aparecem como prédio com bandeira (painel no bloco C).
 - `OfficeView`: parede com `WALL_TINTS[região]` e vista da janela por região (morros, prédios, torres, mar).
 
+### Cenário da tela inicial (`tools/gen_art.py → title_background()`)
+
+A arte tem **810×480** e é desenhada em escala 2: 960 px de altura, exatamente a altura do viewport
+em qualquer janela. A largura é que varia, então a tela inicial repete a faixa até cobrir a janela
+(`TitleScreen._apply_layout`). Para a emenda não aparecer, **cada camada fecha exatamente na borda
+direita** — `_fill_row()` estica a última peça do skyline e dos prédios, `_fixed_row()` distribui o
+vão entre as lojas do térreo — e só as nuvens atravessam a lateral (são desenhadas duas vezes, com
+deslocamento de −W). O logo tem 512 px e a caixa dele nunca passa disso, senão a escala sairia
+fracionária e a arte borraria. Carros e pedestres usam a largura real do viewport como borda, não
+os 540 px fixos de antes.
+
 ### Desenho da cidade (`tools/gen_art.py → world_map()`)
 
 O mapa é um losango isométrico de 16×8 px por tile (`iso_pt`, `iso_tile`, `iso_box`, `iso_tree`)
@@ -336,6 +347,59 @@ temporárias e prefixa 🔥/🧊 nos serviços; a agenda da aba Empresa marca o 
   `GameManager` logo depois de `finance.on_month()`, debita cada parcela. Sem caixa, a parcela não
   sai: o saldo cresce `late_fee_rate` (8%) e a reputação cai `late_reputation` — encarece, mas não
   quebra a agência sozinho. `settle(id)` quita o saldo cheio, sem desconto.
+
+## Layout responsivo: celular e PC (`main.gd`, `ui_kit.gd`)
+
+O projeto usa `stretch/mode = canvas_items` com `aspect = expand` sobre uma base de 540×960. Medido
+no Godot 4.3 (não deduzido): a **altura do viewport fica sempre em 960** e só a largura acompanha a
+janela.
+
+| janela | viewport | escala do canvas |
+|---|---|---|
+| 540×960 (celular) | 540×960 | 1,000 |
+| **1620×960** (padrão do PC) | **1620×960** | **1,000** |
+| 1440×960 | 1440×960 | 1,000 |
+| 1920×1080 (tela cheia) | 1706×960 | 1,125 |
+
+Por isso `window/size/window_width_override = 1620` no `project.godot`: é a janela em que a pixel art
+roda em escala inteira, sem borrar. E por isso **só a largura decide o layout**:
+`UIKit.is_wide(node)` compara `UIKit.layout_width(node)` com `WIDE_MIN_WIDTH` (1180).
+
+`main.gd` tem **um único ponto de decisão**, `_apply_layout()`, chamado no `_ready` e em
+`get_viewport().size_changed`. Nada é reconstruído: os quatro blocos que já existem — escritório,
+diário (feed), aba ativa (`holder`) e navegação — trocam de pai entre duas montagens que convivem
+na árvore:
+
+- **`portrait_box`** (celular): a pilha vertical de sempre. A raiz ganha teto de
+  `PORTRAIT_MAX_WIDTH` (620 px) e fica centrada, senão numa janela de 960 px os cartões sairiam com
+  944 px de largura.
+- **`wide_box`** (PC): três colunas — navegação de 172 px com ícone + nome, escritório com moldura
+  (`office_frame`) e o diário embaixo no meio, e a aba ativa numa coluna de `TAB_COL_W` = 532 px.
+  Essa largura é deliberada: é a mesma do celular, então **nenhum dos seis `BaseScreen` precisou
+  mudar** — os cartões continuam sendo lidos na largura para a qual foram desenhados, só que com
+  850 px de altura em vez de 350.
+
+A navegação é um `GridContainer` (`columns = 6` no celular, `1` no PC) para os mesmos seis botões
+servirem de barra inferior e de rail lateral. O HUD expõe `set_wide()`, que reparenta a segunda
+linha para dentro da primeira: no PC o topo é uma linha só.
+
+Cuidados que valeram correção e estão no código:
+
+- `UIKit.center_panel(panel, max_w, vw)` recebe a largura por parâmetro porque um painel
+  recém-criado **ainda não está na árvore** — `get_viewport()` devolve `null` e a medida cairia no
+  fallback de 540 px, deixando todo modal com 500 px no PC.
+- `Popups._panel()` aceita uma `box: Rect2`. No PC o modal de um evento vai para a coluna da aba,
+  ao lado da cena — no celular ele continua começando abaixo do escritório (`below_office_y()`).
+- `EventStage` segue o painel do escritório (`track()`), e confere a geometria a cada quadro
+  enquanto está visível: `resized` não dispara quando o painel apenas muda de lugar.
+- O World Map continua com a folha de 540×1280 centrada; só o cabeçalho e a legenda são presos a
+  uma coluna de `CHROME_MAX_W` (1080 px).
+- Os testes rodam sem janela de verdade (o headless devolve sempre 960×960), então
+  `UIKit.force_layout_width` deixa o `ui_smoke_test` montar os **dois** layouts no mesmo processo.
+
+Atalhos de teclado (`main._unhandled_key_input`): 1 a 6 trocam de aba na ordem da navegação, espaço
+pausa, M abre o mapa, N a central de notificações e Esc fecha o mapa. Ficam desligados na tela
+inicial e enquanto um modal espera resposta.
 
 ## Central de notificações (`notification_system.gd`)
 

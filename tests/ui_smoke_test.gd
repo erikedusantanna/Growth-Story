@@ -322,8 +322,9 @@ func _ready() -> void:
 	for key in main.SCREEN_ORDER:
 		main.show_screen(key)
 		await get_tree().process_frame
-	# nada pode ser mais largo que a tela: HUD ou tela larga demais empurra o layout e corta a interface
-	var vp_w: float = 540.0 - 16.0
+	# nada pode ser mais largo que a coluna em que vive: HUD ou tela larga demais empurra o layout
+	# e corta a interface. A régua vem do layout em vigor (celular tem teto de 620 px).
+	var vp_w: float = minf(UIKit.PORTRAIT_MAX_WIDTH, UIKit.viewport_size(main).x) - 16.0
 	var widest := 0.0
 	var layout_ok := true
 	for key in main.SCREEN_ORDER:
@@ -427,11 +428,11 @@ func _ready() -> void:
 		nav_ok = nav_ok and b.icon != null and b.tooltip_text != ""
 	Game.state.new_candidates = 0
 	await get_tree().process_frame
-	nav_ok = nav_ok and main.nav_buttons["team"].text == ""
+	nav_ok = nav_ok and main.nav_buttons["team"].text == main._nav_label("team", 0)
 	Game.employees.add_candidate()
 	await get_tree().create_timer(0.3).timeout
 	var team_badge: String = main.nav_buttons["team"].text
-	nav_ok = nav_ok and team_badge == "1"
+	nav_ok = nav_ok and team_badge == main._nav_label("team", 1)
 	main.show_screen("team")
 	await get_tree().create_timer(0.3).timeout
 	nav_ok = nav_ok and Game.state.new_candidates == 0 and main.nav_buttons["team"].text == ""
@@ -479,9 +480,62 @@ func _ready() -> void:
 	await get_tree().process_frame
 	slots_ok = slots_ok and Game.state != null and not main.title_screen.visible and Game.is_running()
 	print("  escolher espaço de save ao continuar: %s (%d espaços)" % [slots_ok, SaveSystem.MAX_SLOTS])
+	# --- layout de PC ------------------------------------------------------------------------
+	# O headless devolve sempre 960x960, então o teste fixa a largura lógica para montar as três
+	# colunas e conferir que nada some, nada estoura e o celular volta igual depois.
+	var pc_ok := true
+	UIKit.force_layout_width = 1620.0
+	main._apply_layout()
+	await get_tree().create_timer(0.3).timeout
+	pc_ok = pc_ok and main.wide and main.wide_box.visible and not main.portrait_box.visible
+	pc_ok = pc_ok and main.nav.columns == 1 and main.nav.get_parent() == main.wide_nav_col
+	pc_ok = pc_ok and main.office_view.get_parent() == main.office_frame
+	pc_ok = pc_ok and main.holder.get_parent() == main.wide_right_col
+	pc_ok = pc_ok and main.hud.bottom.visible == false     # o topo vira uma linha só
+	pc_ok = pc_ok and main.nav_buttons["team"].text.contains("Equipe")
+	var pc_widest := 0.0
+	for key in main.SCREEN_ORDER:
+		main.show_screen(key)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var w: float = main.screens[key].get_combined_minimum_size().x
+		pc_widest = maxf(pc_widest, w)
+		if w > main.TAB_COL_W:
+			pc_ok = false
+			print("  LARGURA PC: tela %s pede %.0f px (coluna de %.0f)" % [key, w, main.TAB_COL_W])
+	# atalhos de teclado: 1..6 trocam de aba, espaço pausa (o PC é teclado e mouse)
+	main.show_screen("clients")
+	await get_tree().process_frame
+	var key := InputEventKey.new()
+	key.keycode = KEY_4
+	key.pressed = true
+	main._unhandled_key_input(key)
+	await get_tree().process_frame
+	pc_ok = pc_ok and main.current_screen == "company"
+	var paused_before: bool = Game.state.paused
+	var space := InputEventKey.new()
+	space.keycode = KEY_SPACE
+	space.pressed = true
+	main._unhandled_key_input(space)
+	await get_tree().process_frame
+	pc_ok = pc_ok and Game.state.paused != paused_before
+	main._unhandled_key_input(space)
+	await get_tree().process_frame
+	# o modal continua uma caixa centrada, não uma faixa de ponta a ponta
+	main.popups.show_info("Modal no PC", "Deve ficar centrado e estreito.")
+	await get_tree().process_frame
+	var modal: Control = main.popups.current
+	pc_ok = pc_ok and modal != null and is_equal_approx(modal.anchor_left, 0.5)
+	await _drain_popups(main)
+	UIKit.force_layout_width = 0.0
+	main._apply_layout()
+	await get_tree().create_timer(0.3).timeout
+	pc_ok = pc_ok and not main.wide and main.portrait_box.visible and main.nav.columns == main.SCREEN_ORDER.size()
+	pc_ok = pc_ok and main.nav.get_parent() == main.portrait_box and main.hud.bottom.visible
+	print("  layout de PC (3 colunas), atalhos de teclado e volta para o celular: %s (aba mais larga: %.0f de %.0f px)" % [pc_ok, pc_widest, main.TAB_COL_W])
 	Game.save.delete_save()
 	print("  workers no escritório: %d" % workers_count)
-	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene and mood_ok and leaving_ok and map_ok and rival_ok and cal_ok and quest_ok and news_ok and pets_ok and alert_ok and layout_ok and reload_ok and talent_ok and crisis_ok and dec_ok and spec_ok and slots_ok and drag_ok and hire_ok and recruiter_ok and bank_ok and loan_ok and nav_ok and notif_ok and warn_ok
+	var ok: bool = Game.state.day >= 30 and main.office_view.workers.size() == Game.state.employees.size() and training_seen and scene_seen and scene_hidden and agency_scene and decor_seen and decor_gone and guide_ok and awards_scene and mood_ok and leaving_ok and map_ok and rival_ok and cal_ok and quest_ok and news_ok and pets_ok and alert_ok and layout_ok and reload_ok and talent_ok and crisis_ok and dec_ok and spec_ok and slots_ok and drag_ok and hire_ok and recruiter_ok and bank_ok and loan_ok and nav_ok and notif_ok and warn_ok and pc_ok
 	print("[%s] UI smoke" % ("OK" if ok else "FALHA"))
 	get_tree().quit(0 if ok else 1)
 

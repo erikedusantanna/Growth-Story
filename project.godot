@@ -22,6 +22,10 @@ Audio="*res://src/core/audio_manager.gd"
 
 window/size/viewport_width=540
 window/size/viewport_height=960
+; janela do desktop: 1620x960 dá viewport 1620x960 em escala 1,0 (pixel art sem borrar),
+; porque canvas_items+expand fixa a altura da base e estica a largura. Ignorado no Android.
+window/size/window_width_override=1620
+window/size/window_height_override=960
 window/handheld/orientation=1
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"

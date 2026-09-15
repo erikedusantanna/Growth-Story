@@ -2616,6 +2616,7 @@ PAL.update({
 })
 
 TITLE_W, TITLE_H = 270, 480
+TITLE_WIDE_W = 810           # cenário da tela inicial: 3 larguras de celular, emendando nela mesma
 
 
 def _glyphs():
@@ -2684,57 +2685,167 @@ def _cloud(c, x, y, w):
     rect(c, x, y + 7, w, 1, "cloud_lo")
 
 
-def title_background():
+def title_background(width=None):
+    """Cenario da tela inicial: uma avenida de agencias.
+
+    A largura e parametrizada porque a tela inicial do PC e bem mais larga que a do celular; a
+    altura fica em 480 (x2 = 960, a altura do viewport em qualquer janela). Cada camada fecha
+    exatamente na borda direita, entao a faixa emenda nela mesma sem costura: a tela inicial
+    repete a imagem quantas vezes precisar para cobrir a janela.
+    A calcada (y 400) e a rua (y 422) nao mudam de altura: os carros e os pedestres da tela
+    inicial sao posicionados a partir delas.
+    """
+    import random
+    W = int(width or TITLE_W)
     g = _glyphs()
-    c = canvas(TITLE_W, TITLE_H, "sky1")
+    rng = random.Random(4)
+    c = canvas(W, TITLE_H, "sky1")
     for i, col in enumerate(("sky0", "sky1", "sky2", "sky3", "sky4")):
-        rect(c, 0, i * 52, TITLE_W, 52, col)
-    for x, y, w in ((10, 26, 40), (120, 14, 52), (215, 40, 44), (60, 70, 34), (170, 90, 30), (230, 120, 36)):
-        _cloud(c, x, y, w)
-    # skyline distante
-    for x, w, h in ((0, 22, 90), (18, 14, 130), (34, 26, 70), (62, 18, 110), (84, 30, 60), (118, 16, 140), (138, 24, 95),
-                    (166, 20, 120), (190, 28, 75), (222, 18, 105), (244, 26, 85), (262, 12, 60)):
-        rect(c, x, 250 - h, w, h + 10, "far"); rect(c, x + w - 2, 250 - h, 2, h + 10, "far_lo")
-        for wy in range(254 - h, 250, 6):
-            for wx in range(x + 2, x + w - 3, 5):
+        rect(c, 0, i * 52, W, 52, col)
+
+    # --- nuvens: formas soltas, as unicas que atravessam a borda (sao desenhadas duas vezes) ---
+    x = 6
+    clouds = []
+    while x < W:
+        clouds.append((x, rng.randint(12, 128), rng.randint(28, 52)))
+        x += rng.randint(40, 70)
+    for off in (0, -W):
+        for cx, cy, cw in clouds:
+            _cloud(c, cx + off, cy, cw)
+
+    # --- skyline distante: encosta uma peca na outra e a ultima fecha na borda ---
+    far = _fill_row(W, rng, 12, 30)
+    for fx, fw in far:
+        fh = rng.randint(60, 140)
+        rect(c, fx, 250 - fh, fw, fh + 10, "far")
+        rect(c, fx + fw - 2, 250 - fh, 2, fh + 10, "far_lo")
+        for wy in range(254 - fh, 250, 6):
+            for wx in range(fx + 2, fx + fw - 3, 5):
                 rect(c, wx, wy, 2, 3, "far_win")
-    # prédios do meio (com letreiros)
-    _building(c, 4, 190, 58, 130, "mid_gray", "mid_gray_lo", "win_dark", sign="MARKETING", glyphs=g, sign_col="sign_blue")
-    _building(c, 66, 214, 44, 106, "mid_beige", "mid_beige_lo", "win_dark", sign="IDEAS", glyphs=g, sign_col="sign_blue")
-    _building(c, 114, 200, 52, 120, "mid_brick", "mid_brick_lo", "win_lit", sign="BRANDS", glyphs=g, sign_col="sign_green")
-    _building(c, 170, 224, 40, 96, "mid_beige", "mid_beige_lo", "win_dark", sign="SEO", glyphs=g, sign_col="sign_red")
-    _building(c, 214, 180, 56, 140, "mid_blue", "mid_blue_hi", "win_glass", sign="DIGITAL", glyphs=g, sign_col="sign_blue")
-    # calcada, rua
-    rect(c, 0, 400, TITLE_W, 22, "side"); rect(c, 0, 400, TITLE_W, 2, "cloud"); rect(c, 0, 420, TITLE_W, 2, "side_lo")
-    rect(c, 0, 422, TITLE_W, 58, "road"); rect(c, 0, 422, TITLE_W, 3, "road_lo")
-    for x in range(4, TITLE_W, 24):
+
+    # --- predios do meio, com letreiro; a largura minima e a do letreiro ---
+    SIGNS = [("MARKETING", "mid_gray", "mid_gray_lo", "win_dark", "sign_blue"),
+             ("IDEAS", "mid_beige", "mid_beige_lo", "win_dark", "sign_blue"),
+             ("BRANDS", "mid_brick", "mid_brick_lo", "win_lit", "sign_green"),
+             ("SEO", "mid_beige", "mid_beige_lo", "win_dark", "sign_red"),
+             ("DIGITAL", "mid_blue", "mid_blue_hi", "win_glass", "sign_blue"),
+             ("GROWTH", "mid_teal", "mid_teal_hi", "win_glass", "sign_green"),
+             ("MEDIA", "mid_gray", "mid_gray_lo", "win_lit", "sign_red"),
+             ("CRM", "mid_brick", "mid_brick_lo", "win_dark", "sign_blue"),
+             ("ADS", "mid_blue", "mid_blue_hi", "win_lit", "sign_green"),
+             ("SOCIAL", "mid_beige", "mid_beige_lo", "win_glass", "sign_blue")]
+    mids = _fill_row(W, rng, 46, 72)
+    used = -1
+    for k, (bx, bw) in enumerate(mids):
+        # entre os letreiros que cabem nesta largura, pega o proximo da roda (sem repetir o vizinho)
+        fits = [i for i in range(len(SIGNS)) if len(SIGNS[i][0]) * 6 + 10 <= bw and i != used]
+        if not fits:
+            fits = [i for i in range(len(SIGNS)) if len(SIGNS[i][0]) * 6 + 10 <= bw] or [3]
+        idx = fits[k % len(fits)]
+        used = idx
+        sign, col, col_lo, win, sign_col = SIGNS[idx]
+        h = rng.randint(96, 140)
+        _building(c, bx, 320 - h, bw, h, col, col_lo, win, sign=sign, glyphs=g, sign_col=sign_col)
+
+    # --- terreo: agencias e cafeterias alternadas, com vao entre elas ---
+    front = _fixed_row(W, [96, 92], 14, 34)
+    for kind, fx, fw in front:
+        if kind == 0:
+            _title_agency(c, fx, g)
+        else:
+            _title_coffee(c, fx, g)
+
+    # calcada e rua cobrem a largura inteira
+    rect(c, 0, 400, W, 22, "side"); rect(c, 0, 400, W, 2, "cloud"); rect(c, 0, 420, W, 2, "side_lo")
+    rect(c, 0, 422, W, 58, "road"); rect(c, 0, 422, W, 3, "road_lo")
+    for x in range(4, W, 24):
         rect(c, x, 450, 12, 2, "lane")
-    # agência (esquerda) e cafeteria (direita) em primeiro plano
-    rect(c, 0, 300, 96, 100, "mid_teal"); rect(c, 92, 300, 4, 100, "mid_teal_hi"); rect(c, 0, 300, 96, 3, "mid_teal_hi")
-    for fy in (312, 340, 368):
-        for fx in range(6, 88, 22):
-            rect(c, fx, fy, 16, 20, "win_glass"); rect(c, fx, fy, 16, 4, "cloud")
-            rect(c, fx + 2, fy + 14, 12, 6, "wood")                       # mesa
-            person = (("pot_hi", "car_b"), ("hill_lo", "car_r"), ("pot", "leaf"))[(fx // 22 + fy // 28) % 3]
-            rect(c, fx + 6, fy + 5, 4, 4, person[0]); rect(c, fx + 5, fy + 9, 6, 5, person[1])   # cabeça e camisa
-            rect(c, fx + 6, fy + 5, 4, 2, "wood_lo")                      # cabelo
-    rect(c, 8, 384, 80, 12, "sign_blue"); draw_text(c, "AGENCY", 14, 386, 1, "cloud", g, spacing=2)
-    rect(c, 178, 330, 92, 70, "mid_beige"); rect(c, 266, 330, 4, 70, "mid_beige_lo")
-    for i in range(0, 92, 8):
-        rect(c, 178 + i, 344, 8, 10, "awning_r" if (i // 8) % 2 == 0 else "awning_w")
-    rect(c, 178, 354, 92, 2, "mid_beige_lo")
-    rect(c, 186, 332, 76, 10, "wood_lo"); draw_text(c, "COFFEE", 200, 334, 1, "cloud", g, spacing=2)
-    rect(c, 186, 360, 30, 34, "win_lit"); rect(c, 224, 360, 30, 34, "win_lit"); rect(c, 186, 360, 30, 2, "cloud"); rect(c, 224, 360, 30, 2, "cloud")
-    rect(c, 236, 372, 8, 22, "wood"); put(c, 242, 384, "metal_hi")
-    rect(c, 190, 370, 20, 6, "wood"); rect(c, 192, 366, 6, 4, "mug"); rect(c, 200, 366, 6, 4, "mug")
-    # árvores, postes, ponto de ônibus
-    for x in (104, 150, 258):
-        _tree(c, x, 400, 12)
-    for x in (130, 236):
-        rect(c, x, 372, 2, 28, "metal_lo"); rect(c, x - 2, 370, 6, 3, "metal_hi"); rect(c, x - 1, 368, 4, 2, "win_lit")
-    rect(c, 150, 380, 34, 3, "metal"); rect(c, 150, 383, 2, 17, "metal_lo"); rect(c, 182, 383, 2, 17, "metal_lo"); rect(c, 154, 384, 26, 8, "glass")
+
+    # --- arvores, postes e pontos de onibus nos vaos entre as lojas, ja por cima da calcada ---
+    for i in range(len(front)):
+        kind, fx, fw = front[i]
+        nxt = front[(i + 1) % len(front)]
+        gap_start = fx + fw
+        gap_end = nxt[1] if i + 1 < len(front) else W
+        if gap_end - gap_start < 12:
+            continue
+        mid = (gap_start + gap_end) // 2
+        r = rng.random()
+        if r < 0.45:
+            _tree(c, mid - 6, 400, 12)
+        elif r < 0.8:
+            rect(c, mid, 372, 2, 28, "metal_lo"); rect(c, mid - 2, 370, 6, 3, "metal_hi"); rect(c, mid - 1, 368, 4, 2, "win_lit")
+        elif gap_end - gap_start >= 36:
+            sx = mid - 17
+            rect(c, sx, 380, 34, 3, "metal"); rect(c, sx, 383, 2, 17, "metal_lo")
+            rect(c, sx + 32, 383, 2, 17, "metal_lo"); rect(c, sx + 4, 384, 26, 8, "glass")
+        else:
+            _tree(c, mid - 6, 400, 12)
     # os carros não entram aqui: a tela inicial os anima por cima (assets/art/title/car_*.png)
     return c
+
+
+def _fill_row(W, rng, wmin, wmax):
+    """Pecas encostadas cobrindo [0, W) exatamente: a ultima estica ou encolhe para fechar a borda.
+    Assim nada atravessa a lateral e a faixa emenda nela mesma."""
+    out = []
+    x = 0
+    while x < W:
+        w = rng.randint(wmin, wmax)
+        if x + w + wmin > W:                 # e a ultima: fecha a borda
+            out.append((x, W - x))
+            break
+        out.append((x, w))
+        x += w
+    if not out:
+        out = [(0, W)]
+    return out
+
+
+def _fixed_row(W, widths, gap_min, gap_max):
+    """Lojas de largura fixa (a arte nao estica) alternadas, com o vao ajustado para fechar a borda.
+    Devolve (indice da arte, x, largura)."""
+    avg = sum(widths) / float(len(widths)) + (gap_min + gap_max) * 0.5
+    n = max(1, int(round(W / avg)))
+    total = sum(widths[i % len(widths)] for i in range(n))
+    gap = (W - total) / float(n)
+    if gap < gap_min:                        # nao cabe: tira uma loja e recalcula
+        n = max(1, n - 1)
+        total = sum(widths[i % len(widths)] for i in range(n))
+        gap = (W - total) / float(n)
+    out = []
+    x = 0.0
+    for i in range(n):
+        w = widths[i % len(widths)]
+        out.append((i % len(widths), int(round(x)), w))
+        x += w + gap
+    return out
+
+
+def _title_agency(c, x, g):
+    """Predio da agencia no terreo: vitrines com gente trabalhando e letreiro AGENCY."""
+    rect(c, x, 300, 96, 100, "mid_teal"); rect(c, x + 92, 300, 4, 100, "mid_teal_hi"); rect(c, x, 300, 96, 3, "mid_teal_hi")
+    for fy in (312, 340, 368):
+        for fx in range(6, 88, 22):
+            rect(c, x + fx, fy, 16, 20, "win_glass"); rect(c, x + fx, fy, 16, 4, "cloud")
+            rect(c, x + fx + 2, fy + 14, 12, 6, "wood")
+            person = (("pot_hi", "car_b"), ("hill_lo", "car_r"), ("pot", "leaf"))[(fx // 22 + fy // 28) % 3]
+            rect(c, x + fx + 6, fy + 5, 4, 4, person[0]); rect(c, x + fx + 5, fy + 9, 6, 5, person[1])
+            rect(c, x + fx + 6, fy + 5, 4, 2, "wood_lo")
+    rect(c, x + 8, 384, 80, 12, "sign_blue"); draw_text(c, "AGENCY", x + 14, 386, 1, "cloud", g, spacing=2)
+
+
+def _title_coffee(c, x, g):
+    """Cafeteria no terreo: toldo listrado, vitrines acesas e mesinha na calcada."""
+    rect(c, x, 330, 92, 70, "mid_beige"); rect(c, x + 88, 330, 4, 70, "mid_beige_lo")
+    for i in range(0, 92, 8):
+        rect(c, x + i, 344, 8, 10, "awning_r" if (i // 8) % 2 == 0 else "awning_w")
+    rect(c, x, 354, 92, 2, "mid_beige_lo")
+    rect(c, x + 8, 332, 76, 10, "wood_lo"); draw_text(c, "COFFEE", x + 22, 334, 1, "cloud", g, spacing=2)
+    rect(c, x + 8, 360, 30, 34, "win_lit"); rect(c, x + 46, 360, 30, 34, "win_lit")
+    rect(c, x + 8, 360, 30, 2, "cloud"); rect(c, x + 46, 360, 30, 2, "cloud")
+    rect(c, x + 58, 372, 8, 22, "wood"); put(c, x + 64, 384, "metal_hi")
+    rect(c, x + 12, 370, 20, 6, "wood"); rect(c, x + 14, 366, 6, 4, "mug"); rect(c, x + 22, 366, 6, 4, "mug")
 
 
 TITLE_CAR_COLORS = {"car_y": "y", "car_b": "b", "car_r": "r", "car_w": "w"}
@@ -2786,7 +2897,9 @@ def title_logo():
 def export_title(root):
     """Só o cenário: o logo da tela inicial vem da arte de marca, por tools/gen_brand.py."""
     out = os.path.join(root, "assets", "art", "title")
-    write_png(os.path.join(out, "background.png"), title_background())
+    # 810 px de cidade: em escala 2 são 1620 px, exatamente a janela padrão do PC. O celular
+    # mostra os primeiros 270 px e a tela inicial repete a faixa quando a janela é ainda mais larga.
+    write_png(os.path.join(out, "background.png"), title_background(TITLE_WIDE_W))
     for col, name in TITLE_CAR_COLORS.items():
         write_png(os.path.join(out, "car_%s.png" % name), title_car(col))
         write_png(os.path.join(out, "car_%s_flip.png" % name), title_car(col, True))
