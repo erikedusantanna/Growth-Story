@@ -10,6 +10,7 @@ signal start_requested()
 const WORLD_SCALE := 2.0
 const LOGO_TOP := 24.0               # o logo ocupa a faixa de cima, acima dos botões
 const LOGO_HEIGHT := 430.0
+const LOGO_NATIVE_W := 512.0          # tamanho real da arte: acima disso a escala sairia quebrada
 const LOGO_MARGIN := 14.0
 # a avenida do cenário: os carros são sprites animados por cima do fundo (antes estavam
 # pintados dentro da imagem e por isso ficavam parados enquanto os pedestres andavam)
@@ -43,34 +44,38 @@ var walkers: Array = []              # {node, dir}
 var cars: Array = []                 # {node, dir, speed}
 var _frame_timer := 0.0
 var _walk_frame := 0
+var bg_strip: Control                # faixas do cenário, repetidas até cobrir a largura
+var logo_rect: TextureRect
+var _bg_width := -1.0
 
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var bg := TextureRect.new()
-	bg.texture = preload("res://assets/art/title/background.png")
-	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
+	# O cenário tem 270x480 e é desenhado em escala 2: 960 px de altura, exatamente a altura do
+	# viewport em qualquer janela. A largura, essa sim, varia — então em vez de um COVER (que num
+	# viewport largo ampliaria 6x e mostraria só o miolo dos prédios) a cidade é repetida em
+	# faixas de 540 px, espelhando uma sim outra não para a emenda não aparecer.
+	bg_strip = Control.new()
+	bg_strip.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg_strip.clip_contents = true
+	add_child(bg_strip)
 
 	world = Node2D.new()
 	world.scale = Vector2(WORLD_SCALE, WORLD_SCALE)
 	add_child(world)
 	# o logo vem pronto de assets/brand (tools/gen_brand.py) e já traz o fundador olhando a
 	# cidade, por isso fica em escala 1 por cima do cenário, sem a pessoa avulsa de antes
-	var logo := TextureRect.new()
-	logo.texture = preload("res://assets/art/title/logo.png")
-	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	logo.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	logo.anchor_left = 0.0
-	logo.anchor_right = 1.0
-	logo.offset_left = LOGO_MARGIN
-	logo.offset_right = -LOGO_MARGIN
-	logo.offset_top = LOGO_TOP
-	logo.offset_bottom = LOGO_TOP + LOGO_HEIGHT
-	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(logo)
+	logo_rect = TextureRect.new()
+	logo_rect.texture = preload("res://assets/art/title/logo.png")
+	logo_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	logo_rect.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	logo_rect.anchor_left = 0.5
+	logo_rect.anchor_right = 0.5
+	logo_rect.offset_top = LOGO_TOP
+	logo_rect.offset_bottom = LOGO_TOP + LOGO_HEIGHT
+	logo_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(logo_rect)
 	_add_cars()
 	people = Node2D.new()
 	add_child(people)
@@ -159,6 +164,43 @@ func _ready() -> void:
 	version.add_theme_constant_override("outline_size", 3)
 	version.add_theme_color_override("font_outline_color", Color(0.12, 0.15, 0.2))
 	add_child(version)
+	resized.connect(_apply_layout)
+	_apply_layout()
+
+
+## Borda direita da avenida: a largura real do viewport, que no PC passa de 540 px.
+func _right_edge() -> float:
+	return maxf(UIKit.viewport_size(self).x, size.x)
+
+
+## Refaz o que depende da largura da janela: as faixas do cenário e a caixa do logo.
+## Chamado no _ready e sempre que a janela do PC é redimensionada.
+func _apply_layout() -> void:
+	var w: float = _right_edge()
+	if logo_rect != null:
+		# a arte do logo tem 512 px: a caixa nunca passa disso, senão a escala vira fracionária
+		var half: float = minf(LOGO_NATIVE_W * 0.5, w * 0.5 - LOGO_MARGIN)
+		logo_rect.offset_left = -half
+		logo_rect.offset_right = half
+	if bg_strip == null or is_equal_approx(w, _bg_width):
+		return
+	_bg_width = w
+	for child in bg_strip.get_children():
+		child.queue_free()
+	var tile: Texture2D = preload("res://assets/art/title/background.png")
+	var tile_w: float = tile.get_width() * WORLD_SCALE
+	var tiles: int = int(ceil(w / tile_w))
+	for i in maxi(tiles, 1):
+		var t := TextureRect.new()
+		t.texture = tile
+		t.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		t.stretch_mode = TextureRect.STRETCH_SCALE
+		t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		t.flip_h = i % 2 == 1      # espelha uma faixa sim, outra não: a emenda some
+		t.position = Vector2(i * tile_w, 0)
+		t.size = Vector2(tile_w, tile.get_height() * WORLD_SCALE)
+		t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bg_strip.add_child(t)
 
 
 ## Carros na avenida, em duas faixas de mão contrária. Saem por um lado e voltam pelo outro.
@@ -175,7 +217,7 @@ func _add_cars() -> void:
 			car.texture = load("res://assets/art/title/car_%s%s.png" % [color, "" if dir > 0 else "_flip"])
 			car.centered = false
 			car.scale = Vector2(CAR_SCALE, CAR_SCALE)
-			car.position = Vector2(rng.randf_range(-CAR_WIDTH, 540.0), float(lane["y"]))
+			car.position = Vector2(rng.randf_range(-CAR_WIDTH, _right_edge()), float(lane["y"]))
 			add_child(car)
 			cars.append({"node": car, "dir": dir, "speed": float(lane["speed"]) * rng.randf_range(0.85, 1.15)})
 
@@ -212,14 +254,14 @@ func _process(delta: float) -> void:
 	for ca in cars:
 		var car: Sprite2D = ca.node
 		car.position.x += ca.dir * ca.speed * delta
-		if car.position.x > 540.0:
+		if car.position.x > _right_edge():
 			car.position.x = -CAR_WIDTH
 		elif car.position.x < -CAR_WIDTH:
-			car.position.x = 540.0
+			car.position.x = _right_edge()
 	for wk in walkers:
 		var w: Worker = wk.node
 		w.position.x += wk.dir * wk.speed * delta
-		if w.position.x > 580.0:
+		if w.position.x > _right_edge() + 40.0:
 			wk.dir = -1
 			w.facing = Worker.Dir.LEFT
 		elif w.position.x < -40.0:

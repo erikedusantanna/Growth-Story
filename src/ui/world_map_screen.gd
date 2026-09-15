@@ -8,6 +8,7 @@ extends Control
 
 const MAP_SCALE := 2.0
 const MARKER_W := 230.0
+const CHROME_MAX_W := 1080.0   # largura máxima do cabeçalho e da legenda no layout de PC
 
 var scroll: ScrollContainer
 var bank_button: Button
@@ -16,6 +17,9 @@ var map: TextureRect
 var life: WorldMapLife
 var markers: Control
 var header_title: Label
+var head: PanelContainer
+var legend: PanelContainer
+var legend_label: Label
 var marker_nodes: Array = []
 
 
@@ -32,10 +36,18 @@ func _ready() -> void:
 	scroll.offset_bottom = -44
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(scroll)
+	# O ScrollContainer estica o filho na direção que não rola, então num viewport largo a folha
+	# do mapa seria esmagada para 1620 px de largura. Uma linha centrada segura a folha no tamanho
+	# certo (540x1280) e deixa o resto como margem.
+	var sheet_row := HBoxContainer.new()
+	sheet_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	sheet_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(sheet_row)
 	board = Control.new()
 	var map_tex: Texture2D = preload("res://assets/art/map/world.png")
 	board.custom_minimum_size = map_tex.get_size() * MAP_SCALE
-	scroll.add_child(board)
+	board.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	sheet_row.add_child(board)
 	map = TextureRect.new()
 	map.texture = map_tex
 	map.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -52,7 +64,7 @@ func _ready() -> void:
 	board.add_child(markers)
 
 	# cabeçalho fixo
-	var head := PanelContainer.new()
+	head = PanelContainer.new()
 	head.theme = UIKit.theme()
 	head.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	head.offset_left = 8
@@ -79,7 +91,7 @@ func _ready() -> void:
 	close_btn.tooltip_text = "Fechar o mapa"
 	row.add_child(close_btn)
 	# legenda fixa embaixo
-	var legend := PanelContainer.new()
+	legend = PanelContainer.new()
 	legend.theme = UIKit.theme()
 	legend.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	legend.anchor_top = 1.0
@@ -88,15 +100,30 @@ func _ready() -> void:
 	legend.offset_top = -40
 	legend.offset_bottom = -6
 	add_child(legend)
-	var lg := UIKit.label("📍 sua sede · 🏗️ ampliar · 🚚 mudar de sede · 🔒 bloqueada · ⚔️ concorrente", 12, UIKit.COLOR_MUTED)
-	lg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lg.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	legend.add_child(lg)
+	legend_label = UIKit.label("📍 sua sede · 🏗️ ampliar · 🚚 mudar de sede · 🔒 bloqueada · ⚔️ concorrente", 12, UIKit.COLOR_MUTED)
+	legend_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	legend_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	legend.add_child(legend_label)
+	resized.connect(_layout_chrome)
 	EventBus.state_changed.connect(func():
 		if visible:
 			_build_markers()
 			_refresh_bank_button())
 	set_process(false)
+	_layout_chrome()
+
+
+## Numa janela de PC o mapa é uma folha de 540 px centrada; o cabeçalho e a legenda acompanham
+## essa coluna em vez de virarem tiras de ponta a ponta com um mar de painel vazio no meio.
+func _layout_chrome() -> void:
+	if head == null:
+		return
+	var col: float = minf(size.x - 16.0, CHROME_MAX_W)
+	var m: float = floorf((size.x - col) * 0.5)
+	for panel in [head, legend]:
+		panel.offset_left = m
+		panel.offset_right = -m
+	legend_label.add_theme_font_size_override("font_size", 14 if size.x >= UIKit.WIDE_MIN_WIDTH else 12)
 
 
 func _refresh_bank_button() -> void:

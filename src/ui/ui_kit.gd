@@ -22,6 +22,59 @@ const ATTR_SHORT := {
 	"communication": "Com", "management": "Ges", "technology": "Tec",
 }
 
+## --- Layout: retrato (celular) e largo (PC) ----------------------------------------------
+##
+## O projeto usa stretch `canvas_items` com aspect `expand` sobre uma base de 540x960. Medido no
+## Godot 4.3: a altura do viewport fica **sempre** em 960 e só a largura muda com a janela —
+## 540x960 → 540x960 (escala 1,0) · 1620x960 → 1620x960 (escala 1,0) · 1920x1080 em tela cheia →
+## 1706x960 (escala 1,125). Ou seja: só a largura decide o layout, e a janela de PC de 1620x960
+## (definida em project.godot) roda a pixel art em escala inteira, sem borrar.
+## Abaixo de WIDE_MIN_WIDTH o jogo usa o layout de celular; acima, o de PC (três colunas).
+## O limiar fica acima de 1024 de propósito: numa janela de ~960 px as três colunas espremeriam
+## o escritório, e o layout de celular com teto de largura fica melhor.
+const WIDE_MIN_WIDTH := 1180.0
+const PORTRAIT_MAX_WIDTH := 620.0 # teto do layout de celular: numa janela média ele centraliza
+const ROOT_MARGIN := 8.0          # margem da raiz, dos dois lados (a largura útil desconta 2x)
+const POPUP_MAX_WIDTH := 640.0    # modal em tela larga: uma caixa centrada, não uma faixa
+
+## Os testes rodam sem janela de verdade (o headless devolve sempre 960x960), então eles forçam
+## esta largura para exercitar os dois layouts no mesmo processo. 0 = usa a janela real.
+static var force_layout_width := 0.0
+
+
+static func viewport_size(node: Node) -> Vector2:
+	var vp := node.get_viewport()
+	return vp.get_visible_rect().size if vp != null else Vector2(540, 960)
+
+
+## Largura que decide o layout: a da janela, ou a que os testes fixaram.
+static func layout_width(node: Node) -> float:
+	return force_layout_width if force_layout_width > 0.0 else viewport_size(node).x
+
+
+static func is_wide(node: Node) -> bool:
+	return layout_width(node) >= WIDE_MIN_WIDTH
+
+
+## Largura útil: o que sobra depois das margens da raiz.
+static func usable_width(node: Node) -> float:
+	return viewport_size(node).x - 2.0 * ROOT_MARGIN
+
+
+## Prende um painel de tela cheia a uma largura máxima, centrado. Em 540 px nada muda (a largura
+## máxima é maior que a tela); em 1620 px o painel vira uma caixa no meio em vez de uma faixa.
+##
+## `vw` existe porque um painel recém-criado ainda NÃO está na árvore — get_viewport() devolve
+## null e a medida sairia do fallback de 540 px, deixando todo modal com 500 px no PC. Quem
+## constrói o painel passa a largura que já conhece.
+static func center_panel(panel: Control, max_width: float, vw: float = -1.0, side_margin: float = 20.0) -> void:
+	var width: float = vw if vw > 0.0 else viewport_size(panel).x
+	var half: float = minf(max_width, width - 2.0 * side_margin) * 0.5
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.offset_left = -half
+	panel.offset_right = half
+
 
 static var _theme: Theme = null
 

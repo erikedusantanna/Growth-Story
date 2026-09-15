@@ -26,6 +26,8 @@ func _ready() -> void:
 	offset_right = -20
 	offset_top = 70
 	offset_bottom = -70
+	# em tela de PC o diálogo fica centrado, com largura de caixa — não de ponta a ponta
+	UIKit.center_panel(self, UIKit.POPUP_MAX_WIDTH)
 	var v := UIKit.vbox(8)
 	add_child(v)
 	v.add_child(UIKit.title("📣 Novo projeto"))

@@ -662,6 +662,60 @@ Lote pedido depois de uma partida perdida de surpresa. O fio condutor é o mesmo
    uma enseada no meio da cidade e ele saiu atravessando arranha-céus. Olhar a imagem antes de
    commitar é o que separou as três.
 
+## 8m. Versão para PC: layout responsivo em três colunas (15/09)
+
+Pedido: *"uma versão do jogo para que a tela seja maior... pode ser uma tela quadrada ou
+horizontal, o que dificultar menos"*. A escolha ficou comigo e foi **horizontal**, por dois
+motivos medidos, não supostos.
+
+**O que a medição mostrou.** Com `canvas_items` + `expand` sobre a base de 540×960, a **altura do
+viewport é sempre 960** — só a largura acompanha a janela. Rodei o jogo em sete tamanhos e anotei:
+540×960 → 540×960 (escala 1,0); **1620×960 → 1620×960 (escala 1,0)**; 1440×960 → 1440×960 (1,0);
+1920×1080 em tela cheia → 1706×960 (1,125); 1280×800 → 1536×960 (0,833). Ou seja: 1620×960 é a
+janela em que a pixel art roda em escala inteira, e o layout só precisa olhar a **largura**.
+
+**A decisão de arquitetura.** Um código só, layout responsivo, sem fork. `main._apply_layout()` é o
+único ponto que decide, e nada é reconstruído: escritório, diário, aba ativa e navegação trocam de
+pai entre duas montagens que convivem na árvore.
+
+**O layout de PC.** Três colunas: navegação com ícone + nome à esquerda, escritório com moldura e o
+diário embaixo no meio, aba ativa à direita numa coluna de **532 px — a mesma largura de leitura do
+celular**. Essa última decisão é a que fez o trabalho caber: como a coluna tem a largura para a qual
+os cartões já foram desenhados, **nenhuma das seis telas precisou mudar**, e a maior parte dos
+problemas que a auditoria previu ("cartão esticado de 1580 px", "barra de progresso de 1450 px",
+"botão OK de 800 px") simplesmente não acontece. O ganho vem da altura: 850 px de aba visível em vez
+de 350, com o escritório rodando ao lado o tempo todo.
+
+**Como o desenho foi escolhido.** Rodei um workflow de 14 agentes: oito auditores (um por área da
+interface), três propostas independentes de layout sob ângulos diferentes e três juízes com lentes
+diferentes (jogabilidade em PC, risco de implementação, integridade visual). Os três juízes
+escolheram a mesma proposta, por larga margem (95 × 80 × 73) — a de duas/três colunas com a coluna
+de conteúdo travada na largura do celular, que é a que estava sendo construída. Da perdedora
+"Palco" vieram os enxertos: atalhos de teclado, a sala de treinamento ancorada na borda do
+escritório e o `EventStage` acompanhando o painel.
+
+**Coisas que a auditoria pegou e eu não teria visto:**
+
+1. **A tela inicial quebrava de verdade.** O cenário tinha 270×480 e usava `KEEP_ASPECT_COVERED`:
+   em 1620×960 a escala virava 6× e só o miolo dos prédios aparecia. A arte foi regerada com
+   **810×480 e emenda invisível** (cada camada fecha na borda direita; só as nuvens atravessam), e
+   a tela repete a faixa até cobrir a janela. Primeira tentativa: espelhar faixas alternadas — os
+   letreiros ficaram de trás para frente ("DMITEKRAM"). Olhar a imagem antes de commitar pegou.
+2. **`center_panel` media o viewport de um painel que ainda não estava na árvore.** `get_viewport()`
+   devolvia `null`, a medida caía no fallback de 540 px e **todo modal ficava com 500 px** no PC em
+   vez de 640. Só apareceu porque uma das propostas leu o código em andamento.
+3. **O headless devolve sempre 960×960 e ignora `--resolution`.** Sem isso descoberto, o
+   `ui_smoke_test` teria passado a testar só um dos layouts. A saída foi `UIKit.force_layout_width`:
+   o teste monta os dois no mesmo processo e confere que o celular volta igual.
+
+**Janelas médias.** Abaixo de 1180 px vale o layout de celular, mas com teto de 620 px e centrado —
+numa janela de 960 px os cartões ficariam com 944 px, que é o problema que motivou tudo.
+
+**O que ficou de fora, de propósito.** A proposta "Mesa de Trabalho" abria **duas abas ao mesmo
+tempo** (três colunas de 524 px). É a ideia mais nativa de PC das três e é a melhor candidata para
+um próximo lote; ficou fora agora porque exige um segundo conjunto de telas vivas e os juízes a
+classificaram como a de maior risco (nota 3-4 de 10 em risco de implementação).
+
 ## 9. Checklist para retomar o projeto
 
 1. Ler este documento, depois `README.md` (tabela "O que já existe") e `docs/ARQUITETURA.md`;

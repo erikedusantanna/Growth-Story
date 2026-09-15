@@ -14,6 +14,7 @@ var actors: Node2D
 var front: Node2D
 var fade: ColorRect
 var current_kind := ""
+var follow: Control                  # painel que a cena cobre (o escritório)
 
 
 func _ready() -> void:
@@ -44,8 +45,48 @@ func _ready() -> void:
 	resized.connect(_center)
 
 
+## Maior escala inteira que cabe no painel, com 2x de piso (o valor do celular). No PC o painel do
+## escritório é bem maior e sem isso o cenário viraria uma ilha de 540x336 no meio da tela.
+func _scale_for_size() -> float:
+	if size.x <= 0.0 or size.y <= 0.0:
+		return SCALE
+	return maxf(SCALE, floorf(minf(size.x / SCENE_SIZE.x, size.y / SCENE_SIZE.y)))
+
+
 func _center() -> void:
-	world.position = Vector2(floorf((size.x - SCENE_SIZE.x * SCALE) * 0.5), floorf((size.y - SCENE_SIZE.y * SCALE) * 0.5))
+	var s: float = _scale_for_size()
+	world.scale = Vector2(s, s)
+	world.position = Vector2(floorf((size.x - SCENE_SIZE.x * s) * 0.5), floorf((size.y - SCENE_SIZE.y * s) * 0.5))
+
+
+## Faz a cena cobrir o painel `target` e continuar cobrindo se ele mudar de tamanho (a janela do
+## PC é redimensionável, e a cena fica aberta enquanto o jogador não responde o evento).
+func track(target: Control) -> void:
+	if follow == target:
+		return
+	if follow != null and follow.resized.is_connected(_follow_target):
+		follow.resized.disconnect(_follow_target)
+	follow = target
+	if follow != null:
+		follow.resized.connect(_follow_target)
+	_follow_target()
+
+
+func _follow_target() -> void:
+	if follow == null or not is_instance_valid(follow):
+		return
+	global_position = follow.global_position
+	size = follow.size
+
+
+## `resized` não dispara quando o painel só MUDA DE LUGAR (troca de coluna, rolagem da raiz),
+## então enquanto a cena está no ar ela confere a geometria a cada quadro. É barato: dois
+## comparativos de Vector2 e nada mais.
+func _process(_delta: float) -> void:
+	if not visible or follow == null or not is_instance_valid(follow):
+		return
+	if global_position != follow.global_position or size != follow.size:
+		_follow_target()
 
 
 ## Mostra o cenário `kind` com as pessoas dadas (a primeira é a protagonista: recebe o troféu, se houver).

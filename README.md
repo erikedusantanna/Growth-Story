@@ -7,7 +7,9 @@ Estética pixel art simples. Este repositório contém **as bases e as mecânica
 
 ## Stack
 
-- **Godot 4.3** (GDScript), renderer *Mobile*, viewport 540×960 em retrato.
+- **Godot 4.3** (GDScript), renderer *Mobile*. Base de 540×960 em retrato, **layout responsivo**:
+  no celular a interface é a pilha vertical de sempre; no PC a janela abre em 1620×960 e o jogo
+  monta três colunas (navegação, escritório + diário, aba ativa). Um código só, sem fork.
 - Conteúdo em JSON (`data/`), lógica em sistemas independentes (`src/systems/`).
 - Arte pixel art gerada por script, sem dependências: `tools/gen_art.py` (tile de 32 px, estilo chibi com contorno escuro e 3 tons; personagens em camadas recoloríveis, 7 cabelos, óculos e 4 direções) e `tools/gen_icons.py` (ícones do HUD).
 - Testes headless (`tests/`) executados também no CI (`.github/workflows/tests.yml`); o CI também gera o APK Android e o executável Windows a cada mudança.
@@ -26,6 +28,9 @@ godot --headless --path . res://tests/sim_test.tscn      # 3 anos de jogo com po
 godot --headless --path . res://tests/ui_smoke_test.tscn # abre todas as telas e popups
 # Capturas de tela das telas (precisa de display; em servidor use xvfb-run):
 xvfb-run godot --path . --rendering-driver opengl3 --resolution 540x960 res://tests/screenshot_tour.tscn
+
+# tour do layout de PC (três colunas), na janela de 1620x960 que vem do project.godot
+xvfb-run godot --path . --rendering-driver opengl3 res://tests/pc_tour.tscn
 ```
 
 ### Instalar no celular (APK pronto)
@@ -47,6 +52,9 @@ com os dados do jogo embutidos — não precisa instalar nada, basta copiar e ab
 
 1. No repositório, abra **Actions** → workflow **Executável Windows** → execução mais recente.
 2. Em **Artifacts**, baixe `growth-story-windows` (zip com o `growth-story.exe`).
+A janela abre em **1620×960** — nesse tamanho a pixel art roda em escala exata 1,0, sem borrar — e
+pode ser redimensionada à vontade: o jogo remonta o layout sozinho ao cruzar 1180 px de largura.
+
 3. Extraia e dê dois cliques. O Windows pode mostrar o aviso "Windows protegeu o seu PC" por o
    arquivo não ser assinado: clique em **Mais informações → Executar assim mesmo**.
 
@@ -101,6 +109,7 @@ Depois: *Projeto → Exportar → Android → Exportar projeto*, ou
 | Central de notificações | `notification_system.gd`, `popups.gd` | O sino do HUD é o assistente da agência: junta num lugar só tudo o que está pedindo atenção — prospect esperando, currículo novo, talento raro com prazo, projeto sem equipe, entrega apertada, missão acabando, crise na região, caixa no vermelho, parcela do banco, escritório lotado — ordenado por urgência, com um botão “Ir para…” que leva direto à aba certa. O sino mostra o número e pulsa quando há algo urgente. O sistema **não guarda estado**: lê os outros sistemas e monta a lista na hora |
 | Aviso de falência | `finance_system.gd` (`status`, `check_alerts`), `company_screen.gd` | O jogo acaba se o caixa passar de −R$ 30.000, e dava para perder de surpresa. Agora a aba **Empresa** abre com a situação do caixa em tempo real (nível, limite exato, quanto ainda falta e quantos meses o caixa aguenta no ritmo atual) e dois avisos aparecem antes da derrota: em −R$ 6.000 e em −R$ 18.000. No segundo, o popup oferece **capital de giro no banco** na hora. Voltar para o positivo rearma os avisos |
 | Navegação por ícones | `src/ui/main.gd` (`NAV_ICONS`), `tools/gen_icons.py` | A barra de baixo virou seis ícones pixel art (equipe, clientes, projetos, empresa, RH, agência) no lugar do texto, com o nome no tooltip. As abas **Clientes** e **Equipe** piscam com o número esperando: prospect novo e currículo novo (`GameState.new_candidates`, zerado ao abrir a aba). Todo currículo entra por `EmployeeSystem.register_candidate()`, inclusive o talento raro |
+| Versão para PC | `src/ui/main.gd` (`_apply_layout`), `src/ui/ui_kit.gd` (`is_wide`) | A mesma cena serve celular e computador. Acima de 1180 px de largura o jogo troca a pilha vertical por **três colunas**: navegação com ícone + nome à esquerda (172 px), escritório grande com moldura e o diário embaixo no meio, e a aba ativa à direita numa coluna de 532 px — a mesma largura de leitura do celular, mas com 850 px de altura em vez de 350, então dá para ver o escritório funcionando e a aba inteira ao mesmo tempo. O topo vira uma linha só. Abaixo de 1180 px vale o layout de celular, com teto de 620 px e centralizado para os cartões não esticarem numa janela média. **Atalhos de teclado**: 1 a 6 trocam de aba, espaço pausa, M abre o mapa, N as notificações, Esc fecha o mapa |
 | Mídia paga | `client_system.gd` (`CAMPAIGNS`) | Aba Clientes: comprar leads (Impulsionar, Campanha, Lançamento) que chegam em poucos dias além dos prospects orgânicos; o custo sobe com a região. Prospect novo toca um som e a aba Clientes pisca com o número esperando |
 | World Map e regiões | `data/regions.json`, `tools/gen_layouts.py`, `src/ui/world_map_screen.gd` | Botão 🌎 no HUD abre a cidade isométrica (gerada em `tools/gen_art.py`) em tela cheia: 5 regiões = 5 tiers de cliente (Bairro Criativo → Centro Regional → Capital → Distrito das Marcas → Hub Global). Mudar de sede custa R$ 40 mil / 150 mil / 450 mil / 1,2 mi com reputação 15 / 35 / 55 / 75, abre o nível 1 da região nova, muda a parede e a vista da janela, e começa uma semana de mudança (produtividade ×0,85, caixas no escritório). Cada região tem 3–4 níveis de expansão (+2 lugares, barata); 16 níveis no total. O tier máximo dos prospects passa a ser min(região, 1 + equipe/3). A cidade tem mar com profundidade (raso na praia, azul escuro no alto-mar), faixa de areia na costa e espuma quebrando, sombra no chão sob cada prédio, caixa d'água, casa de máquinas e antena com luz de sinalização nos telhados, praças de piso claro com chafariz e árvores, lago no parque, campinho de futebol com marcação, igrejinha no bairro, prédio do banco no centro, faixa central e faixas de pedestre na avenida, postes de luz nas calçadas e dois tipos de árvore. A cidade é viva (`src/ui/world_map_life.gd`, rotas em `data/map_life.json`): carros na avenida e nas ruas, barcos, nuvens com sombra, avião com rastro, pássaros, espuma, pino pulsando, bandeira nas rivais; à noite as janelas acendem e o farol gira; na mudança de sede um caminhão atravessa a avenida com a câmera acompanhando |
 | Escritório | `office_system.gd`, `src/office/` | 16 níveis gerados por `tools/gen_layouts.py` (4 → 28 lugares) com layout em tiles, mesas agrupadas em ilhas com tapete e divisória por setor e ala de convivência com mesa de reunião; ampliação pela aba Equipe ou Empresa; funcionários andam entre mesa, café e sofá, com barra de moral sobre a cabeça; arrastar com um dedo e zoom com pinça (ou roda do mouse); toque no avatar abre a jornada |
